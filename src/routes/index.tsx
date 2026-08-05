@@ -30,7 +30,7 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   const [place, setPlace] = useState("");
-  const [placeType, setPlaceType] = useState<PlaceType>("village");
+  const placeType: PlaceType = "village";
   const [selected, setSelected] = useState<string[]>([]);
   const [copied, setCopied] = useState(false);
 
@@ -58,7 +58,6 @@ function Index() {
 
   const reset = () => {
     setPlace("");
-    setPlaceType("village");
     setSelected([]);
   };
 
