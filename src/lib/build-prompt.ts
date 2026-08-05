@@ -5,6 +5,7 @@ import {
   LEVEL_RULE,
   PROMPT_MODULES,
   PLACE_TYPES,
+  SYNTHESIS_RULES,
   TEMPLATE_INTRO,
   type PlaceType,
 } from "./prompt-modules";
@@ -32,8 +33,9 @@ export function buildPrompt({ place, placeType, selected }: PromptInput): string
 Тип: ${typeLabel}
 Наименование / пощенски код: ${target}`,
     sections ? `РАЗДЕЛИ ЗА ПОКРИВАНЕ:\n\n${sections}` : "",
-    "ФОРМАТ НА ОТГОВОРА:\nЗа всеки раздел използвай заглавие и кратки булети. Всяко твърдение с източник и дата в скоби. Липсващите данни — с точния текст „Няма налична информация“.",
+    SYNTHESIS_RULES,
   ].filter(Boolean);
+
 
   return parts.join("\n\n");
 }
