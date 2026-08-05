@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { buildPrompt } from "@/lib/build-prompt";
-import { PLACE_TYPES, PROMPT_MODULES, type PlaceType } from "@/lib/prompt-modules";
+import { PROMPT_MODULES, type PlaceType } from "@/lib/prompt-modules";
 
 const TITLE = "Да се върнем на село — генератор на промпти за проучване";
 const DESCRIPTION =
