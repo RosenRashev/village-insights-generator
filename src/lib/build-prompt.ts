@@ -5,6 +5,7 @@ import {
   LEVEL_RULE,
   PROMPT_MODULES,
   PLACE_TYPES,
+  SYNTHESIS_RULES,
   TEMPLATE_INTRO,
   type PlaceType,
 } from "./prompt-modules";
