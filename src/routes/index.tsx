@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { buildPrompt } from "@/lib/build-prompt";
-import { PLACE_TYPES, PROMPT_MODULES, type PlaceType } from "@/lib/prompt-modules";
+import { PROMPT_MODULES, type PlaceType } from "@/lib/prompt-modules";
 
 const TITLE = "Да се върнем на село — генератор на промпти за проучване";
 const DESCRIPTION =
@@ -30,7 +30,7 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   const [place, setPlace] = useState("");
-  const [placeType, setPlaceType] = useState<PlaceType>("village");
+  const placeType: PlaceType = "village";
   const [selected, setSelected] = useState<string[]>([]);
   const [copied, setCopied] = useState(false);
 
@@ -58,7 +58,6 @@ function Index() {
 
   const reset = () => {
     setPlace("");
-    setPlaceType("village");
     setSelected([]);
   };
 
@@ -66,8 +65,8 @@ function Index() {
     <main className="min-h-screen bg-background">
       <div className="mx-auto max-w-3xl px-4 py-12 sm:py-16">
         <header className="border-b border-border pb-8">
-          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
-            <span className="text-background [-webkit-text-stroke:1px_hsl(0_0%_70%)]">
+          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl [text-shadow:0_2px_6px_hsl(0_0%_0%/0.35)]">
+            <span className="text-background [-webkit-text-stroke:1px_hsl(0_0%_45%)]">
               Да се
             </span>{" "}
             <span className="text-primary">върнем</span>{" "}
@@ -81,7 +80,7 @@ function Index() {
         </header>
 
         <section className="mt-10">
-          <h2 className="text-lg font-bold text-destructive">
+          <h2 className="text-center text-2xl font-bold text-primary sm:text-3xl">
             Кое населено място проучвате?
           </h2>
           <div className="mt-4 space-y-4">
@@ -98,38 +97,9 @@ function Index() {
                 autoComplete="off"
               />
             </div>
-
-            <div className="space-y-2">
-              <span className="text-sm font-medium">Тип на обекта</span>
-              <div className="grid gap-2 sm:grid-cols-3">
-                {PLACE_TYPES.map((t) => {
-                  const active = placeType === t.value;
-                  return (
-                    <button
-                      key={t.value}
-                      type="button"
-                      onClick={() => setPlaceType(t.value)}
-                      className={`rounded-lg border p-3 text-left transition-colors ${
-                        active
-                          ? "border-primary bg-secondary"
-                          : "border-border hover:border-primary/50"
-                      }`}
-                    >
-                      <span
-                        className={`block text-sm font-semibold ${active ? "text-primary" : "text-foreground"}`}
-                      >
-                        {t.label}
-                      </span>
-                      <span className="mt-1 block text-xs text-muted-foreground">
-                        {t.hint}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
           </div>
         </section>
+
 
         {hasPlace && (
           <section className="mt-12 animate-in fade-in slide-in-from-bottom-2 duration-300">
