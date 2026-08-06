@@ -57,6 +57,24 @@ function Index() {
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
 
+  const showCopiedToast = () =>
+    toast.success("ПРОМПТЪТ Е КОПИРАН В ПАМЕТТА — ГОТОВ ЗА ПОСТАВЯНЕ (Ctrl+V)", {
+      duration: 5000,
+      className: "text-base font-bold py-6",
+    });
+
+  const copyOnly = async () => {
+    try {
+      await navigator.clipboard.writeText(prompt);
+    } catch {
+      toast.error("Копирането не успя — опитайте отново");
+      return;
+    }
+    setCopiedOnly(true);
+    setTimeout(() => setCopiedOnly(false), 2500);
+    showCopiedToast();
+  };
+
   const copyAndOpen = async () => {
     try {
       await navigator.clipboard.writeText(prompt);
@@ -66,7 +84,8 @@ function Index() {
     }
 
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => setCopied(false), 2500);
+    showCopiedToast();
 
     let opened: Window | null = null;
     try {
@@ -79,15 +98,14 @@ function Index() {
       opened = null;
     }
 
-    if (opened) {
-      toast.success("Промптът е копиран — поставете го в Gemini (Ctrl+V)");
-    } else {
+    if (!opened) {
       toast(
-        "Промптът е копиран. Понеже браузърът блокира автоматичното отваряне, отворете gemini.google.com ръчно и поставете с Ctrl+V.",
+        "Браузърът блокира автоматичното отваряне — отворете gemini.google.com ръчно и поставете с Ctrl+V.",
         { duration: 5000 },
       );
     }
   };
+
 
 
   const reset = () => {
