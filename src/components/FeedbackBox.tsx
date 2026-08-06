@@ -27,17 +27,18 @@ export function FeedbackBox() {
 
   if (!open) {
     return (
-      <div className="mt-6">
+      <div className="mt-6 flex justify-center">
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="rounded-md border border-border bg-muted px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent"
+          className="rounded-md border border-border bg-muted px-6 py-3 text-base font-bold text-muted-foreground transition-colors hover:bg-accent"
         >
           Коментар / препоръка
         </button>
       </div>
     );
   }
+
 
   return (
     <div className="mt-6 max-w-md">
