@@ -33,7 +33,9 @@ export function SettlementCombobox({
   const [all, setAll] = useState<Settlement[] | null>(null);
   const [open, setOpen] = useState(false);
   const [blocked, setBlocked] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
 
   useEffect(() => {
     if (!open || all) return;
