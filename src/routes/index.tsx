@@ -10,6 +10,8 @@ import { Label } from "@/components/ui/label";
 import { buildPrompt } from "@/lib/build-prompt";
 import { PROMPT_MODULES, type PlaceType } from "@/lib/prompt-modules";
 import { SettlementCombobox } from "@/components/SettlementCombobox";
+import { FeedbackBox } from "@/components/FeedbackBox";
+
 import { formatSettlement, type Settlement } from "@/lib/settlements";
 
 
@@ -296,7 +298,9 @@ function Index() {
 
         <footer className="mt-16 border-t border-border pt-6 text-xs text-muted-foreground">
           Проектът е с нестопанска цел, в подкрепа на купувачите на имоти, в процес на активна разработка.
+          <FeedbackBox />
         </footer>
+
       </div>
     </main>
   );
