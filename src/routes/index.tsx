@@ -90,32 +90,23 @@ function Index() {
             Кое населено място проучвате?
           </h2>
           <div className="mt-4 space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="place" className="text-sm font-medium">
-                Населено място или пощенски код
-              </Label>
-              <Input
-                id="place"
-                value={place}
-                onChange={(e) => setPlace(e.target.value)}
-                placeholder="напр. с. Баня, обл. Пловдив или 4360"
-                className="h-12 text-base"
-                autoComplete="off"
-              />
-            </div>
+            <SettlementCombobox
+              id="place"
+              label="Населено място или пощенски код"
+              placeholder="напр. Баня или 4360"
+              value={place}
+              onChange={setPlace}
+            />
 
             {hasPlace && (
               <div className="space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <Label htmlFor="current-location" className="text-sm font-medium">
-                  Настояща локация
-                </Label>
-                <Input
+                <SettlementCombobox
                   id="current-location"
+                  label="Настояща локация"
+                  placeholder="напр. Стара Загора"
                   value={currentLocation}
-                  onChange={(e) => setCurrentLocation(e.target.value)}
-                  placeholder="напр. гр. Стара Загора"
-                  className="h-10 text-sm"
-                  autoComplete="off"
+                  onChange={setCurrentLocation}
+                  size="sm"
                 />
                 <p className="text-sm text-muted-foreground">
                   Въведете населеното място, в което живеете в момента, за да
@@ -128,6 +119,7 @@ function Index() {
           </div>
 
         </section>
+
 
 
         {hasPlace && (
