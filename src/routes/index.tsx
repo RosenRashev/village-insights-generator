@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { buildPrompt } from "@/lib/build-prompt";
-import { PLACE_TYPES, PROMPT_MODULES, type PlaceType } from "@/lib/prompt-modules";
+import { PROMPT_MODULES, type PlaceType } from "@/lib/prompt-modules";
 import { SettlementCombobox } from "@/components/SettlementCombobox";
 import { formatSettlement, type Settlement } from "@/lib/settlements";
 
@@ -34,7 +34,7 @@ export const Route = createFileRoute("/")({
 function Index() {
   const [place, setPlace] = useState<Settlement | null>(null);
   const [currentLocation, setCurrentLocation] = useState<Settlement | null>(null);
-  const [placeType, setPlaceType] = useState<PlaceType>("village");
+  const placeType: PlaceType = place?.isVillage ? "village" : "town";
   const [selected, setSelected] = useState<string[]>([]);
   const [copied, setCopied] = useState(false);
 
@@ -71,7 +71,6 @@ function Index() {
   const reset = () => {
     setPlace(null);
     setCurrentLocation(null);
-    setPlaceType("village");
     setSelected([]);
   };
 
@@ -109,30 +108,8 @@ function Index() {
               onChange={setPlace}
             />
 
-            {hasPlace && (
-              <div className="space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <Label className="text-sm font-medium">Тип на обекта</Label>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                  {PLACE_TYPES.map((t) => (
-                    <button
-                      key={t.value}
-                      type="button"
-                      onClick={() => setPlaceType(t.value)}
-                      className={
-                        placeType === t.value
-                          ? "rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground"
-                          : "rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-primary/10"
-                      }
-                    >
-                      {t.label}
-                    </button>
-                  ))}
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {PLACE_TYPES.find((t) => t.value === placeType)?.hint}
-                </p>
-              </div>
-            )}
+
+
 
             {hasPlace && (
               <div className="space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
