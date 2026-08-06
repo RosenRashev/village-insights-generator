@@ -60,8 +60,10 @@ function Index() {
 
   const reset = () => {
     setPlace("");
+    setCurrentLocation("");
     setSelected([]);
   };
+
 
   return (
     <main className="min-h-screen bg-background">
