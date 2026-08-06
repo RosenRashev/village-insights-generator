@@ -10,20 +10,27 @@ export type Settlement = {
 type Row = [number, number, string, string, string, string];
 
 let cache: Settlement[] | null = null;
+let pending: Promise<Settlement[]> | null = null;
 
 export async function loadSettlements(): Promise<Settlement[]> {
   if (cache) return cache;
-  const mod = await import("@/data/settlements.json");
-  const rows = (mod.default ?? mod) as unknown as Row[];
-  cache = rows.map(([ekatte, village, name, municipality, province, postalCode]) => ({
-    ekatte,
-    isVillage: village === 1,
-    name,
-    municipality,
-    province,
-    postalCode,
-  }));
-  return cache;
+  if (pending) return pending;
+  pending = import("@/data/settlements.json").then((mod) => {
+    const rows = (mod.default ?? mod) as unknown as Row[];
+    const parsed = rows.map(
+      ([ekatte, village, name, municipality, province, postalCode]) => ({
+        ekatte,
+        isVillage: village === 1,
+        name,
+        municipality,
+        province,
+        postalCode,
+      }),
+    );
+    cache = parsed;
+    return parsed;
+  });
+  return pending;
 }
 
 /** Позволени са само кирилица, интервал, тире, апостроф и цифри (за пощенски код). */
