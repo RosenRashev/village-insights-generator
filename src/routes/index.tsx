@@ -106,11 +106,11 @@ function Index() {
             <h2 className="text-lg font-bold text-destructive">
               Какво да включим в проучването?
             </h2>
-            <div className="mt-4 space-y-3">
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
               {PROMPT_MODULES.map((m) => (
                 <div
                   key={m.id}
-                  className="flex items-start gap-3 rounded-lg border border-border p-4"
+                  className="flex h-full items-start gap-3 rounded-lg border border-border p-4"
                 >
                   <Checkbox
                     id={m.id}
