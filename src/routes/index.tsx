@@ -224,24 +224,50 @@ function Index() {
                 </p>
               </div>
             </div>
+            <ol className="w-full max-w-md space-y-3 text-left text-base text-foreground">
+              {[
+                "Натисни бутона — промптът се копира автоматично",
+                "Ще бъдеш пренасочен към Gemini",
+                "Натисни Ctrl+V, за да поставиш промпта в полето",
+              ].map((step, i) => (
+                <li key={step} className="flex items-start gap-3">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-base font-bold text-primary-foreground">
+                    {i + 1}
+                  </span>
+                  <span className="pt-1 leading-snug">{step}</span>
+                </li>
+              ))}
+            </ol>
+
             <button
               type="button"
               onClick={copyAndOpen}
               aria-label="Копирай промпта и отвори Gemini"
-              className="group flex h-28 w-28 flex-col items-center justify-center gap-1 bg-primary text-primary-foreground transition-transform hover:scale-105 active:scale-95 [clip-path:polygon(50%_0%,100%_38%,100%_100%,0%_100%,0%_38%)]"
+              className="group flex h-40 w-40 flex-col items-center justify-center gap-1.5 bg-primary text-primary-foreground transition-transform hover:scale-105 active:scale-95 [clip-path:polygon(50%_0%,100%_38%,100%_100%,0%_100%,0%_38%)]"
             >
               {copied ? (
-                <Check className="mt-5 h-8 w-8" />
+                <Check className="mt-7 h-11 w-11" />
               ) : (
-                <House className="mt-5 h-8 w-8" />
+                <span className="mt-7 flex items-center gap-1.5">
+                  <House className="h-11 w-11" />
+                  <GeminiMark className="h-6 w-6" />
+                </span>
               )}
-              <span className="px-2 text-center text-[11px] font-semibold leading-tight">
-                {copied ? "Копирано" : "Копирай и отвори Gemini"}
+              <span className="px-3 text-center text-[15px] font-semibold leading-tight">
+                {copied ? "✓ Копирано!" : "Копирай и отвори Gemini"}
               </span>
             </button>
 
+            <button
+              type="button"
+              onClick={copyOnly}
+              className="rounded-md border border-border bg-transparent px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted"
+            >
+              {copiedOnly ? "✓ Копирано!" : "Само копирай"}
+            </button>
+
             <p className="text-xs text-muted-foreground">
-              Промптът се копира автоматично — в Gemini само го поставете с Ctrl+V (Cmd+V) и натиснете Enter. Ако Gemini не се отвори тук, отворете{" "}
+              Ако Gemini не се отвори тук, отворете{" "}
               <a
                 href="https://gemini.google.com/app"
                 target="_blank"
@@ -250,8 +276,9 @@ function Index() {
               >
                 gemini.google.com
               </a>{" "}
-              в нов таб.
+              в нов таб и поставете с Ctrl+V (Cmd+V).
             </p>
+
             <Button onClick={reset} variant="outline" size="sm">
               <RotateCcw className="h-4 w-4" />
               Изчисти
