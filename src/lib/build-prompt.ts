@@ -38,6 +38,7 @@ export function buildPrompt({ place, placeType, selected, currentLocation }: Pro
 Наименование / пощенски код: ${target}`,
     current ? currentLocationModule(target, current) : "",
     sections ? `РАЗДЕЛИ ЗА ПОКРИВАНЕ:\n\n${sections}` : "",
+    ENVIRONMENT_RULES,
     SYNTHESIS_RULES,
   ].filter(Boolean);
 
