@@ -9,6 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { buildPrompt } from "@/lib/build-prompt";
 import { PROMPT_MODULES, type PlaceType } from "@/lib/prompt-modules";
+import { SettlementCombobox } from "@/components/SettlementCombobox";
+import { formatSettlement, type Settlement } from "@/lib/settlements";
+
 
 const TITLE = "Да се върнем на село — генератор на промпти за проучване";
 const DESCRIPTION =
