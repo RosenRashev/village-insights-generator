@@ -135,10 +135,20 @@ function Index() {
 
         {hasPlace && selected.length > 0 && (
           <section className="mt-12 flex flex-col items-center gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <p className="text-sm text-muted-foreground">
-              Избрани раздела: {selected.length}. Натиснете къщичката, за да копирате
-              промпта.
-            </p>
+            <div className="space-y-4 text-center">
+              <p className="text-lg font-bold text-foreground">
+                Как да извлечете максимална полза от генерирания промпт?
+              </p>
+              <div className="space-y-3 text-sm text-muted-foreground whitespace-pre-line">
+                <p>Препоръчваме да използвате промпта в Google Gemini.</p>
+                <p>
+                  Защо Gemini? За разлика от много други модели, Gemini разполага с пряк и ефективен достъп до търсачката на Google в реално време. Това му позволява да намира най-актуалните новини, общински съобщения, графици и официални данни за избраното населено място.
+                </p>
+                <p>
+                  Безплатен достъп: Не е необходим платен абонамент — безплатната версия на Gemini е напълно достатъчна за изготвянето на детайлен доклад.
+                </p>
+              </div>
+            </div>
             <button
               type="button"
               onClick={copy}
