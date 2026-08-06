@@ -32,17 +32,24 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  const [place, setPlace] = useState("");
-  const [currentLocation, setCurrentLocation] = useState("");
+  const [place, setPlace] = useState<Settlement | null>(null);
+  const [currentLocation, setCurrentLocation] = useState<Settlement | null>(null);
   const placeType: PlaceType = "village";
   const [selected, setSelected] = useState<string[]>([]);
   const [copied, setCopied] = useState(false);
 
-  const hasPlace = place.trim().length > 1;
+  const hasPlace = place !== null;
   const prompt = useMemo(
-    () => buildPrompt({ place, placeType, selected, currentLocation }),
+    () =>
+      buildPrompt({
+        place: place ? formatSettlement(place) : "",
+        placeType,
+        selected,
+        currentLocation: currentLocation ? formatSettlement(currentLocation) : "",
+      }),
     [place, placeType, selected, currentLocation],
   );
+
 
 
   const toggle = (id: string) =>
