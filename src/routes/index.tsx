@@ -205,11 +205,9 @@ function Index() {
                 </p>
               </div>
             </div>
-            <a
-              href="https://gemini.google.com/app"
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={copy}
+            <button
+              type="button"
+              onClick={copyAndOpen}
               aria-label="Копирай промпта и отвори Gemini"
               className="group flex h-28 w-28 flex-col items-center justify-center gap-1 bg-primary text-primary-foreground transition-transform hover:scale-105 active:scale-95 [clip-path:polygon(50%_0%,100%_38%,100%_100%,0%_100%,0%_38%)]"
             >
@@ -221,7 +219,8 @@ function Index() {
               <span className="px-2 text-center text-[11px] font-semibold leading-tight">
                 {copied ? "Копирано" : "Копирай и отвори Gemini"}
               </span>
-            </a>
+            </button>
+
             <p className="text-xs text-muted-foreground">
               Промптът се копира автоматично — в Gemini само го поставете с Ctrl+V (Cmd+V) и натиснете Enter. Ако Gemini не се отвори тук, отворете{" "}
               <a
