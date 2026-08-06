@@ -30,15 +30,17 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   const [place, setPlace] = useState("");
+  const [currentLocation, setCurrentLocation] = useState("");
   const placeType: PlaceType = "village";
   const [selected, setSelected] = useState<string[]>([]);
   const [copied, setCopied] = useState(false);
 
   const hasPlace = place.trim().length > 1;
   const prompt = useMemo(
-    () => buildPrompt({ place, placeType, selected }),
-    [place, placeType, selected],
+    () => buildPrompt({ place, placeType, selected, currentLocation }),
+    [place, placeType, selected, currentLocation],
   );
+
 
   const toggle = (id: string) =>
     setSelected((prev) =>
@@ -58,8 +60,10 @@ function Index() {
 
   const reset = () => {
     setPlace("");
+    setCurrentLocation("");
     setSelected([]);
   };
+
 
   return (
     <main className="min-h-screen bg-background">
@@ -99,7 +103,30 @@ function Index() {
                 autoComplete="off"
               />
             </div>
+
+            {hasPlace && (
+              <div className="space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <Label htmlFor="current-location" className="text-sm font-medium">
+                  Настояща локация
+                </Label>
+                <Input
+                  id="current-location"
+                  value={currentLocation}
+                  onChange={(e) => setCurrentLocation(e.target.value)}
+                  placeholder="напр. гр. Стара Загора"
+                  className="h-10 text-sm"
+                  autoComplete="off"
+                />
+                <p className="text-sm text-muted-foreground">
+                  Въведете населеното място, в което живеете в момента, за да
+                  изчислим разстоянието, времето за пътуване и транспортната
+                  достъпност за имоти купувани с цел уикенд туризъм за отдих и
+                  почивка.
+                </p>
+              </div>
+            )}
           </div>
+
         </section>
 
 
