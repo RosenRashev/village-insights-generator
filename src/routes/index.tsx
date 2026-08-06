@@ -66,7 +66,6 @@ function Index() {
     } catch {
       toast.error("Копирането не успя — опитайте отново");
     }
-    window.open("https://gemini.google.com/app", "_blank", "noopener,noreferrer");
   };
 
   const reset = () => {
@@ -182,8 +181,10 @@ function Index() {
                 </p>
               </div>
             </div>
-            <button
-              type="button"
+            <a
+              href="https://gemini.google.com/app"
+              target="_blank"
+              rel="noopener noreferrer"
               onClick={copy}
               aria-label="Копирай промпта и отвори Gemini"
               className="group flex h-28 w-28 flex-col items-center justify-center gap-1 bg-primary text-primary-foreground transition-transform hover:scale-105 active:scale-95 [clip-path:polygon(50%_0%,100%_38%,100%_100%,0%_100%,0%_38%)]"
@@ -196,9 +197,18 @@ function Index() {
               <span className="px-2 text-center text-[11px] font-semibold leading-tight">
                 {copied ? "Копирано" : "Копирай и отвори Gemini"}
               </span>
-            </button>
+            </a>
             <p className="text-xs text-muted-foreground">
-              Промптът се копира автоматично — в Gemini само го поставете с Ctrl+V (Cmd+V) и натиснете Enter.
+              Промптът се копира автоматично — в Gemini само го поставете с Ctrl+V (Cmd+V) и натиснете Enter. Ако Gemini не се отвори тук, отворете{" "}
+              <a
+                href="https://gemini.google.com/app"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline"
+              >
+                gemini.google.com
+              </a>{" "}
+              в нов таб.
             </p>
             <Button onClick={reset} variant="outline" size="sm">
               <RotateCcw className="h-4 w-4" />
