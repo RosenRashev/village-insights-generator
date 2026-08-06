@@ -37,6 +37,7 @@ function Index() {
   const placeType: PlaceType = place?.isVillage ? "village" : "town";
   const [selected, setSelected] = useState<string[]>([]);
   const [copied, setCopied] = useState(false);
+  const [copiedOnly, setCopiedOnly] = useState(false);
 
   const hasPlace = place !== null;
   const prompt = useMemo(
