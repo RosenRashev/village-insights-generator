@@ -2,7 +2,6 @@ import {
   BASE_PROMPT,
   COMMON_RULES,
   DISTRICT_RULE,
-  ENVIRONMENT_RULES,
   LEVEL_RULE,
   PROMPT_MODULES,
   PLACE_TYPES,
@@ -38,7 +37,6 @@ export function buildPrompt({ place, placeType, selected, currentLocation }: Pro
 Наименование / пощенски код: ${target}`,
     current ? currentLocationModule(target, current) : "",
     sections ? `РАЗДЕЛИ ЗА ПОКРИВАНЕ:\n\n${sections}` : "",
-    ENVIRONMENT_RULES,
     SYNTHESIS_RULES,
   ].filter(Boolean);
 
