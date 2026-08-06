@@ -66,7 +66,6 @@ function Index() {
     } catch {
       toast.error("Копирането не успя — опитайте отново");
     }
-    window.open("https://gemini.google.com/app", "_blank", "noopener,noreferrer");
   };
 
   const reset = () => {
