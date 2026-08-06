@@ -33,7 +33,9 @@ export function SettlementCombobox({
   const [all, setAll] = useState<Settlement[] | null>(null);
   const [open, setOpen] = useState(false);
   const [blocked, setBlocked] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
 
   useEffect(() => {
     if (!open || all) return;
@@ -60,6 +62,43 @@ export function SettlementCombobox({
     () => (all ? searchSettlements(all, query) : []),
     [all, query],
   );
+
+  useEffect(() => {
+    setActiveIndex(-1);
+  }, [query, results]);
+
+  useEffect(() => {
+    if (activeIndex < 0 || !listRef.current) return;
+    const el = listRef.current.querySelectorAll("li")[activeIndex];
+    el?.scrollIntoView({ block: "nearest" });
+  }, [activeIndex]);
+
+  const select = (s: Settlement) => {
+    onChange(s);
+    setOpen(false);
+    setBlocked(false);
+    setActiveIndex(-1);
+  };
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (!open) setOpen(true);
+      setActiveIndex((i) => Math.min(i + 1, results.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIndex((i) => Math.max(i - 1, 0));
+    } else if (e.key === "Enter") {
+      const s = activeIndex >= 0 ? results[activeIndex] : undefined;
+      if (s) {
+        e.preventDefault();
+        select(s);
+      }
+    } else if (e.key === "Escape") {
+      setOpen(false);
+    }
+  };
+
 
   if (value) {
     return (
@@ -111,9 +150,24 @@ export function SettlementCombobox({
           className={size === "lg" ? "h-12 text-base" : "h-10 text-sm"}
           autoComplete="off"
           spellCheck={false}
+          onKeyDown={onKeyDown}
+          role="combobox"
+          aria-expanded={open}
+          aria-controls={`${id}-listbox`}
+          aria-autocomplete="list"
+          aria-activedescendant={
+            activeIndex >= 0 && results[activeIndex]
+              ? `${id}-option-${results[activeIndex].ekatte}`
+              : undefined
+          }
         />
         {open && query.trim().length >= 2 && (
-          <ul className="absolute z-50 mt-1 max-h-72 w-full overflow-auto rounded-md border border-border bg-background shadow-lg">
+          <ul
+            ref={listRef}
+            id={`${id}-listbox`}
+            role="listbox"
+            className="absolute z-50 mt-1 max-h-72 w-full overflow-auto rounded-md border border-border bg-background shadow-lg"
+          >
             {!all && (
               <li className="px-3 py-2 text-sm text-muted-foreground">
                 Зареждане на списъка…
@@ -124,16 +178,20 @@ export function SettlementCombobox({
                 Няма намерено населено място. Проверете изписването.
               </li>
             )}
-            {results.map((s) => (
-              <li key={s.ekatte}>
+            {results.map((s, index) => (
+              <li
+                key={s.ekatte}
+                role="option"
+                aria-selected={index === activeIndex}
+                id={`${id}-option-${s.ekatte}`}
+              >
                 <button
                   type="button"
-                  onClick={() => {
-                    onChange(s);
-                    setOpen(false);
-                    setBlocked(false);
-                  }}
-                  className="flex w-full flex-col items-start gap-0.5 px-3 py-2 text-left hover:bg-primary/10"
+                  tabIndex={-1}
+                  onClick={() => select(s)}
+                  className={`flex w-full flex-col items-start gap-0.5 px-3 py-2 text-left hover:bg-primary/10 ${
+                    index === activeIndex ? "bg-primary/10" : ""
+                  }`}
                 >
                   <span className="text-sm font-semibold">
                     {s.isVillage ? "с." : "гр."} {s.name}
