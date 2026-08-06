@@ -69,8 +69,9 @@ function Index() {
   };
 
   const reset = () => {
-    setPlace("");
-    setCurrentLocation("");
+    setPlace(null);
+    setCurrentLocation(null);
+
     setSelected([]);
   };
 
