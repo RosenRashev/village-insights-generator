@@ -296,7 +296,9 @@ function Index() {
 
         <footer className="mt-16 border-t border-border pt-6 text-xs text-muted-foreground">
           Проектът е с нестопанска цел, в подкрепа на купувачите на имоти, в процес на активна разработка.
+          <FeedbackBox />
         </footer>
+
       </div>
     </main>
   );
