@@ -103,7 +103,30 @@ function Index() {
                 autoComplete="off"
               />
             </div>
+
+            {hasPlace && (
+              <div className="space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <Label htmlFor="current-location" className="text-sm font-medium">
+                  Настояща локация
+                </Label>
+                <Input
+                  id="current-location"
+                  value={currentLocation}
+                  onChange={(e) => setCurrentLocation(e.target.value)}
+                  placeholder="напр. гр. Стара Загора"
+                  className="h-10 text-sm"
+                  autoComplete="off"
+                />
+                <p className="text-sm text-muted-foreground">
+                  Въведете населеното място, в което живеете в момента, за да
+                  изчислим разстоянието, времето за пътуване и транспортната
+                  достъпност за имоти купувани с цел уикенд туризъм за отдих и
+                  почивка.
+                </p>
+              </div>
+            )}
           </div>
+
         </section>
 
 
