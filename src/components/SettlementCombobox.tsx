@@ -63,6 +63,43 @@ export function SettlementCombobox({
     [all, query],
   );
 
+  useEffect(() => {
+    setActiveIndex(-1);
+  }, [query, results]);
+
+  useEffect(() => {
+    if (activeIndex < 0 || !listRef.current) return;
+    const el = listRef.current.querySelectorAll("li")[activeIndex];
+    el?.scrollIntoView({ block: "nearest" });
+  }, [activeIndex]);
+
+  const select = (s: Settlement) => {
+    onChange(s);
+    setOpen(false);
+    setBlocked(false);
+    setActiveIndex(-1);
+  };
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (!open) setOpen(true);
+      setActiveIndex((i) => Math.min(i + 1, results.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIndex((i) => Math.max(i - 1, 0));
+    } else if (e.key === "Enter") {
+      const s = activeIndex >= 0 ? results[activeIndex] : undefined;
+      if (s) {
+        e.preventDefault();
+        select(s);
+      }
+    } else if (e.key === "Escape") {
+      setOpen(false);
+    }
+  };
+
+
   if (value) {
     return (
       <div className="space-y-2">
