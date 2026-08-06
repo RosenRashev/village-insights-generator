@@ -57,16 +57,38 @@ function Index() {
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
 
-  const copy = async () => {
+  const copyAndOpen = async () => {
     try {
       await navigator.clipboard.writeText(prompt);
-      setCopied(true);
-      toast.success("Промптът е копиран — поставете го в Gemini (Ctrl+V)");
-      setTimeout(() => setCopied(false), 2000);
     } catch {
       toast.error("Копирането не успя — опитайте отново");
+      return;
+    }
+
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+
+    let opened: Window | null = null;
+    try {
+      opened = window.open(
+        "https://gemini.google.com/app",
+        "_blank",
+        "noopener,noreferrer",
+      );
+    } catch {
+      opened = null;
+    }
+
+    if (opened) {
+      toast.success("Промптът е копиран — поставете го в Gemini (Ctrl+V)");
+    } else {
+      toast(
+        "Промптът е копиран. Понеже браузърът блокира автоматичното отваряне, отворете gemini.google.com ръчно и поставете с Ctrl+V.",
+        { duration: 5000 },
+      );
     }
   };
+
 
   const reset = () => {
     setPlace(null);
