@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { buildPrompt } from "@/lib/build-prompt";
-import { PLACE_TYPES, PROMPT_MODULES, type PlaceType } from "@/lib/prompt-modules";
+import { PROMPT_MODULES, type PlaceType } from "@/lib/prompt-modules";
 import { SettlementCombobox } from "@/components/SettlementCombobox";
 import { formatSettlement, type Settlement } from "@/lib/settlements";
 
@@ -34,7 +34,7 @@ export const Route = createFileRoute("/")({
 function Index() {
   const [place, setPlace] = useState<Settlement | null>(null);
   const [currentLocation, setCurrentLocation] = useState<Settlement | null>(null);
-  const [placeType, setPlaceType] = useState<PlaceType>("village");
+  const placeType: PlaceType = place?.isVillage ? "village" : "town";
   const [selected, setSelected] = useState<string[]>([]);
   const [copied, setCopied] = useState(false);
 
@@ -71,7 +71,6 @@ function Index() {
   const reset = () => {
     setPlace(null);
     setCurrentLocation(null);
-    setPlaceType("village");
     setSelected([]);
   };
 
