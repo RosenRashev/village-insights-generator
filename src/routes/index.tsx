@@ -9,6 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { buildPrompt } from "@/lib/build-prompt";
 import { PROMPT_MODULES, type PlaceType } from "@/lib/prompt-modules";
+import { SettlementCombobox } from "@/components/SettlementCombobox";
+import { formatSettlement, type Settlement } from "@/lib/settlements";
+
 
 const TITLE = "Да се върнем на село — генератор на промпти за проучване";
 const DESCRIPTION =
@@ -29,17 +32,24 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  const [place, setPlace] = useState("");
-  const [currentLocation, setCurrentLocation] = useState("");
+  const [place, setPlace] = useState<Settlement | null>(null);
+  const [currentLocation, setCurrentLocation] = useState<Settlement | null>(null);
   const placeType: PlaceType = "village";
   const [selected, setSelected] = useState<string[]>([]);
   const [copied, setCopied] = useState(false);
 
-  const hasPlace = place.trim().length > 1;
+  const hasPlace = place !== null;
   const prompt = useMemo(
-    () => buildPrompt({ place, placeType, selected, currentLocation }),
+    () =>
+      buildPrompt({
+        place: place ? formatSettlement(place) : "",
+        placeType,
+        selected,
+        currentLocation: currentLocation ? formatSettlement(currentLocation) : "",
+      }),
     [place, placeType, selected, currentLocation],
   );
+
 
 
   const toggle = (id: string) =>
@@ -59,8 +69,9 @@ function Index() {
   };
 
   const reset = () => {
-    setPlace("");
-    setCurrentLocation("");
+    setPlace(null);
+    setCurrentLocation(null);
+
     setSelected([]);
   };
 
@@ -90,32 +101,23 @@ function Index() {
             Кое населено място проучвате?
           </h2>
           <div className="mt-4 space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="place" className="text-sm font-medium">
-                Населено място или пощенски код
-              </Label>
-              <Input
-                id="place"
-                value={place}
-                onChange={(e) => setPlace(e.target.value)}
-                placeholder="напр. с. Баня, обл. Пловдив или 4360"
-                className="h-12 text-base"
-                autoComplete="off"
-              />
-            </div>
+            <SettlementCombobox
+              id="place"
+              label="Населено място или пощенски код"
+              placeholder="напр. Баня или 4360"
+              value={place}
+              onChange={setPlace}
+            />
 
             {hasPlace && (
               <div className="space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <Label htmlFor="current-location" className="text-sm font-medium">
-                  Настояща локация
-                </Label>
-                <Input
+                <SettlementCombobox
                   id="current-location"
+                  label="Настояща локация"
+                  placeholder="напр. Стара Загора"
                   value={currentLocation}
-                  onChange={(e) => setCurrentLocation(e.target.value)}
-                  placeholder="напр. гр. Стара Загора"
-                  className="h-10 text-sm"
-                  autoComplete="off"
+                  onChange={setCurrentLocation}
+                  size="sm"
                 />
                 <p className="text-sm text-muted-foreground">
                   Въведете населеното място, в което живеете в момента, за да
@@ -128,6 +130,7 @@ function Index() {
           </div>
 
         </section>
+
 
 
         {hasPlace && (
