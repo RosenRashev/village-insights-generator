@@ -103,10 +103,10 @@ function Index() {
         <header className="border-b border-border pb-8">
           <h1 className="text-4xl font-bold tracking-tight sm:text-5xl [text-shadow:0_2px_6px_hsl(0_0%_0%/0.35)]">
             <span className="text-background [-webkit-text-stroke:1px_hsl(0_0%_45%)]">
-              Да се
-            </span>{" "}
-            <span className="text-primary">върнем</span>{" "}
-            <span className="text-destructive">на село</span>
+              СЕЛО
+            </span>
+            <span className="text-primary">СКО</span>
+            <span className="text-destructive">П</span>
           </h1>
           <p className="mt-4 text-base text-muted-foreground">
             За приложението: Ролята на този инструмент е да генерира прецизно
