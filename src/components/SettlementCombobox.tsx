@@ -150,9 +150,24 @@ export function SettlementCombobox({
           className={size === "lg" ? "h-12 text-base" : "h-10 text-sm"}
           autoComplete="off"
           spellCheck={false}
+          onKeyDown={onKeyDown}
+          role="combobox"
+          aria-expanded={open}
+          aria-controls={`${id}-listbox`}
+          aria-autocomplete="list"
+          aria-activedescendant={
+            activeIndex >= 0 && results[activeIndex]
+              ? `${id}-option-${results[activeIndex].ekatte}`
+              : undefined
+          }
         />
         {open && query.trim().length >= 2 && (
-          <ul className="absolute z-50 mt-1 max-h-72 w-full overflow-auto rounded-md border border-border bg-background shadow-lg">
+          <ul
+            ref={listRef}
+            id={`${id}-listbox`}
+            role="listbox"
+            className="absolute z-50 mt-1 max-h-72 w-full overflow-auto rounded-md border border-border bg-background shadow-lg"
+          >
             {!all && (
               <li className="px-3 py-2 text-sm text-muted-foreground">
                 Зареждане на списъка…
@@ -163,16 +178,20 @@ export function SettlementCombobox({
                 Няма намерено населено място. Проверете изписването.
               </li>
             )}
-            {results.map((s) => (
-              <li key={s.ekatte}>
+            {results.map((s, index) => (
+              <li
+                key={s.ekatte}
+                role="option"
+                aria-selected={index === activeIndex}
+                id={`${id}-option-${s.ekatte}`}
+              >
                 <button
                   type="button"
-                  onClick={() => {
-                    onChange(s);
-                    setOpen(false);
-                    setBlocked(false);
-                  }}
-                  className="flex w-full flex-col items-start gap-0.5 px-3 py-2 text-left hover:bg-primary/10"
+                  tabIndex={-1}
+                  onClick={() => select(s)}
+                  className={`flex w-full flex-col items-start gap-0.5 px-3 py-2 text-left hover:bg-primary/10 ${
+                    index === activeIndex ? "bg-primary/10" : ""
+                  }`}
                 >
                   <span className="text-sm font-semibold">
                     {s.isVillage ? "с." : "гр."} {s.name}
