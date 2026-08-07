@@ -21,14 +21,7 @@ type Props = {
   size?: "lg" | "sm";
 };
 
-export function SettlementCombobox({
-  id,
-  label,
-  placeholder,
-  value,
-  onChange,
-  size = "lg",
-}: Props) {
+export function SettlementCombobox({ id, label, placeholder, value, onChange, size = "lg" }: Props) {
   const [query, setQuery] = useState("");
   const [all, setAll] = useState<Settlement[] | null>(null);
   const [open, setOpen] = useState(false);
@@ -58,10 +51,7 @@ export function SettlementCombobox({
     return () => document.removeEventListener("mousedown", onDocClick);
   }, []);
 
-  const results = useMemo(
-    () => (all ? searchSettlements(all, query) : []),
-    [all, query],
-  );
+  const results = useMemo(() => (all ? searchSettlements(all, query) : []), [all, query]);
 
   useEffect(() => {
     setActiveIndex(-1);
@@ -89,7 +79,7 @@ export function SettlementCombobox({
       e.preventDefault();
       setActiveIndex((i) => Math.max(i - 1, 0));
     } else if (e.key === "Enter") {
-      const s = activeIndex >= 0 ? results[activeIndex] : undefined;
+      const s = activeIndex >= 0 ? results[activeIndex] : results[0];
       if (s) {
         e.preventDefault();
         select(s);
@@ -99,16 +89,13 @@ export function SettlementCombobox({
     }
   };
 
-
   if (value) {
     return (
       <div className="space-y-2">
         <Label className="text-sm font-medium">{label}</Label>
         <div className="flex items-center gap-2 rounded-md border border-primary bg-primary/5 px-3 py-2">
           <MapPin className="h-4 w-4 shrink-0 text-primary" />
-          <span className="min-w-0 flex-1 truncate text-sm font-medium">
-            {displaySettlement(value)}
-          </span>
+          <span className="min-w-0 flex-1 truncate text-sm font-medium">{displaySettlement(value)}</span>
           <Button
             type="button"
             variant="ghost"
@@ -156,9 +143,7 @@ export function SettlementCombobox({
           aria-controls={`${id}-listbox`}
           aria-autocomplete="list"
           aria-activedescendant={
-            activeIndex >= 0 && results[activeIndex]
-              ? `${id}-option-${results[activeIndex].ekatte}`
-              : undefined
+            activeIndex >= 0 && results[activeIndex] ? `${id}-option-${results[activeIndex].ekatte}` : undefined
           }
         />
         {open && query.trim().length >= 2 && (
@@ -168,23 +153,14 @@ export function SettlementCombobox({
             role="listbox"
             className="absolute z-50 mt-1 max-h-72 w-full overflow-auto rounded-md border border-border bg-background shadow-lg"
           >
-            {!all && (
-              <li className="px-3 py-2 text-sm text-muted-foreground">
-                Зареждане на списъка…
-              </li>
-            )}
+            {!all && <li className="px-3 py-2 text-sm text-muted-foreground">Зареждане на списъка…</li>}
             {all && results.length === 0 && (
               <li className="px-3 py-2 text-sm text-muted-foreground">
                 Няма намерено населено място. Проверете изписването.
               </li>
             )}
             {results.map((s, index) => (
-              <li
-                key={s.ekatte}
-                role="option"
-                aria-selected={index === activeIndex}
-                id={`${id}-option-${s.ekatte}`}
-              >
+              <li key={s.ekatte} role="option" aria-selected={index === activeIndex} id={`${id}-option-${s.ekatte}`}>
                 <button
                   type="button"
                   tabIndex={-1}
@@ -207,17 +183,11 @@ export function SettlementCombobox({
         )}
       </div>
       {blocked ? (
-        <p className="text-sm font-medium text-destructive">
-          Моля, пишете само на кирилица.
-        </p>
+        <p className="text-sm font-medium text-destructive">Моля, пишете само на кирилица.</p>
       ) : showHint ? (
-        <p className="text-sm text-muted-foreground">
-          Изберете населено място от списъка.
-        </p>
+        <p className="text-sm text-muted-foreground">Изберете населено място от списъка.</p>
       ) : (
-        <p className="text-sm text-muted-foreground">
-          Пишете на кирилица — име на населено място или пощенски код.
-        </p>
+        <p className="text-sm text-muted-foreground">Пишете на кирилица — име на населено място или пощенски код.</p>
       )}
     </div>
   );
