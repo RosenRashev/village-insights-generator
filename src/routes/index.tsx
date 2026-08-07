@@ -4,12 +4,11 @@ import { Check, House, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { buildPrompt } from "@/lib/build-prompt";
 import { PROMPT_MODULES, type PlaceType } from "@/lib/prompt-modules";
 import { SettlementCombobox } from "@/components/SettlementCombobox";
+import { ModuleCard } from "@/components/ModuleCard";
 import { FeedbackBox } from "@/components/FeedbackBox";
 
 import { formatSettlement, type Settlement } from "@/lib/settlements";
