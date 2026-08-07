@@ -193,26 +193,12 @@ function Index() {
             </h2>
             <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
               {PROMPT_MODULES.map((m) => (
-                <div
+                <ModuleCard
                   key={m.id}
-                  className="flex h-full items-start gap-3 rounded-lg border border-border p-4"
-                >
-                  <Checkbox
-                    id={m.id}
-                    checked={selected.includes(m.id)}
-                    onCheckedChange={() => toggle(m.id)}
-                    className="mt-0.5"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <Label
-                      htmlFor={m.id}
-                      className="cursor-pointer text-sm font-semibold"
-                    >
-                      {m.label}
-                    </Label>
-                    <p className="mt-1 text-sm text-muted-foreground">{m.info}</p>
-                  </div>
-                </div>
+                  module={m}
+                  selected={selected.includes(m.id)}
+                  onToggle={() => toggle(m.id)}
+                />
               ))}
             </div>
           </section>
