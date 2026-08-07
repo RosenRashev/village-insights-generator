@@ -123,7 +123,7 @@ function Index() {
   const reset = () => {
     setPlace(null);
     setCurrentLocation(null);
-    setSelected([]);
+    setSelected(PROMPT_MODULES.map((m) => m.id));
   };
 
 
