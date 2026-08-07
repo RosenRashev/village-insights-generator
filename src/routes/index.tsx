@@ -4,12 +4,11 @@ import { Check, House, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { buildPrompt } from "@/lib/build-prompt";
 import { PROMPT_MODULES, type PlaceType } from "@/lib/prompt-modules";
 import { SettlementCombobox } from "@/components/SettlementCombobox";
+import { ModuleCard } from "@/components/ModuleCard";
 import { FeedbackBox } from "@/components/FeedbackBox";
 
 import { formatSettlement, type Settlement } from "@/lib/settlements";
@@ -45,7 +44,9 @@ function Index() {
   const [place, setPlace] = useState<Settlement | null>(null);
   const [currentLocation, setCurrentLocation] = useState<Settlement | null>(null);
   const placeType: PlaceType = place?.isVillage ? "village" : "town";
-  const [selected, setSelected] = useState<string[]>([]);
+  const [selected, setSelected] = useState<string[]>(() =>
+    PROMPT_MODULES.map((m) => m.id),
+  );
   const [copied, setCopied] = useState(false);
   const [copiedOnly, setCopiedOnly] = useState(false);
 
@@ -122,7 +123,7 @@ function Index() {
   const reset = () => {
     setPlace(null);
     setCurrentLocation(null);
-    setSelected([]);
+    setSelected(PROMPT_MODULES.map((m) => m.id));
   };
 
 
@@ -193,26 +194,12 @@ function Index() {
             </h2>
             <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
               {PROMPT_MODULES.map((m) => (
-                <div
+                <ModuleCard
                   key={m.id}
-                  className="flex h-full items-start gap-3 rounded-lg border border-border p-4"
-                >
-                  <Checkbox
-                    id={m.id}
-                    checked={selected.includes(m.id)}
-                    onCheckedChange={() => toggle(m.id)}
-                    className="mt-0.5"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <Label
-                      htmlFor={m.id}
-                      className="cursor-pointer text-sm font-semibold"
-                    >
-                      {m.label}
-                    </Label>
-                    <p className="mt-1 text-sm text-muted-foreground">{m.info}</p>
-                  </div>
-                </div>
+                  module={m}
+                  selected={selected.includes(m.id)}
+                  onToggle={() => toggle(m.id)}
+                />
               ))}
             </div>
           </section>
@@ -267,6 +254,12 @@ function Index() {
                 {copied ? "✓ Копирано!" : "Копирай и отвори Gemini"}
               </span>
             </button>
+
+            <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+              {selected.length} избрани
+            </span>
+
+
 
             <button
               type="button"
