@@ -44,7 +44,9 @@ function Index() {
   const [place, setPlace] = useState<Settlement | null>(null);
   const [currentLocation, setCurrentLocation] = useState<Settlement | null>(null);
   const placeType: PlaceType = place?.isVillage ? "village" : "town";
-  const [selected, setSelected] = useState<string[]>([]);
+  const [selected, setSelected] = useState<string[]>(() =>
+    PROMPT_MODULES.map((m) => m.id),
+  );
   const [copied, setCopied] = useState(false);
   const [copiedOnly, setCopiedOnly] = useState(false);
 
