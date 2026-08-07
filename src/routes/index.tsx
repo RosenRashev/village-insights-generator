@@ -255,6 +255,12 @@ function Index() {
               </span>
             </button>
 
+            <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+              {selected.length} избрани
+            </span>
+
+
+
             <button
               type="button"
               onClick={copyOnly}
