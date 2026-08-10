@@ -290,7 +290,10 @@ function Index() {
               </span>
             </button>
 
-            <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+            <span
+              key={selected.length}
+              className="animate-in zoom-in-95 fade-in rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary transition-transform duration-200 ease-out"
+            >
               {selected.length} избрани
             </span>
 
