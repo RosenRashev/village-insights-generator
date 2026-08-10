@@ -28,7 +28,7 @@ export function TopoBackground() {
             key={i}
             d={contour(i)}
             stroke="var(--primary)"
-            strokeOpacity={i % 3 === 0 ? 0.1 : 0.06}
+            strokeOpacity={i % 3 === 0 ? 0.22 : 0.14}
             strokeWidth={i % 3 === 0 ? 1.6 : 1}
           />
         ))}
