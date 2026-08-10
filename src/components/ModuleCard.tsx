@@ -69,7 +69,7 @@ export function ModuleCard({
       }}
       className={cn(
         "flex h-full cursor-pointer items-start gap-3 rounded-lg border p-4 shadow-sm outline-none transition-all duration-200",
-        "hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98]",
+        "hover:scale-[1.02] hover:border-primary/50 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98]",
         selected
           ? "border-primary/40 bg-primary/10"
           : "border-border bg-muted/40",

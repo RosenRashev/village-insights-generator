@@ -62,7 +62,7 @@
 }
 
 :root {
-  --radius: 0.625rem;
+  --radius: 1.1rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.24 0.02 150);
   --card: oklch(1 0 0);
@@ -142,3 +142,22 @@
     color: var(--color-foreground);
   }
 }
+
+@keyframes topo-drift {
+  0% {
+    transform: translate3d(-10vw, 0, 0);
+  }
+  50% {
+    transform: translate3d(-6vw, -3vh, 0);
+  }
+  100% {
+    transform: translate3d(-10vw, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .topo-drift {
+    animation: topo-drift 80s ease-in-out infinite;
+  }
+}
+
