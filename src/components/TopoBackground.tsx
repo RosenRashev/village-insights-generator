@@ -57,7 +57,7 @@ export function TopoBackground() {
             x2={l.x2}
             y2={l.y2}
             stroke="var(--primary)"
-            strokeOpacity={0.15}
+            strokeOpacity={0.2}
             strokeWidth={1}
             strokeDasharray="5 8"
           />
@@ -70,7 +70,7 @@ export function TopoBackground() {
               cy={d.y}
               r={d.r}
               fill="var(--primary)"
-              fillOpacity={0.24}
+              fillOpacity={0.31}
               style={
                 {
                   "--dot-dur": `${d.dur}s`,
@@ -84,7 +84,7 @@ export function TopoBackground() {
               cy={d.y}
               r={d.r * 3}
               stroke="var(--primary)"
-              strokeOpacity={0.14}
+              strokeOpacity={0.18}
               strokeWidth={1}
               style={
                 {
