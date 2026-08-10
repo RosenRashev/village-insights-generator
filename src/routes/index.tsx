@@ -143,8 +143,8 @@ function Index() {
       <TopoBackground />
       <div className="mx-auto max-w-3xl px-4 py-12 sm:py-16">
 
-        <header className="mount-rise border-b border-border pb-8">
-          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl [text-shadow:0_2px_6px_hsl(0_0%_0%/0.35)]">
+        <header className="mount-rise border-b border-border pb-8 text-center">
+          <h1 className="text-6xl font-bold tracking-tight text-center sm:text-7xl [text-shadow:0_2px_6px_hsl(0_0%_0%/0.35)]">
             <span className="title-part title-part-1 text-background [-webkit-text-stroke:1px_hsl(0_0%_45%)]">
               СЕЛО
             </span>

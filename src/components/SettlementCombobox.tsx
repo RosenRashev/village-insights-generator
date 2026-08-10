@@ -186,9 +186,7 @@ export function SettlementCombobox({ id, label, placeholder, value, onChange, si
         <p className="text-sm font-medium text-destructive">Моля, пишете само на кирилица.</p>
       ) : showHint ? (
         <p className="text-sm text-muted-foreground">Изберете населено място от списъка.</p>
-      ) : (
-        <p className="text-sm text-muted-foreground">Пишете на кирилица — име на населено място или пощенски код.</p>
-      )}
+      ) : null}
     </div>
   );
 }
