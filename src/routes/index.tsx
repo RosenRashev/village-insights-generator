@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Check, House, RotateCcw } from "lucide-react";
+import { Check, House, Info, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -235,6 +235,31 @@ function Index() {
                 </li>
               ))}
             </ol>
+
+            <Accordion
+              type="single"
+              collapsible
+              className="w-full max-w-md rounded-md border border-border bg-muted/50 px-3"
+            >
+              <AccordionItem value="gemini-account" className="border-none">
+                <AccordionTrigger className="py-2 text-sm hover:no-underline">
+                  <span className="flex items-center gap-2 text-left">
+                    <Info className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    Нямате Gemini акаунт? Прочетете тук
+                  </span>
+                </AccordionTrigger>
+                <AccordionContent className="pb-3 text-sm text-muted-foreground">
+                  Не е необходимо да инсталирате нищо. Трябва Ви само обикновен
+                  Google акаунт (същият, който ползвате за Gmail). При първото
+                  отваряне на gemini.google.com системата ще Ви поиска да влезете
+                  с него и да разрешите на Gemini достъп до профила Ви — това е
+                  стандартна стъпка на Google и отнема секунди. Услугата е
+                  напълно безплатна.
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+
+
 
             <button
               type="button"
