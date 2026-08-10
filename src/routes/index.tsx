@@ -140,13 +140,13 @@ function Index() {
       <TopoBackground />
       <div className="mx-auto max-w-3xl px-4 py-12 sm:py-16">
 
-        <header className="border-b border-border pb-8">
+        <header className="mount-rise border-b border-border pb-8">
           <h1 className="text-4xl font-bold tracking-tight sm:text-5xl [text-shadow:0_2px_6px_hsl(0_0%_0%/0.35)]">
-            <span className="text-background [-webkit-text-stroke:1px_hsl(0_0%_45%)]">
+            <span className="title-part title-part-1 text-background [-webkit-text-stroke:1px_hsl(0_0%_45%)]">
               СЕЛО
             </span>
-            <span className="text-primary">СКО</span>
-            <span className="text-destructive">П</span>
+            <span className="title-part title-part-2 text-primary">СКО</span>
+            <span className="title-part title-part-3 text-destructive">П</span>
           </h1>
           <p className="mt-4 text-base text-muted-foreground">
             За приложението: Ролята на този инструмент е да генерира прецизно
@@ -157,7 +157,7 @@ function Index() {
           </p>
         </header>
 
-        <section className="mt-10">
+        <section className="mount-rise-delay mt-10">
           <h2 className="text-center text-2xl font-bold text-primary sm:text-3xl">
             Кое населено място проучвате?
           </h2>
