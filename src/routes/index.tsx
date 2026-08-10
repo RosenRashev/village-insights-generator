@@ -57,6 +57,7 @@ function Index() {
   );
   const [copied, setCopied] = useState(false);
   const [copiedOnly, setCopiedOnly] = useState(false);
+  const [bouncing, setBouncing] = useState(false);
 
   const hasPlace = place !== null;
   const prompt = useMemo(
