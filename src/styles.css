@@ -233,3 +233,18 @@
 }
 
 
+@keyframes scan-dot-pulse {
+  0%,
+  100% {
+    opacity: 0.1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .scan-dot {
+    animation: scan-dot-pulse var(--dot-dur, 8s) ease-in-out var(--dot-delay, 0s) infinite;
+  }
+}
