@@ -3,7 +3,14 @@ import { useMemo, useState } from "react";
 import { Check, House, Info, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
+
 import { Input } from "@/components/ui/input";
 import { buildPrompt } from "@/lib/build-prompt";
 import { PROMPT_MODULES, type PlaceType } from "@/lib/prompt-modules";
