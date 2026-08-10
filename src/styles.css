@@ -248,3 +248,30 @@
     animation: scan-dot-pulse var(--dot-dur, 8s) ease-in-out var(--dot-delay, 0s) infinite;
   }
 }
+
+@keyframes radar-ping {
+  0% {
+    transform: scale(0.02);
+    opacity: 0.4;
+  }
+  80% {
+    opacity: 0.08;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .radar-ring {
+    transform-origin: 800px 450px;
+    animation: radar-ping 5.4s cubic-bezier(0.2, 0.6, 0.4, 1) var(--ring-delay, 0s) infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .radar-ring {
+    opacity: 0;
+  }
+}

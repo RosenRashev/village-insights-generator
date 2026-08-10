@@ -49,6 +49,19 @@ export function TopoBackground() {
         preserveAspectRatio="xMidYMid slice"
         fill="none"
       >
+        {[0, 1.8, 3.6].map((delay, i) => (
+          <circle
+            key={`ring-${i}`}
+            className="radar-ring"
+            cx={800}
+            cy={450}
+            r={820}
+            fill="none"
+            stroke="var(--primary)"
+            strokeWidth={2}
+            style={{ "--ring-delay": `${delay}s`, opacity: 0 } as React.CSSProperties}
+          />
+        ))}
         {LINKS.map((l, i) => (
           <line
             key={i}
