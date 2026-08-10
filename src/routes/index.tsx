@@ -97,6 +97,8 @@ function Index() {
   };
 
   const copyAndOpen = async () => {
+    setBouncing(true);
+    setTimeout(() => setBouncing(false), 400);
     try {
       await navigator.clipboard.writeText(prompt);
     } catch {
