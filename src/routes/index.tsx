@@ -278,7 +278,7 @@ function Index() {
               type="button"
               onClick={copyAndOpen}
               aria-label="Копирай промпта и отвори Gemini"
-              className="group flex h-40 w-40 flex-col items-center justify-center gap-1.5 bg-primary text-primary-foreground transition-transform hover:scale-105 active:scale-95 [clip-path:polygon(50%_0%,100%_38%,100%_100%,0%_100%,0%_38%)]"
+              className={`group flex h-40 w-40 flex-col items-center justify-center gap-1.5 bg-primary text-primary-foreground transition-transform hover:scale-105 active:scale-95 [clip-path:polygon(50%_0%,100%_38%,100%_100%,0%_100%,0%_38%)] ${bouncing ? "bounce-click" : ""}`}
             >
               {copied ? (
                 <Check className="mt-7 h-11 w-11" />
