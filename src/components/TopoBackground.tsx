@@ -25,11 +25,18 @@ function makeDots(): Dot[] {
 
 const DOTS = makeDots();
 
-const LINKS: [number, number][] = DOTS.flatMap((_, i) => {
-  const out: [number, number][] = [];
-  if ((i + 1) % 5 !== 0 && i + 1 < DOTS.length) out.push([i, i + 1]);
-  if (i + 5 < DOTS.length) out.push([i, i + 5]);
-  if ((i + 1) % 5 !== 0 && i + 6 < DOTS.length && i % 2 === 0) out.push([i, i + 6]);
+type Link = { x1: number; y1: number; x2: number; y2: number };
+
+const LINKS: Link[] = DOTS.flatMap((_, i) => {
+  const out: Link[] = [];
+  const a = DOTS[i]!;
+  const push = (j: number) => {
+    const b = DOTS[j];
+    if (b) out.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y });
+  };
+  if ((i + 1) % 5 !== 0) push(i + 1);
+  push(i + 5);
+  if ((i + 1) % 5 !== 0 && i % 2 === 0) push(i + 6);
   return out;
 });
 
@@ -42,13 +49,13 @@ export function TopoBackground() {
         preserveAspectRatio="xMidYMid slice"
         fill="none"
       >
-        {LINKS.map(([a, b]) => (
+        {LINKS.map((l, i) => (
           <line
-            key={`${a}-${b}`}
-            x1={DOTS[a].x}
-            y1={DOTS[a].y}
-            x2={DOTS[b].x}
-            y2={DOTS[b].y}
+            key={i}
+            x1={l.x1}
+            y1={l.y1}
+            x2={l.x2}
+            y2={l.y2}
             stroke="var(--primary)"
             strokeOpacity={0.15}
             strokeWidth={1}
