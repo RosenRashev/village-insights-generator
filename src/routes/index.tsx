@@ -174,7 +174,9 @@ function Index() {
               label="Населено място или пощенски код"
               placeholder="напр. Баня или 4360"
               value={place}
-              onChange={setPlace}
+              onChange={handlePlaceChange}
+              excludeLargeCities
+              notice={placeNotice}
             />
 
 
@@ -187,9 +189,11 @@ function Index() {
                   label="Настояща локация"
                   placeholder="напр. Стара Загора"
                   value={currentLocation}
-                  onChange={setCurrentLocation}
+                  onChange={handleCurrentLocationChange}
                   size="sm"
+                  notice={currentNotice}
                 />
+
                 <p className="text-sm text-muted-foreground">
                   Въведете населеното място, в което живеете в момента, за да
                   изчислим разстоянието, времето за пътуване и транспортната
