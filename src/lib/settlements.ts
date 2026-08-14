@@ -5,7 +5,7 @@ export type Settlement = {
   municipality: string;
   province: string;
   postalCode: string;
-  population?: number;
+  population?: number | undefined;
 };
 
 type Row = [number, number, string, string, string, string, number?];
