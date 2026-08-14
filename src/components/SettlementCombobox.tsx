@@ -131,7 +131,9 @@ export function SettlementCombobox({
             Смени
           </Button>
         </div>
+        {notice && <p className="text-sm font-medium text-destructive">{notice}</p>}
       </div>
+
     );
   }
 
