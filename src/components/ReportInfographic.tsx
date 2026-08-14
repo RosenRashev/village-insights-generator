@@ -26,6 +26,8 @@ import {
   type RiskLevel,
   type SourceLink,
 } from "@/data/mock-report";
+import "leaflet/dist/leaflet.css";
+
 import { LocationMap } from "@/components/LocationMap";
 import type { Settlement } from "@/lib/settlements";
 import { displaySettlement } from "@/lib/settlements";
