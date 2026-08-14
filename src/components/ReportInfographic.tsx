@@ -358,7 +358,7 @@ export function ReportInfographic({ place = null, current = null }: InfographicP
       ? { lat: place.lat, lng: place.lng, label: displaySettlement(place) }
       : DEMO_MAP_POINT;
   const currentPoint =
-    current && current.lat != null && current.lng != null
+    place && current && current.lat != null && current.lng != null
       ? { lat: current.lat, lng: current.lng, label: displaySettlement(current) }
       : null;
 
