@@ -32,6 +32,39 @@ export type Database = {
         }
         Relationships: []
       }
+      report_cache: {
+        Row: {
+          cached_at: string
+          category_id: string
+          data: Json
+          ekatte: number
+          expires_at: string | null
+          id: string
+          incident_count: number | null
+          source_links: Json | null
+        }
+        Insert: {
+          cached_at?: string
+          category_id: string
+          data: Json
+          ekatte: number
+          expires_at?: string | null
+          id?: string
+          incident_count?: number | null
+          source_links?: Json | null
+        }
+        Update: {
+          cached_at?: string
+          category_id?: string
+          data?: Json
+          ekatte?: number
+          expires_at?: string | null
+          id?: string
+          incident_count?: number | null
+          source_links?: Json | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

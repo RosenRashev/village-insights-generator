@@ -383,7 +383,7 @@ function Index() {
           </div>
           {showReport && (
             <div className="mt-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              <ReportInfographic />
+              <ReportInfographic place={place} current={currentLocation} />
             </div>
           )}
         </section>

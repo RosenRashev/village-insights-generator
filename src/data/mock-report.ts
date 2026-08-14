@@ -1,7 +1,12 @@
+export type SourceLink = { label: string; url: string };
+
 export type RiskLevel = "low" | "medium" | "high";
 
 export type ReportBlock =
-  | { kind: "facts"; items: { label: string; value: string }[] }
+  | {
+      kind: "facts";
+      items: { label: string; value: string; sources?: SourceLink[] }[];
+    }
   | { kind: "text"; title?: string; body: string }
   | { kind: "list"; title?: string; items: string[] }
   | {
@@ -19,7 +24,13 @@ export type ReportBlock =
   | {
       kind: "risks";
       title: string;
-      items: { label: string; level: RiskLevel; note?: string }[];
+      items: {
+        label: string;
+        level: RiskLevel;
+        note?: string;
+        incidentCount?: number;
+        sources?: SourceLink[];
+      }[];
     }
   | { kind: "checklist"; title?: string; items: { title: string; points: string[] }[] };
 
@@ -237,9 +248,25 @@ export const MOCK_REPORT: ReportSection[] = [
         kind: "risks",
         title: "Ниво на риск",
         items: [
-          { label: "Обща престъпност", level: "low", note: "Селото рядко присъства в бюлетините на ОДМВР." },
-          { label: "Битови кражби", level: "medium", note: "Единични кражби от необитаеми вили през зимата." },
-          { label: "Пътни инциденти", level: "low", note: "Нисък интензитет на ПТП." },
+          {
+            label: "Обща престъпност",
+            level: "low",
+            note: "Селото рядко присъства в бюлетините на ОДМВР.",
+            incidentCount: 2,
+            sources: [
+              {
+                label: "ОДМВР Стара Загора — сводка",
+                url: "https://www.mvr.bg/starazagora",
+              },
+            ],
+          },
+          {
+            label: "Битови кражби",
+            level: "medium",
+            note: "Единични кражби от необитаеми вили през зимата.",
+            incidentCount: 4,
+          },
+          { label: "Пътни инциденти", level: "low", note: "Нисък интензитет на ПТП.", incidentCount: 1 },
         ],
       },
       {
@@ -429,9 +456,14 @@ export const MOCK_REPORT: ReportSection[] = [
         kind: "risks",
         title: "Оценка на рисковете",
         items: [
-          { label: "Горски и полски пожари", level: "medium", note: "През сухите летни месеци, суха растителност и масиви." },
-          { label: "Наводнения", level: "low", note: "Нисък риск за жилищните зони." },
-          { label: "Свлачища", level: "low", note: "Няма регистрирани активни свлачищни зони." },
+          {
+            label: "Горски и полски пожари",
+            level: "medium",
+            note: "През сухите летни месеци, суха растителност и масиви.",
+            incidentCount: 5,
+          },
+          { label: "Наводнения", level: "low", note: "Нисък риск за жилищните зони.", incidentCount: 0 },
+          { label: "Свлачища", level: "low", note: "Няма регистрирани активни свлачищни зони.", incidentCount: 0 },
         ],
       },
       {

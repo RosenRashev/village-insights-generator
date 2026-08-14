@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import {
   AlertTriangle,
   Bus,
@@ -23,7 +24,11 @@ import {
   type ReportBlock,
   type ReportSection,
   type RiskLevel,
+  type SourceLink,
 } from "@/data/mock-report";
+import { LocationMap } from "@/components/LocationMap";
+import type { Settlement } from "@/lib/settlements";
+import { displaySettlement } from "@/lib/settlements";
 
 const ICONS: Record<string, LucideIcon> = {
   basic: MapPin,
@@ -66,6 +71,23 @@ const RISK: Record<RiskLevel, { label: string; color: string; width: string }> =
   high: { label: "ВИСОК", color: "#dc2626", width: "100%" },
 };
 
+function SourceArrow({ sources }: { sources?: SourceLink[] | undefined }) {
+  if (!sources || sources.length === 0) return null;
+  const first = sources[0]!;
+  return (
+    <a
+      href={first.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      title={sources.map((s) => `${s.label} — ${s.url}`).join("\n")}
+      aria-label={`Източник: ${first.label}`}
+      className="ml-1 inline-block align-super text-[10px] leading-none text-black/30 transition-opacity hover:text-black/70"
+    >
+      ↗
+    </a>
+  );
+}
+
 function Block({ block, accent, ink }: { block: ReportBlock; accent: string; ink: string }) {
   switch (block.kind) {
     case "facts":
@@ -79,6 +101,7 @@ function Block({ block, accent, ink }: { block: ReportBlock; accent: string; ink
               <div className="text-xs uppercase tracking-wide text-black/50">{f.label}</div>
               <div className="mt-1 text-sm font-bold" style={{ color: ink }}>
                 {f.value}
+                <SourceArrow sources={f.sources} />
               </div>
             </div>
           ))}
@@ -217,7 +240,18 @@ function Block({ block, accent, ink }: { block: ReportBlock; accent: string; ink
               return (
                 <div key={r.label} className="rounded-2xl bg-white/70 p-4 shadow-sm ring-1 ring-black/5">
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-black/80">{r.label}</span>
+                    <span className="font-semibold text-black/80">
+                      {r.label}
+                      <SourceArrow sources={r.sources} />
+                    </span>
+                    {typeof r.incidentCount === "number" && (
+                      <span
+                        className="rounded-full bg-black/5 px-2 py-0.5 text-xs font-bold text-black/60"
+                        title="Брой регистрирани рискови събития"
+                      >
+                        {r.incidentCount} събития
+                      </span>
+                    )}
                     <span
                       className="ml-auto rounded-full px-2.5 py-0.5 text-xs font-bold text-white"
                       style={{ backgroundColor: meta.color }}
@@ -268,7 +302,13 @@ function Block({ block, accent, ink }: { block: ReportBlock; accent: string; ink
   }
 }
 
-function Section({ section, index }: { section: ReportSection; index: number }) {
+function Section({
+  section,
+  extra,
+}: {
+  section: ReportSection;
+  extra?: ReactNode;
+}) {
   const theme = THEMES[section.theme];
   const Icon = ICONS[section.id] ?? MapPin;
 
@@ -285,9 +325,6 @@ function Section({ section, index }: { section: ReportSection; index: number }) 
           <Icon className="h-7 w-7" />
         </span>
         <div>
-          <div className="text-xs font-bold uppercase tracking-widest" style={{ color: theme.accent }}>
-            Раздел {index + 1}
-          </div>
           <h3 className="text-2xl font-bold leading-tight" style={{ color: theme.ink }}>
             {section.title}
           </h3>
@@ -298,6 +335,7 @@ function Section({ section, index }: { section: ReportSection; index: number }) 
       </header>
 
       <div className="mt-6 space-y-6">
+        {extra}
         {section.blocks.map((b, i) => (
           <Block key={i} block={b} accent={theme.accent} ink={theme.ink} />
         ))}
@@ -306,22 +344,46 @@ function Section({ section, index }: { section: ReportSection; index: number }) 
   );
 }
 
-export function ReportInfographic() {
+type InfographicProps = {
+  place?: Settlement | null;
+  current?: Settlement | null;
+};
+
+export function ReportInfographic({ place = null, current = null }: InfographicProps) {
+  const mapPoint =
+    place && place.lat != null && place.lng != null
+      ? { lat: place.lat, lng: place.lng, label: displaySettlement(place) }
+      : null;
+  const currentPoint =
+    current && current.lat != null && current.lng != null
+      ? { lat: current.lat, lng: current.lng, label: displaySettlement(current) }
+      : null;
+
   return (
     <div className="space-y-6">
       <div className="rounded-[2rem] border border-dashed border-border bg-background/80 p-5 text-center">
         <p className="text-xs font-bold uppercase tracking-widest text-destructive">
           Демонстрационни данни
         </p>
-        <h2 className="mt-1 text-2xl font-bold text-primary">{MOCK_REPORT_PLACE}</h2>
+        <h2 className="mt-1 text-2xl font-bold text-primary">
+          {place ? displaySettlement(place) : MOCK_REPORT_PLACE}
+        </h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Примерен доклад за визуализация на резултата. Данните са мостра — все още не се
           генерират автоматично.
         </p>
       </div>
 
-      {MOCK_REPORT.map((s, i) => (
-        <Section key={s.id} section={s} index={i} />
+      {MOCK_REPORT.map((s) => (
+        <Section
+          key={s.id}
+          section={s}
+          extra={
+            s.id === "basic" && mapPoint ? (
+              <LocationMap place={mapPoint} current={currentPoint} />
+            ) : undefined
+          }
+        />
       ))}
     </div>
   );
