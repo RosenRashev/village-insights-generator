@@ -1,7 +1,6 @@
 import { MOCK_REPORT } from "@/data/mock-report";
-import type { SourceLink } from "@/lib/report-cache";
-
 import type { Json } from "@/integrations/supabase/types";
+import type { SourceLink } from "@/lib/report-cache";
 
 export type GeneratedCategory = {
   data: Json;

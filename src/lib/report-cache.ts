@@ -1,3 +1,5 @@
+import type { Json } from "@/integrations/supabase/types";
+
 /**
  * Правила за кеширане на категориите от доклада.
  *
@@ -40,8 +42,6 @@ export const LIVE_PARTS: Record<string, string[]> = {
 export const SOURCE_LINK_CATEGORIES = ["security", "media", "social", "news"];
 
 export type SourceLink = { label: string; url: string };
-
-import type { Json } from "@/integrations/supabase/types";
 
 export type CachedCategory = {
   ekatte: number;
