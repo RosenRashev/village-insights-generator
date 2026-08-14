@@ -60,7 +60,9 @@ function Index() {
   const [copied, setCopied] = useState(false);
   const [copiedOnly, setCopiedOnly] = useState(false);
   const [bouncing, setBouncing] = useState(false);
+  const [showReport, setShowReport] = useState(false);
   const [placeNotice, setPlaceNotice] = useState<string | null>(null);
+
   const [currentNotice, setCurrentNotice] = useState<string | null>(null);
 
   const CONFLICT_MSG =
