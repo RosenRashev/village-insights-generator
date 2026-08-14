@@ -18,6 +18,8 @@ import { SettlementCombobox } from "@/components/SettlementCombobox";
 import { ModuleCard } from "@/components/ModuleCard";
 import { TopoBackground } from "@/components/TopoBackground";
 import { FeedbackBox } from "@/components/FeedbackBox";
+import { ReportInfographic } from "@/components/ReportInfographic";
+
 
 import { formatSettlement, type Settlement } from "@/lib/settlements";
 
@@ -58,6 +60,8 @@ function Index() {
   const [copied, setCopied] = useState(false);
   const [copiedOnly, setCopiedOnly] = useState(false);
   const [bouncing, setBouncing] = useState(false);
+  const [showReport, setShowReport] = useState(false);
+
 
   const hasPlace = place !== null;
   const prompt = useMemo(
@@ -330,10 +334,34 @@ function Index() {
           </section>
         )}
 
+        <section className="mt-16">
+          <div className="flex flex-col items-center gap-2 text-center">
+            <h2 className="text-lg font-bold text-destructive">
+              Резултатът като инфографика (демо)
+            </h2>
+            <p className="max-w-md text-sm text-muted-foreground">
+              Вижте как ще изглежда готовият доклад — цветни секции, диаграми и
+              индикатори за риск. Засега с примерни данни.
+            </p>
+            <Button
+              variant={showReport ? "outline" : "default"}
+              onClick={() => setShowReport((v) => !v)}
+            >
+              {showReport ? "Скрий примерния доклад" : "Виж примерния доклад"}
+            </Button>
+          </div>
+          {showReport && (
+            <div className="mt-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <ReportInfographic />
+            </div>
+          )}
+        </section>
+
         <footer className="mt-16 border-t border-border pt-6 text-xs text-muted-foreground">
           Проектът е с нестопанска цел, в подкрепа на купувачите на имоти, в процес на активна разработка.
           <FeedbackBox />
         </footer>
+
 
       </div>
     </main>
