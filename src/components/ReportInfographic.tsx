@@ -71,7 +71,7 @@ const RISK: Record<RiskLevel, { label: string; color: string; width: string }> =
   high: { label: "ВИСОК", color: "#dc2626", width: "100%" },
 };
 
-function SourceArrow({ sources }: { sources?: SourceLink[] }) {
+function SourceArrow({ sources }: { sources?: SourceLink[] | undefined }) {
   if (!sources || sources.length === 0) return null;
   const first = sources[0]!;
   return (
