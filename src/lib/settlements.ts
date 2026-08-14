@@ -5,9 +5,17 @@ export type Settlement = {
   municipality: string;
   province: string;
   postalCode: string;
+  population?: number;
 };
 
-type Row = [number, number, string, string, string, string];
+type Row = [number, number, string, string, string, string, number?];
+
+export const LARGE_CITY_POPULATION_THRESHOLD = 30000;
+
+/** Липсващи данни за население НЕ се третират като голям град. */
+export function isLargeCity(s: Settlement): boolean {
+  return typeof s.population === "number" && s.population >= LARGE_CITY_POPULATION_THRESHOLD;
+}
 
 let cache: Settlement[] | null = null;
 let pending: Promise<Settlement[]> | null = null;
@@ -18,13 +26,14 @@ export async function loadSettlements(): Promise<Settlement[]> {
   pending = import("@/data/settlements.json").then((mod) => {
     const rows = (mod.default ?? mod) as unknown as Row[];
     const parsed = rows.map(
-      ([ekatte, village, name, municipality, province, postalCode]) => ({
+      ([ekatte, village, name, municipality, province, postalCode, population]) => ({
         ekatte,
         isVillage: village === 1,
         name,
         municipality,
         province,
         postalCode,
+        population,
       }),
     );
     cache = parsed;
@@ -32,6 +41,7 @@ export async function loadSettlements(): Promise<Settlement[]> {
   });
   return pending;
 }
+
 
 /** Позволени са само кирилица, интервал, тире, апостроф и цифри (за пощенски код). */
 export function sanitizeCyrillic(value: string): string {
