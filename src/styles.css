@@ -275,3 +275,10 @@
     opacity: 0;
   }
 }
+
+/* Дълги думи без интервали не бива да преливат извън картите. */
+.wrap-anywhere,
+.wrap-anywhere * {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
