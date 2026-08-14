@@ -60,10 +60,35 @@ function Index() {
   const [copied, setCopied] = useState(false);
   const [copiedOnly, setCopiedOnly] = useState(false);
   const [bouncing, setBouncing] = useState(false);
-  const [showReport, setShowReport] = useState(false);
+  const [placeNotice, setPlaceNotice] = useState<string | null>(null);
+  const [currentNotice, setCurrentNotice] = useState<string | null>(null);
 
+  const CONFLICT_MSG =
+    "Настоящата локация не може да съвпада с търсеното населено място — полето беше изчистено.";
+
+  const handlePlaceChange = (s: Settlement | null) => {
+    setPlace(s);
+    setPlaceNotice(null);
+    if (s && currentLocation && currentLocation.ekatte === s.ekatte) {
+      setCurrentLocation(null);
+      setCurrentNotice(CONFLICT_MSG);
+    } else {
+      setCurrentNotice(null);
+    }
+  };
+
+  const handleCurrentLocationChange = (s: Settlement | null) => {
+    if (s && place && place.ekatte === s.ekatte) {
+      setCurrentLocation(null);
+      setCurrentNotice(CONFLICT_MSG);
+      return;
+    }
+    setCurrentLocation(s);
+    setCurrentNotice(null);
+  };
 
   const hasPlace = place !== null;
+
   const prompt = useMemo(
     () =>
       buildPrompt({
