@@ -1,7 +1,12 @@
 import type { ReportSection } from "@/data/mock-report";
 import type { Json } from "@/integrations/supabase/types";
 import type { SourceLink } from "@/lib/report-cache";
-import { PROMPT_MODULES, ENVIRONMENT_RULES } from "@/lib/prompt-modules";
+import {
+  PROMPT_MODULES,
+  COMMON_RULES,
+  DISTRICT_RULE,
+  LEVEL_RULE,
+} from "@/lib/prompt-modules";
 
 export type GeneratedCategory = {
   data: Json;
@@ -105,7 +110,6 @@ const PLACE_TYPE_LABEL: Record<GenerateInput["placeType"], string> = {
 };
 
 function moduleSection(categoryId: string): string {
-  if (categoryId === "environment") return ENVIRONMENT_RULES;
   const mod = PROMPT_MODULES.find((m) => m.id === categoryId);
   if (!mod) throw new Error(`Непозната категория: ${categoryId}`);
   return mod.section;
@@ -131,6 +135,10 @@ ${input.currentLocationName ? `Настояща локация на потреб
 Проучи САМО следната тема и нищо друго:
 
 ${moduleSection(input.categoryId)}
+
+${input.placeType === "district" ? DISTRICT_RULE : LEVEL_RULE}
+
+${COMMON_RULES}
 
 ПРАВИЛА:
 - Не измисляй факти. При липса на данни пиши изрично „Няма налични публични данни“.
