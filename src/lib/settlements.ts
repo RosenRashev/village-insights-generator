@@ -6,9 +6,21 @@ export type Settlement = {
   province: string;
   postalCode: string;
   population?: number | undefined;
+  lat?: number | undefined;
+  lng?: number | undefined;
 };
 
-type Row = [number, number, string, string, string, string, number?];
+type Row = [
+  number,
+  number,
+  string,
+  string,
+  string,
+  string,
+  (number | null)?,
+  (number | null)?,
+  (number | null)?,
+];
 
 export const LARGE_CITY_POPULATION_THRESHOLD = 30000;
 
@@ -26,14 +38,16 @@ export async function loadSettlements(): Promise<Settlement[]> {
   pending = import("@/data/settlements.json").then((mod) => {
     const rows = (mod.default ?? mod) as unknown as Row[];
     const parsed = rows.map(
-      ([ekatte, village, name, municipality, province, postalCode, population]) => ({
+      ([ekatte, village, name, municipality, province, postalCode, population, lat, lng]) => ({
         ekatte,
         isVillage: village === 1,
         name,
         municipality,
         province,
         postalCode,
-        population,
+        population: population ?? undefined,
+        lat: lat ?? undefined,
+        lng: lng ?? undefined,
       }),
     );
     cache = parsed;
@@ -66,6 +80,22 @@ export function formatSettlement(s: Settlement): string {
   const meta = [`ЕКАТТЕ ${String(s.ekatte).padStart(5, "0")}`];
   if (s.postalCode) meta.push(`пощенски код ${s.postalCode}`);
   return `${prefix(s)} ${s.name}, община ${s.municipality}, област ${s.province} (${meta.join(", ")})`;
+}
+
+/** Разстояние по права линия в километри (haversine). */
+export function distanceKm(
+  a: { lat?: number | undefined; lng?: number | undefined },
+  b: { lat?: number | undefined; lng?: number | undefined },
+): number | null {
+  if (a.lat == null || a.lng == null || b.lat == null || b.lng == null) return null;
+  const R = 6371;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return Math.round(2 * R * Math.asin(Math.sqrt(h)) * 10) / 10;
 }
 
 export function searchSettlements(
