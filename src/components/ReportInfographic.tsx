@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import {
   AlertTriangle,
   Bus,
@@ -306,7 +307,7 @@ function Section({
   extra,
 }: {
   section: ReportSection;
-  extra?: React.ReactNode;
+  extra?: ReactNode;
 }) {
   const theme = THEMES[section.theme];
   const Icon = ICONS[section.id] ?? MapPin;
