@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Check, House, Info, RotateCcw } from "lucide-react";
+import { Check, House, Info, Loader2, RotateCcw, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -19,6 +19,8 @@ import { ModuleCard } from "@/components/ModuleCard";
 import { TopoBackground } from "@/components/TopoBackground";
 import { FeedbackBox } from "@/components/FeedbackBox";
 import { ReportInfographic } from "@/components/ReportInfographic";
+import { getCategory } from "@/lib/report-cache.functions";
+import type { ReportSection } from "@/data/mock-report";
 
 
 import { formatSettlement, type Settlement } from "@/lib/settlements";
@@ -62,6 +64,9 @@ function Index() {
   const [bouncing, setBouncing] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [placeNotice, setPlaceNotice] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [progress, setProgress] = useState<{ done: number; total: number }>({ done: 0, total: 0 });
+  const [realSections, setRealSections] = useState<ReportSection[] | null>(null);
 
   const [currentNotice, setCurrentNotice] = useState<string | null>(null);
 
@@ -162,10 +167,59 @@ function Index() {
 
 
 
+  const generateReal = async () => {
+    if (!place || selected.length === 0) return;
+    setGenerating(true);
+    setRealSections(null);
+    setProgress({ done: 0, total: selected.length });
+    const collected: ReportSection[] = [];
+    let failed = 0;
+
+    for (const categoryId of selected) {
+      try {
+        const res = await getCategory({
+          data: {
+            ekatte: place.ekatte,
+            categoryId,
+            placeName: formatSettlement(place),
+            placeType,
+            ...(currentLocation ? { currentLocationName: formatSettlement(currentLocation) } : {}),
+          },
+        });
+        const section = res.data as unknown as ReportSection | null;
+        if (section && Array.isArray(section.blocks)) {
+          collected.push({ ...section, id: categoryId });
+          setRealSections([...collected]);
+        } else {
+          failed += 1;
+        }
+      } catch (err) {
+        failed += 1;
+        toast.error(
+          `Грешка при „${PROMPT_MODULES.find((m) => m.id === categoryId)?.label ?? categoryId}“: ${
+            err instanceof Error ? err.message : "неизвестна грешка"
+          }`,
+        );
+      }
+      setProgress((p) => ({ ...p, done: p.done + 1 }));
+    }
+
+    setGenerating(false);
+    if (collected.length === 0) {
+      toast.error("Докладът не можа да бъде генериран.");
+    } else if (failed > 0) {
+      toast.warning(`Готово с ${failed} пропуснати категории.`);
+    } else {
+      toast.success("Докладът е готов.");
+    }
+  };
+
   const reset = () => {
     setPlace(null);
     setCurrentLocation(null);
     setSelected(PROMPT_MODULES.map((m) => m.id));
+    setRealSections(null);
+    setProgress({ done: 0, total: 0 });
   };
 
 
@@ -362,6 +416,60 @@ function Index() {
               <RotateCcw className="h-4 w-4" />
               Изчисти
             </Button>
+          </section>
+        )}
+
+        {hasPlace && selected.length > 0 && (
+          <section className="mt-16">
+            <div className="flex flex-col items-center gap-3 text-center">
+              <h2 className="text-lg font-bold text-destructive">
+                Генерирай истински доклад
+              </h2>
+              <p className="max-w-md text-sm text-muted-foreground">
+                Приложението ще проучи избраните категории с Gemini и търсене в Google в
+                реално време и ще покаже резултата тук като инфографика.
+              </p>
+              <Button size="lg" onClick={generateReal} disabled={generating}>
+                {generating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
+                {generating
+                  ? `Генериране… ${progress.done}/${progress.total}`
+                  : "Генерирай истински доклад"}
+              </Button>
+            </div>
+
+            {(generating || realSections) && (
+              <div className="mt-8 space-y-6">
+                {realSections && realSections.length > 0 && (
+                  <ReportInfographic
+                    place={place}
+                    current={currentLocation}
+                    sections={realSections}
+                    demo={false}
+                  />
+                )}
+                {generating &&
+                  Array.from({ length: Math.max(0, progress.total - progress.done) })
+                    .slice(0, 3)
+                    .map((_, i) => (
+                      <div
+                        key={i}
+                        className="animate-pulse space-y-4 rounded-[2rem] bg-muted/60 p-6 sm:p-8"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="h-14 w-14 shrink-0 rounded-2xl bg-muted-foreground/20" />
+                          <div className="h-6 w-2/3 rounded bg-muted-foreground/20" />
+                        </div>
+                        <div className="h-4 w-full rounded bg-muted-foreground/15" />
+                        <div className="h-4 w-5/6 rounded bg-muted-foreground/15" />
+                        <div className="h-24 w-full rounded-2xl bg-muted-foreground/10" />
+                      </div>
+                    ))}
+              </div>
+            )}
           </section>
         )}
 

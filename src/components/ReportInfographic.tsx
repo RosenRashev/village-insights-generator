@@ -349,12 +349,19 @@ function Section({
 type InfographicProps = {
   place?: Settlement | null;
   current?: Settlement | null;
+  sections?: ReportSection[];
+  demo?: boolean;
 };
 
 /** Координати на с. Медово (ekatte 47665) — fallback за демо режима. */
 const DEMO_MAP_POINT = { lat: 42.371968, lng: 25.201267, label: MOCK_REPORT_PLACE };
 
-export function ReportInfographic({ place = null, current = null }: InfographicProps) {
+export function ReportInfographic({
+  place = null,
+  current = null,
+  sections = MOCK_REPORT,
+  demo = true,
+}: InfographicProps) {
   const mapPoint =
     place && place.lat != null && place.lng != null
       ? { lat: place.lat, lng: place.lng, label: displaySettlement(place) }
@@ -367,19 +374,22 @@ export function ReportInfographic({ place = null, current = null }: InfographicP
   return (
     <div className="space-y-6">
       <div className="rounded-[2rem] border border-dashed border-border bg-background/80 p-5 text-center">
-        <p className="text-xs font-bold uppercase tracking-widest text-destructive">
-          Демонстрационни данни
-        </p>
+        {demo && (
+          <p className="text-xs font-bold uppercase tracking-widest text-destructive">
+            Демонстрационни данни
+          </p>
+        )}
         <h2 className="mt-1 text-2xl font-bold text-primary">
           {place ? displaySettlement(place) : MOCK_REPORT_PLACE}
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Примерен доклад за визуализация на резултата. Данните са мостра — все още не се
-          генерират автоматично.
+          {demo
+            ? "Примерен доклад за визуализация на резултата. Данните са мостра — все още не се генерират автоматично."
+            : "Докладът е генериран автоматично от Gemini с търсене в Google в реално време. Проверявайте важните факти по посочените източници."}
         </p>
       </div>
 
-      {MOCK_REPORT.map((s) => (
+      {sections.map((s) => (
         <Section
           key={s.id}
           section={s}
@@ -393,3 +403,4 @@ export function ReportInfographic({ place = null, current = null }: InfographicP
     </div>
   );
 }
+
