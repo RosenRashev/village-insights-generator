@@ -66,7 +66,13 @@ export function SettlementCombobox({
     return () => document.removeEventListener("mousedown", onDocClick);
   }, []);
 
-  const results = useMemo(() => (all ? searchSettlements(all, query) : []), [all, query]);
+  const pool = useMemo(
+    () => (all ? (excludeLargeCities ? all.filter((s) => !isLargeCity(s)) : all) : null),
+    [all, excludeLargeCities],
+  );
+
+  const results = useMemo(() => (pool ? searchSettlements(pool, query) : []), [pool, query]);
+
 
   useEffect(() => {
     setActiveIndex(-1);
