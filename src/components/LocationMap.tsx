@@ -22,10 +22,7 @@ export function LocationMap({ place, current = null }: Props) {
     let cancelled = false;
 
     (async () => {
-      const [L] = await Promise.all([
-        import("leaflet"),
-        import("leaflet/dist/leaflet.css"),
-      ]);
+      const L = await import("leaflet");
       if (cancelled || !ref.current) return;
 
       const map = L.map(ref.current, {
