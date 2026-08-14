@@ -274,7 +274,7 @@ function Section({ section, index }: { section: ReportSection; index: number }) 
 
   return (
     <section
-      className="scroll-mt-6 rounded-[2rem] p-6 shadow-sm ring-1 ring-black/5 sm:p-8"
+      className="wrap-anywhere scroll-mt-6 rounded-[2rem] p-6 shadow-sm ring-1 ring-black/5 sm:p-8"
       style={{ backgroundColor: theme.soft }}
     >
       <header className="flex items-start gap-4">

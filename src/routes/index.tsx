@@ -61,9 +61,36 @@ function Index() {
   const [copiedOnly, setCopiedOnly] = useState(false);
   const [bouncing, setBouncing] = useState(false);
   const [showReport, setShowReport] = useState(false);
+  const [placeNotice, setPlaceNotice] = useState<string | null>(null);
 
+  const [currentNotice, setCurrentNotice] = useState<string | null>(null);
+
+  const CONFLICT_MSG =
+    "Настоящата локация не може да съвпада с търсеното населено място — полето беше изчистено.";
+
+  const handlePlaceChange = (s: Settlement | null) => {
+    setPlace(s);
+    setPlaceNotice(null);
+    if (s && currentLocation && currentLocation.ekatte === s.ekatte) {
+      setCurrentLocation(null);
+      setCurrentNotice(CONFLICT_MSG);
+    } else {
+      setCurrentNotice(null);
+    }
+  };
+
+  const handleCurrentLocationChange = (s: Settlement | null) => {
+    if (s && place && place.ekatte === s.ekatte) {
+      setCurrentLocation(null);
+      setCurrentNotice(CONFLICT_MSG);
+      return;
+    }
+    setCurrentLocation(s);
+    setCurrentNotice(null);
+  };
 
   const hasPlace = place !== null;
+
   const prompt = useMemo(
     () =>
       buildPrompt({
@@ -174,7 +201,9 @@ function Index() {
               label="Населено място или пощенски код"
               placeholder="напр. Баня или 4360"
               value={place}
-              onChange={setPlace}
+              onChange={handlePlaceChange}
+              excludeLargeCities
+              notice={placeNotice}
             />
 
 
@@ -187,9 +216,11 @@ function Index() {
                   label="Настояща локация"
                   placeholder="напр. Стара Загора"
                   value={currentLocation}
-                  onChange={setCurrentLocation}
+                  onChange={handleCurrentLocationChange}
                   size="sm"
+                  notice={currentNotice}
                 />
+
                 <p className="text-sm text-muted-foreground">
                   Въведете населеното място, в което живеете в момента, за да
                   изчислим разстоянието, времето за пътуване и транспортната

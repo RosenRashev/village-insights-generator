@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import {
   displaySettlement,
+  isLargeCity,
   loadSettlements,
   sanitizeCyrillic,
   searchSettlements,
@@ -19,9 +20,22 @@ type Props = {
   value: Settlement | null;
   onChange: (s: Settlement | null) => void;
   size?: "lg" | "sm";
+  /** Скрива големите градове от резултатите (за полето „Търсено място“). */
+  excludeLargeCities?: boolean;
+  /** Inline съобщение под полето (напр. при конфликт между двете полета). */
+  notice?: string | null;
 };
 
-export function SettlementCombobox({ id, label, placeholder, value, onChange, size = "lg" }: Props) {
+export function SettlementCombobox({
+  id,
+  label,
+  placeholder,
+  value,
+  onChange,
+  size = "lg",
+  excludeLargeCities = false,
+  notice = null,
+}: Props) {
   const [query, setQuery] = useState("");
   const [all, setAll] = useState<Settlement[] | null>(null);
   const [open, setOpen] = useState(false);
@@ -29,6 +43,7 @@ export function SettlementCombobox({ id, label, placeholder, value, onChange, si
   const [activeIndex, setActiveIndex] = useState(-1);
   const wrapRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
+
 
   useEffect(() => {
     if (!open || all) return;
@@ -51,7 +66,13 @@ export function SettlementCombobox({ id, label, placeholder, value, onChange, si
     return () => document.removeEventListener("mousedown", onDocClick);
   }, []);
 
-  const results = useMemo(() => (all ? searchSettlements(all, query) : []), [all, query]);
+  const pool = useMemo(
+    () => (all ? (excludeLargeCities ? all.filter((s) => !isLargeCity(s)) : all) : null),
+    [all, excludeLargeCities],
+  );
+
+  const results = useMemo(() => (pool ? searchSettlements(pool, query) : []), [pool, query]);
+
 
   useEffect(() => {
     setActiveIndex(-1);
@@ -110,7 +131,9 @@ export function SettlementCombobox({ id, label, placeholder, value, onChange, si
             Смени
           </Button>
         </div>
+        {notice && <p className="text-sm font-medium text-destructive">{notice}</p>}
       </div>
+
     );
   }
 
@@ -182,11 +205,14 @@ export function SettlementCombobox({ id, label, placeholder, value, onChange, si
           </ul>
         )}
       </div>
-      {blocked ? (
+      {notice ? (
+        <p className="text-sm font-medium text-destructive">{notice}</p>
+      ) : blocked ? (
         <p className="text-sm font-medium text-destructive">Моля, пишете само на кирилица.</p>
       ) : showHint ? (
         <p className="text-sm text-muted-foreground">Изберете населено място от списъка.</p>
       ) : null}
+
     </div>
   );
 }
