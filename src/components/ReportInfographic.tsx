@@ -349,11 +349,14 @@ type InfographicProps = {
   current?: Settlement | null;
 };
 
+/** Координати на с. Медово (ekatte 47665) — fallback за демо режима. */
+const DEMO_MAP_POINT = { lat: 42.371968, lng: 25.201267, label: MOCK_REPORT_PLACE };
+
 export function ReportInfographic({ place = null, current = null }: InfographicProps) {
   const mapPoint =
     place && place.lat != null && place.lng != null
       ? { lat: place.lat, lng: place.lng, label: displaySettlement(place) }
-      : null;
+      : DEMO_MAP_POINT;
   const currentPoint =
     current && current.lat != null && current.lng != null
       ? { lat: current.lat, lng: current.lng, label: displaySettlement(current) }
