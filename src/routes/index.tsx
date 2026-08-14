@@ -18,6 +18,8 @@ import { SettlementCombobox } from "@/components/SettlementCombobox";
 import { ModuleCard } from "@/components/ModuleCard";
 import { TopoBackground } from "@/components/TopoBackground";
 import { FeedbackBox } from "@/components/FeedbackBox";
+import { ReportInfographic } from "@/components/ReportInfographic";
+
 
 import { formatSettlement, type Settlement } from "@/lib/settlements";
 
@@ -58,6 +60,8 @@ function Index() {
   const [copied, setCopied] = useState(false);
   const [copiedOnly, setCopiedOnly] = useState(false);
   const [bouncing, setBouncing] = useState(false);
+  const [showReport, setShowReport] = useState(false);
+
 
   const hasPlace = place !== null;
   const prompt = useMemo(
