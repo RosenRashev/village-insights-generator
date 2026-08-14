@@ -1,8 +1,10 @@
 import { MOCK_REPORT } from "@/data/mock-report";
 import type { SourceLink } from "@/lib/report-cache";
 
+import type { Json } from "@/integrations/supabase/types";
+
 export type GeneratedCategory = {
-  data: unknown;
+  data: Json;
   sourceLinks: SourceLink[] | null;
   incidentCount: number | null;
 };
@@ -25,7 +27,7 @@ export async function generateCategory(
       : null;
 
   return {
-    data: section,
+    data: (section as unknown as Json) ?? null,
     sourceLinks: null,
     incidentCount,
   };

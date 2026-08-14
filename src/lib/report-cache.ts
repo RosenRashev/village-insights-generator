@@ -41,10 +41,12 @@ export const SOURCE_LINK_CATEGORIES = ["security", "media", "social", "news"];
 
 export type SourceLink = { label: string; url: string };
 
+import type { Json } from "@/integrations/supabase/types";
+
 export type CachedCategory = {
   ekatte: number;
   categoryId: string;
-  data: unknown;
+  data: Json;
   sourceLinks: SourceLink[] | null;
   incidentCount: number | null;
   cachedAt: string;

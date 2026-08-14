@@ -26,7 +26,7 @@ export const getCategory = createServerFn({ method: "POST" })
       return {
         ekatte: row.ekatte,
         categoryId: row.category_id,
-        data: row.data,
+        data: row.data as CachedCategory["data"],
         sourceLinks: (row.source_links as CachedCategory["sourceLinks"]) ?? null,
         incidentCount: row.incident_count,
         cachedAt: row.cached_at,
