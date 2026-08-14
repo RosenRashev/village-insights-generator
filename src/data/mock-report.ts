@@ -1,7 +1,12 @@
+export type SourceLink = { label: string; url: string };
+
 export type RiskLevel = "low" | "medium" | "high";
 
 export type ReportBlock =
-  | { kind: "facts"; items: { label: string; value: string }[] }
+  | {
+      kind: "facts";
+      items: { label: string; value: string; sources?: SourceLink[] }[];
+    }
   | { kind: "text"; title?: string; body: string }
   | { kind: "list"; title?: string; items: string[] }
   | {
@@ -19,7 +24,13 @@ export type ReportBlock =
   | {
       kind: "risks";
       title: string;
-      items: { label: string; level: RiskLevel; note?: string }[];
+      items: {
+        label: string;
+        level: RiskLevel;
+        note?: string;
+        incidentCount?: number;
+        sources?: SourceLink[];
+      }[];
     }
   | { kind: "checklist"; title?: string; items: { title: string; points: string[] }[] };
 
