@@ -39,7 +39,7 @@ export const LIVE_PARTS: Record<string, string[]> = {
 };
 
 /** Категории, за които събираме линкове към пълните статии. */
-export const SOURCE_LINK_CATEGORIES = ["security", "media", "social", "news"];
+export const SOURCE_LINK_CATEGORIES = ["security", "media", "social"];
 
 export type SourceLink = { label: string; url: string };
 

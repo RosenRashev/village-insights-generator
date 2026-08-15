@@ -399,7 +399,7 @@ export const MOCK_REPORT: ReportSection[] = [
     ],
   },
   {
-    id: "news",
+    id: "culture",
     title: "Култура и общински инвестиции",
     subtitle: "Читалище, традиции, постоянно население",
     theme: "indigo",

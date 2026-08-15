@@ -43,7 +43,7 @@ const ICONS: Record<string, LucideIcon> = {
   connectivity: Wifi,
   industry: Factory,
   social: Newspaper,
-  news: Landmark,
+  culture: Landmark,
   media: MessageCircle,
   risks: TreePine,
   environment: AlertTriangle,
