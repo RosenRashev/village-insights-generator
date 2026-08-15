@@ -443,7 +443,19 @@ function Index() {
                 Приложението ще проучи избраните категории с Gemini и търсене в Google в
                 реално време и ще покаже резултата тук като инфографика.
               </p>
-              <Button size="lg" onClick={generateReal} disabled={generating}>
+              <p className="max-w-md text-xs text-muted-foreground">
+                Затворен тест: генерирането изисква код за достъп.
+              </p>
+              <Input
+                type="password"
+                value={accessCode}
+                onChange={(e) => setAccessCode(e.target.value)}
+                placeholder="Код за достъп"
+                aria-label="Код за достъп"
+                className="max-w-xs text-center"
+              />
+              <Button size="lg" onClick={generateReal} disabled={generating || !accessCode.trim()}>
+
                 {generating ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
