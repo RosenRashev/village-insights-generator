@@ -148,8 +148,21 @@ function Block({ block, accent, ink }: { block: ReportBlock; accent: string; ink
       const palette = [accent, "#f59e0b", "#0ea5e9", "#94a3b8"];
       return (
         <div>
-          <h4 className="mb-2 text-sm font-bold uppercase tracking-wide" style={{ color: accent }}>
+          <h4
+            className="mb-2 flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide"
+            style={{ color: accent }}
+          >
             {block.title}
+            <span
+              title={
+                block.note ||
+                "Данните може да са приблизителни или на общинско ниво (Преброяване 2021 г., НСИ)."
+              }
+              aria-label="Пояснение към данните"
+              className="inline-flex cursor-help items-center opacity-70"
+            >
+              <Info className="h-3.5 w-3.5" />
+            </span>
           </h4>
           <div className="grid items-center gap-4 sm:grid-cols-2">
             <div className="h-56 w-full">
