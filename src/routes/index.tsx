@@ -115,10 +115,12 @@ function Index() {
 
 
 
-  const toggle = (id: string) =>
+  const toggle = (id: string) => {
+    if (PROMPT_MODULES.find((m) => m.id === id)?.required) return;
     setSelected((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
+  };
 
   const showCopiedToast = () =>
     toast.success("ПРОМПТЪТ Е КОПИРАН В ПАМЕТТА — ГОТОВ ЗА ПОСТАВЯНЕ (Ctrl+V)", {
