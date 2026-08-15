@@ -231,15 +231,22 @@ Block е един от:
 /** Стъпка 2: структуриране на грундирания текст в нашия JSON формат (без tools). */
 async function structureCategory(
   input: GenerateInput,
+  id: PlaceIdentity,
   research: string,
 ): Promise<{ section: Omit<ReportSection, "id" | "theme">; incidentCount: number | null }> {
-  const prompt = `Структурирай следния готов изследователски текст за „${input.placeName}“ (тема: ${moduleLabel(
+  const prompt = `Структурирай следния готов изследователски текст за „${id.name}, община ${
+    id.municipality ?? "—"
+  }, област ${id.province ?? "—"} (ЕКАТТЕ ${id.ekatte})“ (тема: ${moduleLabel(
     input.categoryId,
   )}) в JSON за визуална инфографика.
 
 ${SCHEMA_DOC}
 
 Не добавяй факти, които ги няма в текста. Не включвай URL адреси в стойностите.
+Ако някъде в текста е посочена друга община или област, различна от община ${
+    id.municipality ?? "—"
+  } / област ${id.province ?? "—"}, не я пренасяй в JSON-а.
+
 
 ТЕКСТ:
 """
