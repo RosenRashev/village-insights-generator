@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Check, House, Info, Loader2, RotateCcw, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
@@ -67,6 +67,12 @@ function Index() {
   const [generating, setGenerating] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number }>({ done: 0, total: 0 });
   const [realSections, setRealSections] = useState<ReportSection[] | null>(null);
+  const [accessCode, setAccessCode] = useState("");
+
+  useEffect(() => {
+    setAccessCode(localStorage.getItem("seloskop-access-code") ?? "");
+  }, []);
+
 
   const [currentNotice, setCurrentNotice] = useState<string | null>(null);
 
@@ -169,6 +175,12 @@ function Index() {
 
   const generateReal = async () => {
     if (!place || selected.length === 0) return;
+    const code = accessCode.trim();
+    if (!code) {
+      toast.error("Въведете код за достъп (затворен тест).");
+      return;
+    }
+    localStorage.setItem("seloskop-access-code", code);
     setGenerating(true);
     setRealSections(null);
     setProgress({ done: 0, total: selected.length });
@@ -183,9 +195,11 @@ function Index() {
             categoryId,
             placeName: formatSettlement(place),
             placeType,
+            accessCode: code,
             ...(currentLocation ? { currentLocationName: formatSettlement(currentLocation) } : {}),
           },
         });
+
         const section = res.data as unknown as ReportSection | null;
         if (section && Array.isArray(section.blocks)) {
           collected.push({ ...section, id: categoryId });
@@ -429,7 +443,19 @@ function Index() {
                 Приложението ще проучи избраните категории с Gemini и търсене в Google в
                 реално време и ще покаже резултата тук като инфографика.
               </p>
-              <Button size="lg" onClick={generateReal} disabled={generating}>
+              <p className="max-w-md text-xs text-muted-foreground">
+                Затворен тест: генерирането изисква код за достъп.
+              </p>
+              <Input
+                type="password"
+                value={accessCode}
+                onChange={(e) => setAccessCode(e.target.value)}
+                placeholder="Код за достъп"
+                aria-label="Код за достъп"
+                className="max-w-xs text-center"
+              />
+              <Button size="lg" onClick={generateReal} disabled={generating || !accessCode.trim()}>
+
                 {generating ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
