@@ -190,6 +190,13 @@ function Index() {
     let failed = 0;
 
     for (const categoryId of selected) {
+      // Чек-листът е статичен — не се генерира от AI и не се кешира.
+      if (categoryId === "onsite-checklist") {
+        collected.push(ONSITE_CHECKLIST_SECTION);
+        setRealSections([...collected]);
+        setProgress((p) => ({ ...p, done: p.done + 1 }));
+        continue;
+      }
       try {
         const res = await getCategory({
           data: {
