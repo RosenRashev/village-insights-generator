@@ -19,7 +19,7 @@ export const CATEGORY_TTL_DAYS: Record<string, number | null> = {
   industry: 180,
   social: 7,
   culture: 180,
-  media: 7,
+  history: null,
   risks: 180,
   environment: 365,
   "onsite-checklist": null,
@@ -39,7 +39,7 @@ export const LIVE_PARTS: Record<string, string[]> = {
 };
 
 /** Категории, за които събираме линкове към пълните статии. */
-export const SOURCE_LINK_CATEGORIES = ["security", "media", "social"];
+export const SOURCE_LINK_CATEGORIES = ["security", "social"];
 
 export type SourceLink = { label: string; url: string };
 
