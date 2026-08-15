@@ -67,6 +67,12 @@ function Index() {
   const [generating, setGenerating] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number }>({ done: 0, total: 0 });
   const [realSections, setRealSections] = useState<ReportSection[] | null>(null);
+  const [accessCode, setAccessCode] = useState("");
+
+  useEffect(() => {
+    setAccessCode(localStorage.getItem("seloskop-access-code") ?? "");
+  }, []);
+
 
   const [currentNotice, setCurrentNotice] = useState<string | null>(null);
 
