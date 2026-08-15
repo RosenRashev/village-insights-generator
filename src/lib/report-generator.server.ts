@@ -119,8 +119,59 @@ function moduleLabel(categoryId: string): string {
   return PROMPT_MODULES.find((m) => m.id === categoryId)?.label ?? categoryId;
 }
 
+type PlaceIdentity = {
+  name: string;
+  municipality: string | null;
+  province: string | null;
+  postalCode: string | null;
+  ekatte: string;
+};
+
+/** Еднозначна идентификация по ЕКАТТЕ от официалния списък на населените места. */
+async function placeIdentity(input: GenerateInput): Promise<PlaceIdentity> {
+  const { loadSettlements } = await import("@/lib/settlements");
+  const all = await loadSettlements();
+  const match = all.find((s) => s.ekatte === input.ekatte);
+  return {
+    name: match?.name ? `${match.isVillage ? "с." : "гр."} ${match.name}` : input.placeName,
+    municipality: match?.municipality ?? null,
+    province: match?.province ?? null,
+    postalCode: match?.postalCode ?? null,
+    ekatte: String(input.ekatte).padStart(5, "0"),
+  };
+}
+
+function identityBlock(id: PlaceIdentity): string {
+  const lines = [`Наименование: ${id.name}`];
+  if (id.municipality) lines.push(`Община: ${id.municipality}`);
+  if (id.province) lines.push(`Област: ${id.province}`);
+  if (id.postalCode) lines.push(`Пощенски код: ${id.postalCode}`);
+  lines.push(`ЕКАТТЕ: ${id.ekatte}`);
+  return lines.join("\n");
+}
+
+function anchorRule(id: PlaceIdentity): string {
+  const full = [
+    id.name,
+    id.municipality ? `община ${id.municipality}` : null,
+    id.province ? `област ${id.province}` : null,
+    `ЕКАТТЕ ${id.ekatte}`,
+  ]
+    .filter(Boolean)
+    .join(", ");
+  return `КРИТИЧНО ВАЖНО — ЕДНОЗНАЧНА ИДЕНТИФИКАЦИЯ:
+В България има няколко населени места със същото име. Проучваш ЕДИНСТВЕНО: ${full}.
+- Всяко търсене формулирай с пълната комбинация име + община + област (напр. „${id.name} община ${id.municipality ?? ""} област ${id.province ?? ""}“).
+- Игнорирай напълно едноименни населени места в други общини и области — не смесвай техни данни.
+- Ако намерен източник се отнася за друга община/област, отхвърли го.
+- Навсякъде в отговора посочвай община ${id.municipality ?? "—"} и област ${id.province ?? "—"}; никога друга община.`;
+}
+
 /** Стъпка 1: грундирано (Google Search) текстово проучване за ЕДНА категория. */
-async function researchCategory(input: GenerateInput): Promise<{
+async function researchCategory(
+  input: GenerateInput,
+  id: PlaceIdentity,
+): Promise<{
   text: string;
   sources: SourceLink[];
 }> {
@@ -128,9 +179,10 @@ async function researchCategory(input: GenerateInput): Promise<{
 
 ОБЕКТ НА ПРОУЧВАНЕТО:
 Тип: ${PLACE_TYPE_LABEL[input.placeType]}
-Наименование: ${input.placeName}
-ЕКАТТЕ: ${String(input.ekatte).padStart(5, "0")}
+${identityBlock(id)}
 ${input.currentLocationName ? `Настояща локация на потребителя: ${input.currentLocationName}` : ""}
+
+${anchorRule(id)}
 
 Проучи САМО следната тема и нищо друго:
 
@@ -142,10 +194,11 @@ ${COMMON_RULES}
 
 ПРАВИЛА:
 - Не измисляй факти. При липса на данни пиши изрично „Няма налични публични данни“.
-- Ако данните са на общинско/областно ниво, отбележи го.
+- Ако данните са на общинско/областно ниво, отбележи го (община ${id.municipality ?? "—"}, област ${id.province ?? "—"}).
 - Числата давай конкретно (проценти, километри, минути, брой).
 - В края добави списък „ИЗТОЧНИЦИ:“ с пълни URL адреси на използваните страници.
 - Пиши на български, кратко и фактологично.`;
+
 
   const res = await callGemini({
     contents: [{ role: "user", parts: [{ text: prompt }] }],
@@ -178,15 +231,22 @@ Block е един от:
 /** Стъпка 2: структуриране на грундирания текст в нашия JSON формат (без tools). */
 async function structureCategory(
   input: GenerateInput,
+  id: PlaceIdentity,
   research: string,
 ): Promise<{ section: Omit<ReportSection, "id" | "theme">; incidentCount: number | null }> {
-  const prompt = `Структурирай следния готов изследователски текст за „${input.placeName}“ (тема: ${moduleLabel(
+  const prompt = `Структурирай следния готов изследователски текст за „${id.name}, община ${
+    id.municipality ?? "—"
+  }, област ${id.province ?? "—"} (ЕКАТТЕ ${id.ekatte})“ (тема: ${moduleLabel(
     input.categoryId,
   )}) в JSON за визуална инфографика.
 
 ${SCHEMA_DOC}
 
 Не добавяй факти, които ги няма в текста. Не включвай URL адреси в стойностите.
+Ако някъде в текста е посочена друга община или област, различна от община ${
+    id.municipality ?? "—"
+  } / област ${id.province ?? "—"}, не я пренасяй в JSON-а.
+
 
 ТЕКСТ:
 """
@@ -255,8 +315,9 @@ function themeFor(categoryId: string): ReportSection["theme"] {
  * Двустъпков подход: (1) грундирано проучване, (2) структуриране в нашия JSON.
  */
 export async function generateCategory(input: GenerateInput): Promise<GeneratedCategory> {
-  const research = await researchCategory(input);
-  const { section, incidentCount } = await structureCategory(input, research.text);
+  const id = await placeIdentity(input);
+  const research = await researchCategory(input, id);
+  const { section, incidentCount } = await structureCategory(input, id, research.text);
 
   const full: ReportSection = {
     id: input.categoryId,
