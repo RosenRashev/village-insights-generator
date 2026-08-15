@@ -8,6 +8,7 @@ import {
   Landmark,
   MapPin,
   Newspaper,
+  PartyPopper,
   Shield,
   TreePine,
   Volume2,
