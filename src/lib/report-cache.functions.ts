@@ -17,10 +17,16 @@ export const getCategory = createServerFn({ method: "POST" })
         placeName: z.string().min(1),
         placeType: z.enum(["village", "town", "district"]),
         currentLocationName: z.string().min(1).optional(),
+        accessCode: z.string().min(1),
       })
       .parse(data),
   )
   .handler(async ({ data }): Promise<CachedCategory & { fromCache: boolean }> => {
+    const expected = process.env["TESTER_ACCESS_CODE"];
+    if (!expected || data.accessCode !== expected) {
+      throw new Error("Приложението е в затворен тест — нужен е валиден код за достъп.");
+    }
+
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { generateCategory, generateDistanceToCurrent } = await import(
       "@/lib/report-generator.server"
