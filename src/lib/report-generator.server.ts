@@ -315,8 +315,9 @@ function themeFor(categoryId: string): ReportSection["theme"] {
  * Двустъпков подход: (1) грундирано проучване, (2) структуриране в нашия JSON.
  */
 export async function generateCategory(input: GenerateInput): Promise<GeneratedCategory> {
-  const research = await researchCategory(input);
-  const { section, incidentCount } = await structureCategory(input, research.text);
+  const id = await placeIdentity(input);
+  const research = await researchCategory(input, id);
+  const { section, incidentCount } = await structureCategory(input, id, research.text);
 
   const full: ReportSection = {
     id: input.categoryId,
