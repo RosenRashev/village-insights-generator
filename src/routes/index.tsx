@@ -169,6 +169,12 @@ function Index() {
 
   const generateReal = async () => {
     if (!place || selected.length === 0) return;
+    const code = accessCode.trim();
+    if (!code) {
+      toast.error("Въведете код за достъп (затворен тест).");
+      return;
+    }
+    localStorage.setItem("seloskop-access-code", code);
     setGenerating(true);
     setRealSections(null);
     setProgress({ done: 0, total: selected.length });
@@ -183,9 +189,11 @@ function Index() {
             categoryId,
             placeName: formatSettlement(place),
             placeType,
+            accessCode: code,
             ...(currentLocation ? { currentLocationName: formatSettlement(currentLocation) } : {}),
           },
         });
+
         const section = res.data as unknown as ReportSection | null;
         if (section && Array.isArray(section.blocks)) {
           collected.push({ ...section, id: categoryId });
