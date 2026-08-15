@@ -8,6 +8,7 @@ import {
   Factory,
   HelpCircle,
   History,
+  Lock,
   MessageCircle,
   Newspaper,
   PartyPopper,
@@ -58,18 +59,22 @@ export function ModuleCard({
   return (
     <div
       role="checkbox"
-      tabIndex={0}
+      tabIndex={module.required ? -1 : 0}
       aria-checked={selected}
-      onClick={onToggle}
+      aria-disabled={module.required ? true : undefined}
+      onClick={module.required ? undefined : onToggle}
       onKeyDown={(e) => {
+        if (module.required) return;
         if (e.key === " " || e.key === "Enter") {
           e.preventDefault();
           onToggle();
         }
       }}
       className={cn(
-        "wrap-anywhere flex h-full cursor-pointer items-start gap-3 rounded-lg border p-4 shadow-sm outline-none transition-all duration-200",
-        "hover:-translate-y-0.5 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/10 focus-visible:ring-2 focus-visible:ring-ring active:translate-y-0 active:scale-[0.98] active:shadow-sm",
+        "wrap-anywhere flex h-full items-start gap-3 rounded-lg border p-4 shadow-sm outline-none transition-all duration-200",
+        module.required
+          ? "cursor-default border-primary/40 bg-primary/10"
+          : "cursor-pointer hover:-translate-y-0.5 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/10 focus-visible:ring-2 focus-visible:ring-ring active:translate-y-0 active:scale-[0.98] active:shadow-sm",
         selected
           ? "border-primary/40 bg-primary/10"
           : "border-border bg-muted/40",
@@ -91,6 +96,11 @@ export function ModuleCard({
           >
             {module.label}
           </span>
+          {module.required && (
+            <span className="mt-0.5 inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold uppercase text-primary">
+              <Lock className="h-3 w-3" /> Задължителен
+            </span>
+          )}
           <Popover open={infoOpen} onOpenChange={setInfoOpen}>
             <PopoverTrigger asChild>
               <button
