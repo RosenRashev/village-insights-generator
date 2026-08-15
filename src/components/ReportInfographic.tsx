@@ -11,6 +11,7 @@ import {
   Newspaper,
   Shield,
   TreePine,
+  Volume2,
   Users,
   Wifi,
   Zap,
