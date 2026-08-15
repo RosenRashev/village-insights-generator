@@ -21,6 +21,7 @@ import { FeedbackBox } from "@/components/FeedbackBox";
 import { ReportInfographic } from "@/components/ReportInfographic";
 import { getCategory } from "@/lib/report-cache.functions";
 import type { ReportSection } from "@/data/mock-report";
+import { ONSITE_CHECKLIST_SECTION } from "@/data/onsite-checklist";
 
 
 import { formatSettlement, type Settlement } from "@/lib/settlements";
