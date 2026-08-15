@@ -11,6 +11,7 @@ import {
   Newspaper,
   Shield,
   TreePine,
+  Volume2,
   Users,
   Wifi,
   Zap,
@@ -46,8 +47,8 @@ const ICONS: Record<string, LucideIcon> = {
   social: Newspaper,
   culture: Landmark,
   media: MessageCircle,
-  risks: TreePine,
-  environment: AlertTriangle,
+  risks: AlertTriangle,
+  environment: Volume2,
   "onsite-checklist": ClipboardCheck,
 };
 
