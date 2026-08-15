@@ -15,6 +15,7 @@ import {
   Wifi,
   Zap,
   type LucideIcon,
+  Info,
 } from "lucide-react";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 
