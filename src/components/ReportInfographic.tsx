@@ -224,16 +224,17 @@ function Block({ block, accent, ink }: { block: ReportBlock; accent: string; ink
                 key={`${r.route}-${i}`}
                 className="rounded-2xl bg-white/70 p-4 shadow-sm ring-1 ring-black/5"
               >
-                <div className="flex flex-wrap items-center gap-2">
-                  <Bus className="h-4 w-4" style={{ color: accent }} />
-                  <span className="font-semibold text-black/80">{r.route}</span>
+                <div className="flex flex-wrap items-start gap-2">
+                  <Bus className="mt-0.5 h-4 w-4 shrink-0" style={{ color: accent }} />
+                  <span className="min-w-0 flex-1 font-semibold text-black/80 wrap-anywhere">{r.route}</span>
                   <span
-                    className="ml-auto rounded-full px-2 py-0.5 text-xs font-bold text-white"
+                    className="ml-auto max-w-full shrink rounded-2xl px-2 py-0.5 text-xs font-bold leading-snug text-white wrap-anywhere"
                     style={{ backgroundColor: accent }}
                   >
                     {r.days}
                   </span>
                 </div>
+
                 <div className="mt-2 flex flex-wrap gap-4 text-sm text-black/70">
                   <span>Курсове: <b>{r.runs}</b></span>
                   <span>Часови обхват: <b>{r.last}</b></span>
@@ -256,26 +257,27 @@ function Block({ block, accent, ink }: { block: ReportBlock; accent: string; ink
               const meta = RISK[r.level];
               return (
                 <div key={r.label} className="rounded-2xl bg-white/70 p-4 shadow-sm ring-1 ring-black/5">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-black/80">
+                  <div className="flex flex-wrap items-start gap-2">
+                    <span className="min-w-0 flex-1 font-semibold text-black/80 wrap-anywhere">
                       {r.label}
                       <SourceArrow sources={r.sources} />
                     </span>
                     {typeof r.incidentCount === "number" && (
                       <span
-                        className="rounded-full bg-black/5 px-2 py-0.5 text-xs font-bold text-black/60"
+                        className="max-w-full shrink whitespace-nowrap rounded-2xl bg-black/5 px-2 py-0.5 text-xs font-bold text-black/60"
                         title="Брой регистрирани рискови събития"
                       >
                         {r.incidentCount} събития
                       </span>
                     )}
                     <span
-                      className="ml-auto rounded-full px-2.5 py-0.5 text-xs font-bold text-white"
+                      className="ml-auto max-w-full shrink rounded-2xl px-2.5 py-0.5 text-xs font-bold leading-snug text-white wrap-anywhere"
                       style={{ backgroundColor: meta.color }}
                     >
                       {meta.label}
                     </span>
                   </div>
+
                   <div className="mt-2 h-2 w-full rounded-full bg-black/10">
                     <div
                       className="h-2 rounded-full transition-all"
