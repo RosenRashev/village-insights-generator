@@ -764,6 +764,42 @@ export function ReportInfographic({
 
   return (
     <div className="space-y-6 font-sans">
+      {/* Sticky лента с действия */}
+      <div className="sticky top-0 z-30 -mx-2 rounded-2xl bg-village-700 px-4 py-2.5 text-white shadow-lg print:hidden">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-village-clay">
+              <TreePine className="h-4 w-4" />
+            </span>
+            <span className="font-accent text-lg font-black tracking-wide">СЕЛОСКОП</span>
+            <span className="rounded-full bg-white/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-village-200">
+              {demo ? "Демо доклад" : "Пълен доклад"}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            {REPORT_DATA_SOURCE === "mock" && onRegenerate && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-white hover:bg-white/10 hover:text-white"
+                onClick={onRegenerate}
+              >
+                <RefreshCw className="h-4 w-4" />
+                Регенерирай
+              </Button>
+            )}
+            <Button
+              size="sm"
+              className="bg-village-clay text-white hover:bg-village-clay/90"
+              onClick={() => window.print()}
+            >
+              <Printer className="h-4 w-4" />
+              Печат / PDF
+            </Button>
+          </div>
+        </div>
+      </div>
+
       {/* Флаг-банер със заглавие на населеното място */}
       <div className="print-card overflow-hidden rounded-2xl border border-border bg-white shadow-md">
         <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5">
@@ -784,22 +820,6 @@ export function ReportInfographic({
         <div className="h-3 w-full bg-flag-red" />
       </div>
 
-      <div className="flex flex-wrap items-center justify-end gap-2 print:hidden">
-        {REPORT_DATA_SOURCE === "mock" && onRegenerate && (
-          <Button variant="outline" size="sm" onClick={onRegenerate}>
-            <RefreshCw className="h-4 w-4" />
-            Регенерирай примерни данни
-          </Button>
-        )}
-        <Button
-          size="sm"
-          className="bg-village-clay text-white hover:bg-village-clay/90"
-          onClick={() => window.print()}
-        >
-          <Printer className="h-4 w-4" />
-          Печат / PDF
-        </Button>
-      </div>
 
       <div className="rounded-[2rem] border border-dashed border-border bg-background/80 p-5 text-center print:hidden">
         {demo && (
