@@ -282,3 +282,37 @@
   overflow-wrap: anywhere;
   word-break: break-word;
 }
+
+/* ── Инфографика: village палитра и типография (Canva еталон) ───────────── */
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-accent: "Yantra Matra", "Marcellus", ui-serif, Georgia, serif;
+  --color-village-50: #f4f7f4;
+  --color-village-100: #e3ebe3;
+  --color-village-200: #c6d9c7;
+  --color-village-500: #2d5a37;
+  --color-village-600: #23472b;
+  --color-village-700: #1a3620;
+  --color-village-clay: #d96b43;
+  --color-village-wheat: #e6b85c;
+  --color-village-linen: #fcfaf7;
+  --color-flag-green: #00966e;
+  --color-flag-red: #d62612;
+}
+
+/* Печат: бял фон, без интерактивни елементи, секциите не се режат. */
+@media print {
+  body {
+    background: #fff !important;
+  }
+
+  .print\:hidden {
+    display: none !important;
+  }
+
+  section,
+  .print-card {
+    break-inside: avoid;
+    box-shadow: none !important;
+  }
+}
