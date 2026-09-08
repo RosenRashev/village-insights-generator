@@ -675,9 +675,16 @@ function Section({
   // Финалната обобщена оценка получава тъмния „village“ стил от еталона.
   if (section.id === "perspective-summary") {
     return (
-      <section className="wrap-anywhere print-card scroll-mt-6 space-y-4 rounded-3xl bg-village-700 p-6 text-white shadow-2xl sm:p-8">
-        <h3 className="font-accent text-2xl font-bold">{section.title}</h3>
-        {section.subtitle && <p className="text-sm text-white/60">{section.subtitle}</p>}
+      <section className="wrap-anywhere print-card scroll-mt-6 space-y-4 rounded-3xl border border-village-600 bg-village-700 p-6 text-white shadow-2xl md:p-8">
+        <div className="flex items-center gap-3">
+          <span className="animated-icon-box flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-village-clay text-white shadow-lg">
+            <Award className="h-5 w-5" />
+          </span>
+          <div>
+            <h3 className="font-accent text-2xl font-bold text-white">{section.title}</h3>
+            {section.subtitle && <p className="text-xs text-village-200">{section.subtitle}</p>}
+          </div>
+        </div>
         <div className="space-y-4 rounded-2xl border border-white/10 bg-white/10 p-6 text-sm leading-relaxed backdrop-blur-md">
           {section.blocks.map((b, i) =>
             b.kind === "text" ? (
@@ -699,34 +706,23 @@ function Section({
   }
 
   return (
-    <section
-      className="wrap-anywhere print-card scroll-mt-6 rounded-[2rem] p-6 shadow-sm ring-1 ring-black/5 sm:p-8"
-      style={{ backgroundColor: theme.soft }}
-    >
-      <header className="flex items-start gap-4">
+    <section className="wrap-anywhere print-card scroll-mt-6 space-y-6 rounded-3xl border border-slate-100 bg-white p-6 shadow-lg md:p-8">
+      <header className="flex items-center gap-3">
         <span
-          className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-white shadow"
-          style={{ backgroundColor: theme.accent }}
+          className={`animated-icon-box flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white shadow-md ${theme.box}`}
         >
-          <Icon className="h-7 w-7" />
+          <Icon className="h-5 w-5" />
         </span>
-        <div>
-          <h3
-            className="font-accent text-2xl font-bold leading-tight tracking-wide"
-            style={{ color: theme.ink }}
-          >
-            {section.title}
-          </h3>
-          {section.subtitle && (
-            <p className="text-sm text-black/55">{section.subtitle}</p>
-          )}
+        <div className="min-w-0">
+          <h3 className="text-2xl font-bold leading-tight text-slate-900">{section.title}</h3>
+          {section.subtitle && <p className="text-xs text-slate-500">{section.subtitle}</p>}
         </div>
       </header>
 
-      <div className="mt-6 space-y-6">
+      <div className="space-y-6">
         {extra}
         {section.blocks.map((b, i) => (
-          <Block key={i} block={b} accent={theme.accent} ink={theme.ink} />
+          <Block key={i} block={b} accent={theme.accent} ink={theme.ink} hover={theme.hover} />
         ))}
       </div>
     </section>
