@@ -278,157 +278,83 @@ function Index() {
 
         {hasPlace && (
           <section className="mt-12 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <h2 className="text-lg font-bold text-destructive">
-              Какво да включим в проучването?
+            <p className="text-sm text-muted-foreground">
+              Проучването винаги включва пълния набор от категории:{" "}
+              {PROMPT_MODULES.map((m) => m.label).join(", ")}.
+            </p>
+
+            <h2 className="mt-8 text-lg font-bold text-destructive">
+              Цел на търсенето
             </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              По желание — изберете една цел, за да добавим обобщена оценка накрая.
+            </p>
             <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {PROMPT_MODULES.map((m) => (
+              {PURPOSE_OPTIONS.map((p) => (
                 <ModuleCard
-                  key={m.id}
-                  module={m}
-                  selected={selected.includes(m.id)}
-                  onToggle={() => toggle(m.id)}
+                  key={p.id}
+                  variant="radio"
+                  module={{ id: p.id, label: p.label, info: p.hint }}
+                  selected={purpose === p.id}
+                  onToggle={() => setPurpose((cur) => (cur === p.id ? null : p.id))}
                 />
               ))}
             </div>
-          </section>
-        )}
 
-        {hasPlace && selected.length > 0 && (
-          <section className="mt-12 flex flex-col items-center gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <div className="space-y-4 text-center">
-              <p className="text-lg font-bold text-foreground">
-                Как да извлечете максимална полза от генерирания промпт?
-              </p>
-              <div className="space-y-3 text-sm text-muted-foreground whitespace-pre-line">
-                <p>Препоръчваме да използвате промпта в Google Gemini.</p>
-                <p>
-                  Защо Gemini? За разлика от много други модели, Gemini разполага с пряк и ефективен достъп до търсачката на Google в реално време. Това му позволява да намира най-актуалните новини, общински съобщения, графици и официални данни за избраното населено място.
-                </p>
-                <p>
-                  Безплатен достъп: Не е необходим платен абонамент — безплатната версия на Gemini е напълно достатъчна за изготвянето на детайлен доклад.
-                </p>
-              </div>
-            </div>
-            <ol className="w-full max-w-md space-y-3 text-left text-base text-foreground">
-              {[
-                "Натисни бутона — промптът се копира автоматично",
-                "Ще бъдеш пренасочен към Gemini",
-                "Натисни Ctrl+V, за да поставиш промпта в полето",
-              ].map((step, i) => (
-                <li key={step} className="flex items-start gap-3">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-base font-bold text-primary-foreground">
-                    {i + 1}
-                  </span>
-                  <span className="pt-1 leading-snug">{step}</span>
-                </li>
+            <h2 className="mt-10 text-lg font-bold text-destructive">
+              Допълнителни опции
+            </h2>
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {ADDON_MODULES.map((a) => (
+                <ModuleCard
+                  key={a.id}
+                  module={a}
+                  selected={addons.includes(a.id)}
+                  onToggle={() => toggleAddon(a.id)}
+                />
               ))}
-            </ol>
+            </div>
 
-            <Accordion
-              type="single"
-              collapsible
-              className="w-full max-w-md rounded-md border border-border bg-muted/50 px-3"
-            >
-              <AccordionItem value="gemini-account" className="border-none">
-                <AccordionTrigger className="py-2 text-sm hover:no-underline">
-                  <span className="flex items-center gap-2 text-left">
-                    <Info className="h-4 w-4 shrink-0 text-muted-foreground" />
-                    Нямате Gemini акаунт? Прочетете тук
-                  </span>
-                </AccordionTrigger>
-                <AccordionContent className="pb-3 text-sm text-muted-foreground">
-                  Не е необходимо да инсталирате нищо. Трябва Ви само обикновен
-                  Google акаунт (същият, който ползвате за Gmail). При първото
-                  отваряне на gemini.google.com системата ще Ви поиска да влезете
-                  с него и да разрешите на Gemini достъп до профила Ви — това е
-                  стандартна стъпка на Google и отнема секунди. Услугата е
-                  напълно безплатна.
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-
-
-
-            <button
-              type="button"
-              onClick={copyAndOpen}
-              aria-label="Копирай промпта и отвори Gemini"
-              className={`group flex h-40 w-40 flex-col items-center justify-center gap-1.5 bg-primary text-primary-foreground transition-transform hover:scale-105 active:scale-95 [clip-path:polygon(50%_0%,100%_38%,100%_100%,0%_100%,0%_38%)] ${bouncing ? "bounce-click" : ""}`}
-            >
-              {copied ? (
-                <Check className="mt-7 h-11 w-11" />
-              ) : (
-                <span className="mt-7 flex items-center gap-1.5">
-                  <House className="h-11 w-11" />
-                  <GeminiMark className="h-6 w-6" />
-                </span>
-              )}
-              <span className="px-3 text-center text-[15px] font-semibold leading-tight">
-                {copied ? "✓ Копирано!" : "Копирай и отвори Gemini"}
-              </span>
-            </button>
-
-            <span
-              key={selected.length}
-              className="animate-in zoom-in-95 fade-in rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary transition-transform duration-200 ease-out"
-            >
-              {selected.length} избрани
-            </span>
-
-
-
-            <button
-              type="button"
-              onClick={copyOnly}
-              className="rounded-md border border-border bg-transparent px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted"
-            >
-              {copiedOnly ? "✓ Копирано!" : "Само копирай"}
-            </button>
-
-            <p className="text-xs text-muted-foreground">
-              Ако Gemini не се отвори тук, отворете{" "}
-              <a
-                href="https://gemini.google.com/app"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline"
-              >
-                gemini.google.com
-              </a>{" "}
-              в нов таб и поставете с Ctrl+V (Cmd+V).
-            </p>
-
-            <Button onClick={reset} variant="outline" size="sm">
-              <RotateCcw className="h-4 w-4" />
-              Изчисти
-            </Button>
+            <div className="mt-6 flex justify-center">
+              <Button onClick={reset} variant="outline" size="sm">
+                <RotateCcw className="h-4 w-4" />
+                Изчисти
+              </Button>
+            </div>
           </section>
         )}
 
-        {hasPlace && selected.length > 0 && (
+        {hasPlace && (
           <section className="mt-16">
             <div className="flex flex-col items-center gap-3 text-center">
               <h2 className="text-lg font-bold text-destructive">
-                Генерирай истински доклад
+                Генерирай доклад
               </h2>
               <p className="max-w-md text-sm text-muted-foreground">
-                Приложението ще проучи избраните категории с Gemini и търсене в Google в
-                реално време и ще покаже резултата тук като инфографика.
+                {IS_MOCK
+                  ? "Демо режим: докладът се попълва с примерни данни, без реални заявки."
+                  : "Приложението ще проучи категориите с Gemini и търсене в Google в реално време и ще покаже резултата тук като инфографика."}
               </p>
-              <p className="max-w-md text-xs text-muted-foreground">
-                Затворен тест: генерирането изисква код за достъп.
-              </p>
-              <Input
-                type="password"
-                value={accessCode}
-                onChange={(e) => setAccessCode(e.target.value)}
-                placeholder="Код за достъп"
-                aria-label="Код за достъп"
-                className="max-w-xs text-center"
-              />
-              <Button size="lg" onClick={generateReal} disabled={generating || !accessCode.trim()}>
-
+              {!IS_MOCK && (
+                <>
+                  <p className="max-w-md text-xs text-muted-foreground">
+                    Затворен тест: генерирането изисква код за достъп.
+                  </p>
+                  <Input
+                    type="password"
+                    value={accessCode}
+                    onChange={(e) => setAccessCode(e.target.value)}
+                    placeholder="Код за достъп"
+                    aria-label="Код за достъп"
+                    className="max-w-xs text-center"
+                  />
+                </>
+              )}
+              <Button
+                size="lg"
+                onClick={generateReport}
+                disabled={generating || !hasPlace || (!IS_MOCK && !accessCode.trim())}
+              >
                 {generating ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
