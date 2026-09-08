@@ -583,39 +583,49 @@ function Block({
           <h4 className="mb-2 text-sm font-bold uppercase tracking-wide" style={{ color: accent }}>
             {block.title}
           </h4>
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 gap-4 text-xs md:grid-cols-2">
             {block.items.map((r) => {
               const meta = RISK[r.level];
+              const percent = Math.max(0, Math.min(100, r.percent ?? meta.percent));
               return (
-                <div key={r.label} className="rounded-2xl bg-white/70 p-4 shadow-sm ring-1 ring-black/5">
-                  <div className="flex flex-wrap items-start gap-2">
-                    <span className="min-w-0 flex-1 font-semibold text-black/80 wrap-anywhere">
-                      {r.label}
-                      <SourceArrow sources={r.sources} />
-                    </span>
-                    {typeof r.incidentCount === "number" && (
-                      <span
-                        className="max-w-full shrink whitespace-nowrap rounded-2xl bg-black/5 px-2 py-0.5 text-xs font-bold text-black/60"
-                        title="Брой регистрирани рискови събития"
-                      >
-                        {r.incidentCount} събития
+                <div
+                  key={r.label}
+                  className="print-card space-y-2 rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-2 font-bold">
+                    <span className="flex min-w-0 flex-1 items-start gap-1.5 text-slate-800 wrap-anywhere">
+                      <AlertTriangle
+                        className="mt-0.5 h-3.5 w-3.5 shrink-0"
+                        style={{ color: meta.color }}
+                      />
+                      <span>
+                        {r.label}
+                        <SourceArrow sources={r.sources} />
                       </span>
-                    )}
+                    </span>
                     <span
-                      className="ml-auto max-w-full shrink rounded-2xl px-2.5 py-0.5 text-xs font-bold leading-snug text-white wrap-anywhere"
-                      style={{ backgroundColor: meta.color }}
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-extrabold ${meta.pill}`}
                     >
-                      {meta.label}
+                      {meta.label} риск ({percent}%)
                     </span>
                   </div>
 
-                  <div className="mt-2 h-2 w-full rounded-full bg-black/10">
+                  <div className="h-2.5 w-full rounded-full bg-slate-200">
                     <div
-                      className="h-2 rounded-full transition-all"
-                      style={{ width: meta.width, backgroundColor: meta.color }}
+                      className={`h-2.5 rounded-full transition-all ${meta.bar}`}
+                      style={{ width: `${percent}%` }}
                     />
                   </div>
-                  {r.note && <p className="mt-2 text-sm text-black/65">{r.note}</p>}
+                  {(r.note || typeof r.incidentCount === "number") && (
+                    <p className="text-[11px] leading-relaxed text-slate-500">
+                      {r.note}
+                      {typeof r.incidentCount === "number" && (
+                        <span className="ml-1 font-semibold text-slate-600">
+                          Регистрирани: {r.incidentCount}.
+                        </span>
+                      )}
+                    </p>
+                  )}
                 </div>
               );
             })}
