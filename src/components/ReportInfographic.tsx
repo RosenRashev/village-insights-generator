@@ -362,10 +362,50 @@ function Block({ block, accent, ink }: { block: ReportBlock; accent: string; ink
     case "schedule":
       return (
         <div>
-          <h4 className="mb-2 text-sm font-bold uppercase tracking-wide" style={{ color: accent }}>
-            {block.title}
-          </h4>
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <h4 className="text-sm font-bold uppercase tracking-wide" style={{ color: accent }}>
+              {block.title}
+            </h4>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button size="sm" variant="outline" className="print:hidden">
+                  Пълно разписание
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>{block.title}</DialogTitle>
+                </DialogHeader>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm">
+                    <thead>
+                      <tr className="border-b text-xs uppercase tracking-wide text-muted-foreground">
+                        <th className="py-2 pr-3 font-semibold">Линия</th>
+                        <th className="py-2 pr-3 font-semibold">Дни</th>
+                        <th className="py-2 pr-3 font-semibold">Курсове</th>
+                        <th className="py-2 font-semibold">Часови обхват</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {block.rows.map((r, i) => (
+                        <tr key={`${r.route}-modal-${i}`} className="border-b last:border-0">
+                          <td className="py-2 pr-3 font-medium">{r.route}</td>
+                          <td className="py-2 pr-3">{r.days}</td>
+                          <td className="py-2 pr-3">{r.runs}</td>
+                          <td className="py-2">{r.last}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {block.note && (
+                  <p className="text-sm italic text-muted-foreground">{block.note}</p>
+                )}
+              </DialogContent>
+            </Dialog>
+          </div>
           <div className="space-y-3">
+
             {block.rows.map((r, i) => (
               <div
                 key={`${r.route}-${i}`}
