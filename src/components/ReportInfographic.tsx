@@ -94,6 +94,33 @@ const RISK: Record<RiskLevel, { label: string; color: string; width: string }> =
   high: { label: "ВИСОК", color: "#dc2626", width: "100%" },
 };
 
+const CARD_TONES: Record<CardTone, { bg: string; border: string; ink: string; icon: string }> = {
+  emerald: { bg: "#ecfdf5", border: "#a7f3d0", ink: "#064e3b", icon: "#059669" },
+  sky: { bg: "#f0f9ff", border: "#bae6fd", ink: "#0c4a6e", icon: "#0284c7" },
+  blue: { bg: "#eff6ff", border: "#bfdbfe", ink: "#1e3a8a", icon: "#2563eb" },
+  amber: { bg: "#fffbeb", border: "#fde68a", ink: "#78350f", icon: "#d97706" },
+  violet: { bg: "#f5f3ff", border: "#ddd6fe", ink: "#3b0764", icon: "#7c3aed" },
+  purple: { bg: "#faf5ff", border: "#e9d5ff", ink: "#581c87", icon: "#9333ea" },
+  rose: { bg: "#fff1f2", border: "#fecdd3", ink: "#881337", icon: "#e11d48" },
+  teal: { bg: "#f0fdfa", border: "#99f6e4", ink: "#134e4a", icon: "#0d9488" },
+};
+
+const CARD_ICONS: Record<string, LucideIcon> = {
+  "thumbs-up": ThumbsUp,
+  "thumbs-down": ThumbsDown,
+  people: Users,
+  globe: Globe,
+  nature: TreePine,
+  alert: AlertTriangle,
+  news: Newspaper,
+};
+
+const GAUGE_DIRECTION = {
+  up: { color: "#059669", Icon: TrendingUp },
+  down: { color: "#e11d48", Icon: TrendingDown },
+  neutral: { color: "#64748b", Icon: Minus },
+} as const;
+
 function SourceArrow({ sources }: { sources?: SourceLink[] | undefined }) {
   if (!sources || sources.length === 0) return null;
   const first = sources[0]!;
@@ -119,17 +146,118 @@ function Block({ block, accent, ink }: { block: ReportBlock; accent: string; ink
           {block.items.map((f) => (
             <div
               key={f.label}
-              className="rounded-2xl bg-white/70 p-3 text-center shadow-sm ring-1 ring-black/5"
+              className="print-card flex flex-col rounded-2xl bg-white/80 p-3 text-center shadow-sm ring-1 ring-black/5"
             >
-              <div className="text-xs uppercase tracking-wide text-black/50">{f.label}</div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-black/40">
+                {f.label}
+              </div>
               <div className="mt-1 text-sm font-bold" style={{ color: ink }}>
                 {f.value}
                 <SourceArrow sources={f.sources} />
               </div>
+              {f.description && (
+                <p className="mt-1.5 text-[11px] leading-relaxed text-black/50">{f.description}</p>
+              )}
+              {f.pillValue && (
+                <div className="mt-auto flex items-center justify-between gap-2 border-t border-black/10 pt-2.5 text-[11px]">
+                  <span className="font-medium text-black/40">{f.pillLabel ?? "Стойност:"}</span>
+                  <span
+                    className="rounded-md px-2 py-0.5 text-xs font-bold"
+                    style={{ backgroundColor: `${accent}1a`, color: ink }}
+                  >
+                    {f.pillValue}
+                  </span>
+                </div>
+              )}
             </div>
           ))}
         </div>
       );
+
+    case "gauge": {
+      const dir = GAUGE_DIRECTION[block.direction];
+      const value = Math.max(0, Math.min(100, block.value));
+      return (
+        <div>
+          <h4 className="mb-2 text-sm font-bold uppercase tracking-wide" style={{ color: accent }}>
+            {block.title}
+          </h4>
+          <div className="print-card rounded-2xl bg-white/80 p-4 shadow-sm ring-1 ring-black/5">
+            <div className="relative mx-auto h-44 w-full max-w-xs">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={[
+                      { name: block.title, value },
+                      { name: "остатък", value: 100 - value },
+                    ]}
+                    dataKey="value"
+                    innerRadius="80%"
+                    outerRadius="100%"
+                    startAngle={90}
+                    endAngle={-270}
+                    stroke="none"
+                    isAnimationActive={false}
+                  >
+                    <Cell fill={dir.color} />
+                    <Cell fill="#e2e8f0" />
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                <dir.Icon className="mb-1 h-8 w-8" style={{ color: dir.color }} />
+                <span className="text-2xl font-black text-black/80">
+                  {block.direction === "down" ? "-" : block.direction === "up" ? "+" : ""}
+                  {value}%
+                </span>
+                {block.periodLabel && (
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-black/40">
+                    {block.periodLabel}
+                  </span>
+                )}
+              </div>
+            </div>
+            {block.note && (
+              <p className="mt-2 text-center text-[12px] text-black/55">{block.note}</p>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    case "cards":
+      return (
+        <div>
+          {block.title && (
+            <h4 className="mb-2 text-sm font-bold uppercase tracking-wide" style={{ color: accent }}>
+              {block.title}
+            </h4>
+          )}
+          <div className="grid gap-3 sm:grid-cols-2">
+            {block.items.map((c) => {
+              const tone = CARD_TONES[c.tone];
+              const CIcon = (c.icon && CARD_ICONS[c.icon]) || Info;
+              return (
+                <div
+                  key={c.label}
+                  className="print-card rounded-xl border p-3.5"
+                  style={{ backgroundColor: tone.bg, borderColor: tone.border }}
+                >
+                  <span
+                    className="mb-1 flex items-center gap-1.5 text-sm font-bold"
+                    style={{ color: tone.ink }}
+                  >
+                    <CIcon className="h-4 w-4 shrink-0" style={{ color: tone.icon }} />
+                    {c.label}
+                  </span>
+                  <p className="text-[13px] leading-relaxed text-black/65">{c.body}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
+
 
     case "text":
       return (
