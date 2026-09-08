@@ -273,17 +273,19 @@ function Block({
                   </p>
                 )}
               </div>
-              <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-200/80 pt-2.5">
-                <span className="text-[11px] font-medium text-slate-400">
-                  {f.pillLabel ?? f.label}
-                </span>
-                <span
-                  className="rounded-md px-2.5 py-0.5 text-xs font-bold"
-                  style={{ backgroundColor: `${accent}1a`, color: ink }}
-                >
-                  {f.pillValue ?? f.value}
-                </span>
-              </div>
+              {f.pillValue && (
+                <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-200/80 pt-2.5">
+                  <span className="text-[11px] font-medium text-slate-400">
+                    {f.pillLabel ?? "Стойност"}
+                  </span>
+                  <span
+                    className="shrink-0 rounded-md px-2.5 py-0.5 text-xs font-bold"
+                    style={{ backgroundColor: `${accent}1a`, color: ink }}
+                  >
+                    {f.pillValue}
+                  </span>
+                </div>
+              )}
             </div>
           ))}
         </div>
