@@ -484,6 +484,15 @@ export const MOCK_REPORT: ReportSection[] = [
         ],
       },
       {
+        kind: "gauge",
+        title: "Ценови тренд на имотите",
+        value: 65,
+        direction: "up",
+        periodLabel: "год.",
+        note: "Индикативен ръст на офертните цени в общината за последната година.",
+      },
+
+      {
         kind: "list",
         title: "ЧАСТ Б — Туристическо развитие и демографски тренд",
         items: [
