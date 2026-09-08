@@ -22,7 +22,13 @@ import {
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import type { PromptModule } from "@/lib/prompt-modules";
+
+type CardModule = {
+  id: string;
+  label: string;
+  info: string;
+  required?: boolean;
+};
 
 const ICONS: Record<string, LucideIcon> = {
   basic: Activity,
@@ -40,23 +46,29 @@ const ICONS: Record<string, LucideIcon> = {
   "onsite-checklist": CheckSquare,
   environment: Volume2,
   history: History,
+  family: Users,
+  weekend: PartyPopper,
+  retirees: Activity,
+  remote: Wifi,
 };
 
 export function ModuleCard({
   module,
   selected,
   onToggle,
+  variant = "checkbox",
 }: {
-  module: PromptModule;
+  module: CardModule;
   selected: boolean;
   onToggle: () => void;
+  variant?: "checkbox" | "radio";
 }) {
   const [infoOpen, setInfoOpen] = useState(false);
   const Icon = ICONS[module.id] ?? Activity;
 
   return (
     <div
-      role="checkbox"
+      role={variant}
       tabIndex={module.required ? -1 : 0}
       aria-checked={selected}
       aria-disabled={module.required ? true : undefined}
