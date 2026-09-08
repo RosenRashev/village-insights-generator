@@ -5,12 +5,20 @@ import {
   ClipboardCheck,
   Droplet,
   Factory,
+  Globe,
   Landmark,
   MapPin,
+  Minus,
   Newspaper,
   PartyPopper,
+  Printer,
+  RefreshCw,
   Shield,
+  ThumbsDown,
+  ThumbsUp,
   TreePine,
+  TrendingDown,
+  TrendingUp,
   Volume2,
   Users,
   Wifi,
@@ -23,6 +31,7 @@ import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import {
   MOCK_REPORT,
   MOCK_REPORT_PLACE,
+  type CardTone,
   type ReportBlock,
   type ReportSection,
   type RiskLevel,
@@ -31,8 +40,18 @@ import {
 import "leaflet/dist/leaflet.css";
 
 import { LocationMap } from "@/components/LocationMap";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { REPORT_DATA_SOURCE } from "@/lib/report-mode";
 import type { Settlement } from "@/lib/settlements";
 import { displaySettlement } from "@/lib/settlements";
+
 
 const ICONS: Record<string, LucideIcon> = {
   basic: MapPin,
