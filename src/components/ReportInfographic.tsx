@@ -585,16 +585,20 @@ type InfographicProps = {
   current?: Settlement | null;
   sections?: ReportSection[];
   demo?: boolean;
+  /** Показва бутон „Регенерирай примерни данни“ (само в mock режим). */
+  onRegenerate?: (() => void) | undefined;
 };
 
 /** Координати на с. Медово (ekatte 47665) — fallback за демо режима. */
 const DEMO_MAP_POINT = { lat: 42.371968, lng: 25.201267, label: MOCK_REPORT_PLACE };
+const DEMO_POSTAL_CODE = "6235";
 
 export function ReportInfographic({
   place = null,
   current = null,
   sections = MOCK_REPORT,
   demo = true,
+  onRegenerate,
 }: InfographicProps) {
   const mapPoint =
     place && place.lat != null && place.lng != null
@@ -605,21 +609,58 @@ export function ReportInfographic({
       ? { lat: current.lat, lng: current.lng, label: displaySettlement(current) }
       : null;
 
+  const placeLabel = place ? displaySettlement(place) : MOCK_REPORT_PLACE;
+  const postalCode = place?.postalCode || DEMO_POSTAL_CODE;
+
   return (
-    <div className="space-y-6">
-      <div className="rounded-[2rem] border border-dashed border-border bg-background/80 p-5 text-center">
+    <div className="space-y-6 font-sans">
+      {/* Флаг-банер със заглавие на населеното място */}
+      <div className="print-card overflow-hidden rounded-2xl border border-border bg-white shadow-md">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-flag-green text-white">
+              <MapPin className="h-5 w-5" />
+            </span>
+            <h2 className="wrap-anywhere font-accent text-2xl font-black tracking-wide text-slate-900 md:text-3xl">
+              {placeLabel}
+            </h2>
+          </div>
+          <div className="flex items-center gap-2 rounded-xl border border-border bg-slate-50 px-4 py-1.5">
+            <span className="text-xs font-bold uppercase text-slate-600">Пощенски код:</span>
+            <span className="text-lg font-black text-slate-900">{postalCode}</span>
+          </div>
+        </div>
+        <div className="h-3 w-full bg-flag-green" />
+        <div className="h-3 w-full bg-flag-red" />
+      </div>
+
+      <div className="flex flex-wrap items-center justify-end gap-2 print:hidden">
+        {REPORT_DATA_SOURCE === "mock" && onRegenerate && (
+          <Button variant="outline" size="sm" onClick={onRegenerate}>
+            <RefreshCw className="h-4 w-4" />
+            Регенерирай примерни данни
+          </Button>
+        )}
+        <Button
+          size="sm"
+          className="bg-village-clay text-white hover:bg-village-clay/90"
+          onClick={() => window.print()}
+        >
+          <Printer className="h-4 w-4" />
+          Печат / PDF
+        </Button>
+      </div>
+
+      <div className="rounded-[2rem] border border-dashed border-border bg-background/80 p-5 text-center print:hidden">
         {demo && (
           <p className="text-xs font-bold uppercase tracking-widest text-destructive">
             Демонстрационни данни
           </p>
         )}
-        <h2 className="mt-1 text-2xl font-bold text-primary">
-          {place ? displaySettlement(place) : MOCK_REPORT_PLACE}
-        </h2>
         <p className="mt-1 text-sm text-muted-foreground">
           {demo
             ? "Примерен доклад за визуализация на резултата. Данните са мостра — все още не се генерират автоматично."
-            : "Докладът е генериран автоматично от Gemini с търсене в Google в реално време. Проверявайте важните факти по посочените източници."}
+            : "Докладът е генериран автоматично с търсене в реално време. Проверявайте важните факти по посочените източници."}
         </p>
       </div>
 
@@ -637,4 +678,5 @@ export function ReportInfographic({
     </div>
   );
 }
+
 
