@@ -2,13 +2,45 @@ export type SourceLink = { label: string; url: string };
 
 export type RiskLevel = "low" | "medium" | "high";
 
+export type CardTone =
+  | "emerald"
+  | "sky"
+  | "blue"
+  | "amber"
+  | "violet"
+  | "purple"
+  | "rose"
+  | "teal";
+
 export type ReportBlock =
   | {
       kind: "facts";
-      items: { label: string; value: string; sources?: SourceLink[] }[];
+      items: {
+        label: string;
+        value: string;
+        description?: string;
+        pillLabel?: string;
+        pillValue?: string;
+        sources?: SourceLink[];
+      }[];
     }
   | { kind: "text"; title?: string; body: string }
   | { kind: "list"; title?: string; items: string[] }
+  | {
+      kind: "gauge";
+      title: string;
+      /** Процент 0–100 (абсолютна стойност на промяната). */
+      value: number;
+      direction: "up" | "down" | "neutral";
+      periodLabel?: string;
+      note?: string;
+    }
+  | {
+      kind: "cards";
+      title?: string;
+      items: { icon?: string; label: string; body: string; tone: CardTone }[];
+    }
+
   | {
       kind: "pie";
       title: string;
