@@ -24,7 +24,13 @@ export type ReportBlock =
         sources?: SourceLink[];
       }[];
     }
-  | { kind: "text"; title?: string; body: string }
+  | {
+      kind: "text";
+      title?: string;
+      body: string;
+      /** "dark" — тъмна карта (медиен преглед); "highlight" — фолклорен акцент. */
+      variant?: "default" | "dark" | "highlight";
+    }
   | { kind: "list"; title?: string; items: string[] }
   | {
       kind: "gauge";
@@ -60,6 +66,8 @@ export type ReportBlock =
         label: string;
         level: RiskLevel;
         note?: string;
+        /** 0–100; ако липсва, се извежда от level (low=20, medium=50, high=80). */
+        percent?: number;
         incidentCount?: number;
         sources?: SourceLink[];
       }[];
