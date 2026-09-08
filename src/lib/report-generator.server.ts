@@ -227,7 +227,8 @@ Block е един от:
 {"kind":"list","title":string,"items":string[]}
 {"kind":"pie","title":string,"note":string,"data":[{"name":string,"value":number}]}   // value = процент, сборът ~100
 {"kind":"schedule","title":string,"note":string,"rows":[{"route":string,"days":string,"runs":string,"last":string}]}
-{"kind":"risks","title":string,"items":[{"label":string,"level":"low"|"medium"|"high","note":string,"incidentCount":number}]}
+{"kind":"risks","title":string,"items":[{"label":string,"level":"low"|"medium"|"high","percent":number,"note":string,"incidentCount":number}]}
+// "percent" е по избор, 0-100 — относителната тежест на риска за визуалната лента (низък ~10-25, среден ~40-60, висок ~70-90).
 {"kind":"checklist","title":string,"items":[{"title":string,"points":string[]}]}
 {"kind":"gauge","title":string,"value":number,"direction":"up"|"down"|"neutral","periodLabel":string,"note":string}   // value = процент 0-100 (абсолютна стойност на промяната)
 {"kind":"cards","title":string,"items":[{"icon":string,"label":string,"body":string,"tone":"emerald"|"sky"|"blue"|"amber"|"violet"|"purple"|"rose"|"teal"}]}
