@@ -49,24 +49,16 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-function GeminiMark({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className={className}>
-      <path d="M12 0c.4 6.3 5.7 11.6 12 12-6.3.4-11.6 5.7-12 12-.4-6.3-5.7-11.6-12-12C6.3 11.6 11.6 6.3 12 0z" />
-    </svg>
-  );
-}
+const IS_MOCK = REPORT_DATA_SOURCE === "mock";
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 function Index() {
   const [place, setPlace] = useState<Settlement | null>(null);
   const [currentLocation, setCurrentLocation] = useState<Settlement | null>(null);
   const placeType: PlaceType = place?.isVillage ? "village" : "town";
-  const [selected, setSelected] = useState<string[]>(() =>
-    PROMPT_MODULES.map((m) => m.id),
-  );
-  const [copied, setCopied] = useState(false);
-  const [copiedOnly, setCopiedOnly] = useState(false);
-  const [bouncing, setBouncing] = useState(false);
+  const [purpose, setPurpose] = useState<PurposeId | null>(null);
+  const [addons, setAddons] = useState<string[]>([]);
   const [showReport, setShowReport] = useState(false);
   const [placeNotice, setPlaceNotice] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
