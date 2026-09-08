@@ -218,8 +218,12 @@ const SCHEMA_DOC = `Върни САМО JSON обект със следната 
   "incidentCount": number | null         // само за категория "risks": брой регистрирани рискови събития, иначе null
 }
 Block е един от:
-{"kind":"facts","items":[{"label":string,"value":string}]}                    // 2-6 кратки факта
-{"kind":"text","title":string,"body":string}
+{"kind":"facts","items":[{"label":string,"value":string,"description":string}]}  // 2-6 кратки факта; "description" е по избор — едно кратко пояснително изречение под стойността
+{"kind":"text","title":string,"body":string,"variant":"default"|"dark"|"highlight"}
+// "variant" е по избор и по подразбиране е "default".
+// "dark" ползвай САМО за обобщаващия медиен преглед в категория "security".
+// "highlight" ползвай САМО за един интересен исторически/фолклорен факт в категория "history"
+// (в този случай "title" е заглавието на факта).
 {"kind":"list","title":string,"items":string[]}
 {"kind":"pie","title":string,"note":string,"data":[{"name":string,"value":number}]}   // value = процент, сборът ~100
 {"kind":"schedule","title":string,"note":string,"rows":[{"route":string,"days":string,"runs":string,"last":string}]}
