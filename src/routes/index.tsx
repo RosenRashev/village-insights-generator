@@ -99,81 +99,42 @@ function Index() {
 
   const hasPlace = place !== null;
 
-  const prompt = useMemo(
-    () =>
-      buildPrompt({
-        place: place ? formatSettlement(place) : "",
-        placeType,
-        selected,
-        currentLocation: currentLocation ? formatSettlement(currentLocation) : "",
-      }),
-    [place, placeType, selected, currentLocation],
-  );
-
-
-
-  const toggle = (id: string) => {
-    if (PROMPT_MODULES.find((m) => m.id === id)?.required) return;
-    setSelected((prev) =>
+  const toggleAddon = (id: string) =>
+    setAddons((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
+
+  const categoryIds = [
+    ...PROMPT_MODULES.map((m) => m.id),
+    ...ADDON_MODULES.filter((a) => addons.includes(a.id)).map((a) => a.id),
+  ];
+
+  const generateMock = async () => {
+    setGenerating(true);
+    setRealSections(null);
+    setProgress({ done: 0, total: categoryIds.length + (purpose ? 1 : 0) });
+    const collected: ReportSection[] = [];
+
+    for (const categoryId of categoryIds) {
+      await sleep(150);
+      collected.push(generateMockCategory(categoryId));
+      setRealSections([...collected]);
+      setProgress((p) => ({ ...p, done: p.done + 1 }));
+    }
+
+    if (purpose) {
+      await sleep(150);
+      collected.push(generateMockPerspectiveSummary(purpose));
+      setRealSections([...collected]);
+      setProgress((p) => ({ ...p, done: p.done + 1 }));
+    }
+
+    setGenerating(false);
+    toast.success("Докладът е готов (примерни данни).");
   };
 
-  const showCopiedToast = () =>
-    toast.success("ПРОМПТЪТ Е КОПИРАН В ПАМЕТТА — ГОТОВ ЗА ПОСТАВЯНЕ (Ctrl+V)", {
-      duration: 5000,
-      className: "text-base font-bold py-6",
-    });
-
-  const copyOnly = async () => {
-    try {
-      await navigator.clipboard.writeText(prompt);
-    } catch {
-      toast.error("Копирането не успя — опитайте отново");
-      return;
-    }
-    setCopiedOnly(true);
-    setTimeout(() => setCopiedOnly(false), 2500);
-    showCopiedToast();
-  };
-
-  const copyAndOpen = async () => {
-    setBouncing(true);
-    setTimeout(() => setBouncing(false), 400);
-    try {
-      await navigator.clipboard.writeText(prompt);
-    } catch {
-      toast.error("Копирането не успя — опитайте отново");
-      return;
-    }
-
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
-    showCopiedToast();
-
-    let opened: Window | null = null;
-    try {
-      opened = window.open(
-        "https://gemini.google.com/app",
-        "_blank",
-        "noopener,noreferrer",
-      );
-    } catch {
-      opened = null;
-    }
-
-    if (!opened) {
-      toast(
-        "Браузърът блокира автоматичното отваряне — отворете gemini.google.com ръчно и поставете с Ctrl+V.",
-        { duration: 5000 },
-      );
-    }
-  };
-
-
-
-  const generateReal = async () => {
-    if (!place || selected.length === 0) return;
+  const generateLive = async () => {
+    if (!place) return;
     const code = accessCode.trim();
     if (!code) {
       toast.error("Въведете код за достъп (затворен тест).");
@@ -182,11 +143,11 @@ function Index() {
     localStorage.setItem("seloskop-access-code", code);
     setGenerating(true);
     setRealSections(null);
-    setProgress({ done: 0, total: selected.length });
+    setProgress({ done: 0, total: categoryIds.length });
     const collected: ReportSection[] = [];
     let failed = 0;
 
-    for (const categoryId of selected) {
+    for (const categoryId of categoryIds) {
       // Чек-листът е статичен — не се генерира от AI и не се кешира.
       if (categoryId === "onsite-checklist") {
         collected.push(ONSITE_CHECKLIST_SECTION);
@@ -224,6 +185,9 @@ function Index() {
       setProgress((p) => ({ ...p, done: p.done + 1 }));
     }
 
+    // TODO: свържи реалния perspective-summary генератор, когато REPORT_DATA_SOURCE = "live"
+    // (все още няма имплементация — пропускаме тихо, ако purpose е избран).
+
     setGenerating(false);
     if (collected.length === 0) {
       toast.error("Докладът не можа да бъде генериран.");
@@ -234,10 +198,13 @@ function Index() {
     }
   };
 
+  const generateReport = () => (IS_MOCK ? generateMock() : generateLive());
+
   const reset = () => {
     setPlace(null);
     setCurrentLocation(null);
-    setSelected(PROMPT_MODULES.map((m) => m.id));
+    setPurpose(null);
+    setAddons([]);
     setRealSections(null);
     setProgress({ done: 0, total: 0 });
   };
