@@ -46,6 +46,10 @@ const ICONS: Record<string, LucideIcon> = {
   "onsite-checklist": CheckSquare,
   environment: Volume2,
   history: History,
+  family: Users,
+  weekend: PartyPopper,
+  retirees: Activity,
+  remote: Wifi,
 };
 
 export function ModuleCard({
