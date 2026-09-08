@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import {
   AlertTriangle,
+  Award,
   Bus,
   CheckCircle2,
   ClipboardCheck,
