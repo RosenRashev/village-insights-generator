@@ -86,7 +86,7 @@ export function LocationMap({ place, current = null }: Props) {
     <div>
       <div
         ref={ref}
-        className="h-64 w-full overflow-hidden rounded-2xl ring-1 ring-black/10"
+        className="h-64 w-full overflow-hidden rounded-[1.25rem] shadow-sm ring-1 ring-black/5"
         role="img"
         aria-label={`Карта с местоположението на ${place.label}`}
       />
