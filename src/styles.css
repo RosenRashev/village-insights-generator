@@ -298,6 +298,8 @@
   --color-village-linen: #fcfaf7;
   --color-flag-green: #00966e;
   --color-flag-red: #d62612;
+  --color-report-canvas: oklch(0.972802 0.005404 95.099);
+  --color-report-dot: oklch(0.889746 0.028637 95.923);
 }
 
 /* Печат: бял фон, без интерактивни елементи, секциите не се режат. */
@@ -333,8 +335,23 @@
 @utility animated-icon-box {
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 
+  & svg {
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
   &:hover {
     transform: translateY(-3px) scale(1.08);
     box-shadow: 0 10px 20px -5px rgb(0 0 0 / 0.1);
   }
+
+  &:hover svg {
+    transform: scale(1.15) rotate(5deg);
+  }
+}
+
+/* Самостоятелен фон само за изгледа на генерирания доклад. */
+@utility report-canvas {
+  background-color: var(--color-report-canvas);
+  background-image: radial-gradient(var(--color-report-dot) 0.8px, transparent 0.8px);
+  background-size: 18px 18px;
 }
