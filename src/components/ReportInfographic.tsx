@@ -5,12 +5,20 @@ import {
   ClipboardCheck,
   Droplet,
   Factory,
+  Globe,
   Landmark,
   MapPin,
+  Minus,
   Newspaper,
   PartyPopper,
+  Printer,
+  RefreshCw,
   Shield,
+  ThumbsDown,
+  ThumbsUp,
   TreePine,
+  TrendingDown,
+  TrendingUp,
   Volume2,
   Users,
   Wifi,
@@ -23,6 +31,7 @@ import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import {
   MOCK_REPORT,
   MOCK_REPORT_PLACE,
+  type CardTone,
   type ReportBlock,
   type ReportSection,
   type RiskLevel,
@@ -31,8 +40,18 @@ import {
 import "leaflet/dist/leaflet.css";
 
 import { LocationMap } from "@/components/LocationMap";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { REPORT_DATA_SOURCE } from "@/lib/report-mode";
 import type { Settlement } from "@/lib/settlements";
 import { displaySettlement } from "@/lib/settlements";
+
 
 const ICONS: Record<string, LucideIcon> = {
   basic: MapPin,
@@ -75,6 +94,33 @@ const RISK: Record<RiskLevel, { label: string; color: string; width: string }> =
   high: { label: "ВИСОК", color: "#dc2626", width: "100%" },
 };
 
+const CARD_TONES: Record<CardTone, { bg: string; border: string; ink: string; icon: string }> = {
+  emerald: { bg: "#ecfdf5", border: "#a7f3d0", ink: "#064e3b", icon: "#059669" },
+  sky: { bg: "#f0f9ff", border: "#bae6fd", ink: "#0c4a6e", icon: "#0284c7" },
+  blue: { bg: "#eff6ff", border: "#bfdbfe", ink: "#1e3a8a", icon: "#2563eb" },
+  amber: { bg: "#fffbeb", border: "#fde68a", ink: "#78350f", icon: "#d97706" },
+  violet: { bg: "#f5f3ff", border: "#ddd6fe", ink: "#3b0764", icon: "#7c3aed" },
+  purple: { bg: "#faf5ff", border: "#e9d5ff", ink: "#581c87", icon: "#9333ea" },
+  rose: { bg: "#fff1f2", border: "#fecdd3", ink: "#881337", icon: "#e11d48" },
+  teal: { bg: "#f0fdfa", border: "#99f6e4", ink: "#134e4a", icon: "#0d9488" },
+};
+
+const CARD_ICONS: Record<string, LucideIcon> = {
+  "thumbs-up": ThumbsUp,
+  "thumbs-down": ThumbsDown,
+  people: Users,
+  globe: Globe,
+  nature: TreePine,
+  alert: AlertTriangle,
+  news: Newspaper,
+};
+
+const GAUGE_DIRECTION = {
+  up: { color: "#059669", Icon: TrendingUp },
+  down: { color: "#e11d48", Icon: TrendingDown },
+  neutral: { color: "#64748b", Icon: Minus },
+} as const;
+
 function SourceArrow({ sources }: { sources?: SourceLink[] | undefined }) {
   if (!sources || sources.length === 0) return null;
   const first = sources[0]!;
@@ -100,17 +146,118 @@ function Block({ block, accent, ink }: { block: ReportBlock; accent: string; ink
           {block.items.map((f) => (
             <div
               key={f.label}
-              className="rounded-2xl bg-white/70 p-3 text-center shadow-sm ring-1 ring-black/5"
+              className="print-card flex flex-col rounded-2xl bg-white/80 p-3 text-center shadow-sm ring-1 ring-black/5"
             >
-              <div className="text-xs uppercase tracking-wide text-black/50">{f.label}</div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-black/40">
+                {f.label}
+              </div>
               <div className="mt-1 text-sm font-bold" style={{ color: ink }}>
                 {f.value}
                 <SourceArrow sources={f.sources} />
               </div>
+              {f.description && (
+                <p className="mt-1.5 text-[11px] leading-relaxed text-black/50">{f.description}</p>
+              )}
+              {f.pillValue && (
+                <div className="mt-auto flex items-center justify-between gap-2 border-t border-black/10 pt-2.5 text-[11px]">
+                  <span className="font-medium text-black/40">{f.pillLabel ?? "Стойност:"}</span>
+                  <span
+                    className="rounded-md px-2 py-0.5 text-xs font-bold"
+                    style={{ backgroundColor: `${accent}1a`, color: ink }}
+                  >
+                    {f.pillValue}
+                  </span>
+                </div>
+              )}
             </div>
           ))}
         </div>
       );
+
+    case "gauge": {
+      const dir = GAUGE_DIRECTION[block.direction];
+      const value = Math.max(0, Math.min(100, block.value));
+      return (
+        <div>
+          <h4 className="mb-2 text-sm font-bold uppercase tracking-wide" style={{ color: accent }}>
+            {block.title}
+          </h4>
+          <div className="print-card rounded-2xl bg-white/80 p-4 shadow-sm ring-1 ring-black/5">
+            <div className="relative mx-auto h-44 w-full max-w-xs">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={[
+                      { name: block.title, value },
+                      { name: "остатък", value: 100 - value },
+                    ]}
+                    dataKey="value"
+                    innerRadius="80%"
+                    outerRadius="100%"
+                    startAngle={90}
+                    endAngle={-270}
+                    stroke="none"
+                    isAnimationActive={false}
+                  >
+                    <Cell fill={dir.color} />
+                    <Cell fill="#e2e8f0" />
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                <dir.Icon className="mb-1 h-8 w-8" style={{ color: dir.color }} />
+                <span className="text-2xl font-black text-black/80">
+                  {block.direction === "down" ? "-" : block.direction === "up" ? "+" : ""}
+                  {value}%
+                </span>
+                {block.periodLabel && (
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-black/40">
+                    {block.periodLabel}
+                  </span>
+                )}
+              </div>
+            </div>
+            {block.note && (
+              <p className="mt-2 text-center text-[12px] text-black/55">{block.note}</p>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    case "cards":
+      return (
+        <div>
+          {block.title && (
+            <h4 className="mb-2 text-sm font-bold uppercase tracking-wide" style={{ color: accent }}>
+              {block.title}
+            </h4>
+          )}
+          <div className="grid gap-3 sm:grid-cols-2">
+            {block.items.map((c) => {
+              const tone = CARD_TONES[c.tone];
+              const CIcon = (c.icon && CARD_ICONS[c.icon]) || Info;
+              return (
+                <div
+                  key={c.label}
+                  className="print-card rounded-xl border p-3.5"
+                  style={{ backgroundColor: tone.bg, borderColor: tone.border }}
+                >
+                  <span
+                    className="mb-1 flex items-center gap-1.5 text-sm font-bold"
+                    style={{ color: tone.ink }}
+                  >
+                    <CIcon className="h-4 w-4 shrink-0" style={{ color: tone.icon }} />
+                    {c.label}
+                  </span>
+                  <p className="text-[13px] leading-relaxed text-black/65">{c.body}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
+
 
     case "text":
       return (
@@ -215,10 +362,50 @@ function Block({ block, accent, ink }: { block: ReportBlock; accent: string; ink
     case "schedule":
       return (
         <div>
-          <h4 className="mb-2 text-sm font-bold uppercase tracking-wide" style={{ color: accent }}>
-            {block.title}
-          </h4>
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <h4 className="text-sm font-bold uppercase tracking-wide" style={{ color: accent }}>
+              {block.title}
+            </h4>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button size="sm" variant="outline" className="print:hidden">
+                  Пълно разписание
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>{block.title}</DialogTitle>
+                </DialogHeader>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm">
+                    <thead>
+                      <tr className="border-b text-xs uppercase tracking-wide text-muted-foreground">
+                        <th className="py-2 pr-3 font-semibold">Линия</th>
+                        <th className="py-2 pr-3 font-semibold">Дни</th>
+                        <th className="py-2 pr-3 font-semibold">Курсове</th>
+                        <th className="py-2 font-semibold">Часови обхват</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {block.rows.map((r, i) => (
+                        <tr key={`${r.route}-modal-${i}`} className="border-b last:border-0">
+                          <td className="py-2 pr-3 font-medium">{r.route}</td>
+                          <td className="py-2 pr-3">{r.days}</td>
+                          <td className="py-2 pr-3">{r.runs}</td>
+                          <td className="py-2">{r.last}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {block.note && (
+                  <p className="text-sm italic text-muted-foreground">{block.note}</p>
+                )}
+              </DialogContent>
+            </Dialog>
+          </div>
           <div className="space-y-3">
+
             {block.rows.map((r, i) => (
               <div
                 key={`${r.route}-${i}`}
@@ -331,9 +518,35 @@ function Section({
   const theme = THEMES[section.theme];
   const Icon = ICONS[section.id] ?? MapPin;
 
+  // Финалната обобщена оценка получава тъмния „village“ стил от еталона.
+  if (section.id === "perspective-summary") {
+    return (
+      <section className="wrap-anywhere print-card scroll-mt-6 space-y-4 rounded-3xl bg-village-700 p-6 text-white shadow-2xl sm:p-8">
+        <h3 className="font-accent text-2xl font-bold">{section.title}</h3>
+        {section.subtitle && <p className="text-sm text-white/60">{section.subtitle}</p>}
+        <div className="space-y-4 rounded-2xl border border-white/10 bg-white/10 p-6 text-sm leading-relaxed backdrop-blur-md">
+          {section.blocks.map((b, i) =>
+            b.kind === "text" ? (
+              <p key={i}>{b.body}</p>
+            ) : b.kind === "list" ? (
+              <ul key={i} className="space-y-1.5">
+                {b.items.map((it) => (
+                  <li key={it} className="flex gap-2">
+                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-village-wheat" />
+                    <span>{it}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : null,
+          )}
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section
-      className="wrap-anywhere scroll-mt-6 rounded-[2rem] p-6 shadow-sm ring-1 ring-black/5 sm:p-8"
+      className="wrap-anywhere print-card scroll-mt-6 rounded-[2rem] p-6 shadow-sm ring-1 ring-black/5 sm:p-8"
       style={{ backgroundColor: theme.soft }}
     >
       <header className="flex items-start gap-4">
@@ -344,7 +557,10 @@ function Section({
           <Icon className="h-7 w-7" />
         </span>
         <div>
-          <h3 className="text-2xl font-bold leading-tight" style={{ color: theme.ink }}>
+          <h3
+            className="font-accent text-2xl font-bold leading-tight tracking-wide"
+            style={{ color: theme.ink }}
+          >
             {section.title}
           </h3>
           {section.subtitle && (
@@ -363,21 +579,26 @@ function Section({
   );
 }
 
+
 type InfographicProps = {
   place?: Settlement | null;
   current?: Settlement | null;
   sections?: ReportSection[];
   demo?: boolean;
+  /** Показва бутон „Регенерирай примерни данни“ (само в mock режим). */
+  onRegenerate?: (() => void) | undefined;
 };
 
 /** Координати на с. Медово (ekatte 47665) — fallback за демо режима. */
 const DEMO_MAP_POINT = { lat: 42.371968, lng: 25.201267, label: MOCK_REPORT_PLACE };
+const DEMO_POSTAL_CODE = "6235";
 
 export function ReportInfographic({
   place = null,
   current = null,
   sections = MOCK_REPORT,
   demo = true,
+  onRegenerate,
 }: InfographicProps) {
   const mapPoint =
     place && place.lat != null && place.lng != null
@@ -388,21 +609,58 @@ export function ReportInfographic({
       ? { lat: current.lat, lng: current.lng, label: displaySettlement(current) }
       : null;
 
+  const placeLabel = place ? displaySettlement(place) : MOCK_REPORT_PLACE;
+  const postalCode = place?.postalCode || DEMO_POSTAL_CODE;
+
   return (
-    <div className="space-y-6">
-      <div className="rounded-[2rem] border border-dashed border-border bg-background/80 p-5 text-center">
+    <div className="space-y-6 font-sans">
+      {/* Флаг-банер със заглавие на населеното място */}
+      <div className="print-card overflow-hidden rounded-2xl border border-border bg-white shadow-md">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-flag-green text-white">
+              <MapPin className="h-5 w-5" />
+            </span>
+            <h2 className="wrap-anywhere font-accent text-2xl font-black tracking-wide text-slate-900 md:text-3xl">
+              {placeLabel}
+            </h2>
+          </div>
+          <div className="flex items-center gap-2 rounded-xl border border-border bg-slate-50 px-4 py-1.5">
+            <span className="text-xs font-bold uppercase text-slate-600">Пощенски код:</span>
+            <span className="text-lg font-black text-slate-900">{postalCode}</span>
+          </div>
+        </div>
+        <div className="h-3 w-full bg-flag-green" />
+        <div className="h-3 w-full bg-flag-red" />
+      </div>
+
+      <div className="flex flex-wrap items-center justify-end gap-2 print:hidden">
+        {REPORT_DATA_SOURCE === "mock" && onRegenerate && (
+          <Button variant="outline" size="sm" onClick={onRegenerate}>
+            <RefreshCw className="h-4 w-4" />
+            Регенерирай примерни данни
+          </Button>
+        )}
+        <Button
+          size="sm"
+          className="bg-village-clay text-white hover:bg-village-clay/90"
+          onClick={() => window.print()}
+        >
+          <Printer className="h-4 w-4" />
+          Печат / PDF
+        </Button>
+      </div>
+
+      <div className="rounded-[2rem] border border-dashed border-border bg-background/80 p-5 text-center print:hidden">
         {demo && (
           <p className="text-xs font-bold uppercase tracking-widest text-destructive">
             Демонстрационни данни
           </p>
         )}
-        <h2 className="mt-1 text-2xl font-bold text-primary">
-          {place ? displaySettlement(place) : MOCK_REPORT_PLACE}
-        </h2>
         <p className="mt-1 text-sm text-muted-foreground">
           {demo
             ? "Примерен доклад за визуализация на резултата. Данните са мостра — все още не се генерират автоматично."
-            : "Докладът е генериран автоматично от Gemini с търсене в Google в реално време. Проверявайте важните факти по посочените източници."}
+            : "Докладът е генериран автоматично с търсене в реално време. Проверявайте важните факти по посочените източници."}
         </p>
       </div>
 
@@ -420,4 +678,5 @@ export function ReportInfographic({
     </div>
   );
 }
+
 

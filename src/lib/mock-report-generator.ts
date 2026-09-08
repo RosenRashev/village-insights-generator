@@ -41,6 +41,14 @@ export function generateMockCategory(categoryId: string): ReportSection {
           value: `Lorem ipsum ${i + 1}`,
         })),
       },
+      {
+        kind: "gauge",
+        title: "Примерен тренд",
+        value: 42,
+        direction: "neutral",
+        periodLabel: "примерен период",
+        note: "Демонстрационен индикатор за визуална проверка на блока.",
+      },
       { kind: "text", body: LOREM_PARAGRAPH },
     ],
   };
