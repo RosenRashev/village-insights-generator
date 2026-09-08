@@ -218,12 +218,17 @@ const SCHEMA_DOC = `Върни САМО JSON обект със следната 
   "incidentCount": number | null         // само за категория "risks": брой регистрирани рискови събития, иначе null
 }
 Block е един от:
-{"kind":"facts","items":[{"label":string,"value":string}]}                    // 2-6 кратки факта
-{"kind":"text","title":string,"body":string}
+{"kind":"facts","items":[{"label":string,"value":string,"description":string}]}  // 2-6 кратки факта; "description" е по избор — едно кратко пояснително изречение под стойността
+{"kind":"text","title":string,"body":string,"variant":"default"|"dark"|"highlight"}
+// "variant" е по избор и по подразбиране е "default".
+// "dark" ползвай САМО за обобщаващия медиен преглед в категория "security".
+// "highlight" ползвай САМО за един интересен исторически/фолклорен факт в категория "history"
+// (в този случай "title" е заглавието на факта).
 {"kind":"list","title":string,"items":string[]}
 {"kind":"pie","title":string,"note":string,"data":[{"name":string,"value":number}]}   // value = процент, сборът ~100
 {"kind":"schedule","title":string,"note":string,"rows":[{"route":string,"days":string,"runs":string,"last":string}]}
-{"kind":"risks","title":string,"items":[{"label":string,"level":"low"|"medium"|"high","note":string,"incidentCount":number}]}
+{"kind":"risks","title":string,"items":[{"label":string,"level":"low"|"medium"|"high","percent":number,"note":string,"incidentCount":number}]}
+// "percent" е по избор, 0-100 — относителната тежест на риска за визуалната лента (низък ~10-25, среден ~40-60, висок ~70-90).
 {"kind":"checklist","title":string,"items":[{"title":string,"points":string[]}]}
 {"kind":"gauge","title":string,"value":number,"direction":"up"|"down"|"neutral","periodLabel":string,"note":string}   // value = процент 0-100 (абсолютна стойност на промяната)
 {"kind":"cards","title":string,"items":[{"icon":string,"label":string,"body":string,"tone":"emerald"|"sky"|"blue"|"amber"|"violet"|"purple"|"rose"|"teal"}]}

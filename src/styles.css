@@ -316,3 +316,25 @@
     box-shadow: none !important;
   }
 }
+
+/* Диагонален „фолклорен“ фон за акцентни карти (Canva еталон). */
+@utility folklore-pattern {
+  background-color: #2d5a37;
+  background-image: repeating-linear-gradient(
+    45deg,
+    #254b2d 0,
+    #254b2d 12px,
+    #2d5a37 0,
+    #2d5a37 24px
+  );
+}
+
+/* Икона-кутийка с лек hover ефект. */
+@utility animated-icon-box {
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  &:hover {
+    transform: translateY(-3px) scale(1.08);
+    box-shadow: 0 10px 20px -5px rgb(0 0 0 / 0.1);
+  }
+}
