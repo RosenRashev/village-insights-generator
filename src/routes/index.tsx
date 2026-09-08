@@ -362,7 +362,7 @@ function Index() {
                 )}
                 {generating
                   ? `Генериране… ${progress.done}/${progress.total}`
-                  : "Генерирай истински доклад"}
+                  : "Генерирай доклад"}
               </Button>
             </div>
 
