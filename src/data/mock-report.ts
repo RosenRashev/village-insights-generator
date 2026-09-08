@@ -196,9 +196,17 @@ export const MOCK_REPORT: ReportSection[] = [
         items: [
           { label: "Население (2021)", value: "138 души" },
           { label: "Възрастов профил", value: "предимно над 60 г." },
-          { label: "Демографски тренд", value: "траен спад" },
         ],
       },
+      {
+        kind: "gauge",
+        title: "Демографски тренд",
+        value: 23,
+        direction: "down",
+        periodLabel: "2011→2021",
+        note: "Спад от 180 на 138 души между двете преброявания (НСИ).",
+      },
+
       {
         kind: "pie",
         title: "Етнически състав",
