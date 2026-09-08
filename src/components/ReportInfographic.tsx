@@ -518,9 +518,35 @@ function Section({
   const theme = THEMES[section.theme];
   const Icon = ICONS[section.id] ?? MapPin;
 
+  // Финалната обобщена оценка получава тъмния „village“ стил от еталона.
+  if (section.id === "perspective-summary") {
+    return (
+      <section className="wrap-anywhere print-card scroll-mt-6 space-y-4 rounded-3xl bg-village-700 p-6 text-white shadow-2xl sm:p-8">
+        <h3 className="font-accent text-2xl font-bold">{section.title}</h3>
+        {section.subtitle && <p className="text-sm text-white/60">{section.subtitle}</p>}
+        <div className="space-y-4 rounded-2xl border border-white/10 bg-white/10 p-6 text-sm leading-relaxed backdrop-blur-md">
+          {section.blocks.map((b, i) =>
+            b.kind === "text" ? (
+              <p key={i}>{b.body}</p>
+            ) : b.kind === "list" ? (
+              <ul key={i} className="space-y-1.5">
+                {b.items.map((it) => (
+                  <li key={it} className="flex gap-2">
+                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-village-wheat" />
+                    <span>{it}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : null,
+          )}
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section
-      className="wrap-anywhere scroll-mt-6 rounded-[2rem] p-6 shadow-sm ring-1 ring-black/5 sm:p-8"
+      className="wrap-anywhere print-card scroll-mt-6 rounded-[2rem] p-6 shadow-sm ring-1 ring-black/5 sm:p-8"
       style={{ backgroundColor: theme.soft }}
     >
       <header className="flex items-start gap-4">
@@ -531,7 +557,10 @@ function Section({
           <Icon className="h-7 w-7" />
         </span>
         <div>
-          <h3 className="text-2xl font-bold leading-tight" style={{ color: theme.ink }}>
+          <h3
+            className="font-accent text-2xl font-bold leading-tight tracking-wide"
+            style={{ color: theme.ink }}
+          >
             {section.title}
           </h3>
           {section.subtitle && (
@@ -549,6 +578,7 @@ function Section({
     </section>
   );
 }
+
 
 type InfographicProps = {
   place?: Settlement | null;
