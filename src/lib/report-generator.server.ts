@@ -225,8 +225,15 @@ Block е един от:
 {"kind":"schedule","title":string,"note":string,"rows":[{"route":string,"days":string,"runs":string,"last":string}]}
 {"kind":"risks","title":string,"items":[{"label":string,"level":"low"|"medium"|"high","note":string,"incidentCount":number}]}
 {"kind":"checklist","title":string,"items":[{"title":string,"points":string[]}]}
+{"kind":"gauge","title":string,"value":number,"direction":"up"|"down"|"neutral","periodLabel":string,"note":string}   // value = процент 0-100 (абсолютна стойност на промяната)
+{"kind":"cards","title":string,"items":[{"icon":string,"label":string,"body":string,"tone":"emerald"|"sky"|"blue"|"amber"|"violet"|"purple"|"rose"|"teal"}]}
 Използвай "pie" само при реални процентни разпределения, "schedule" само за транспортни разписания,
-"risks" само за рискови оценки, "checklist" само за списъци със стъпки за оглед.`;
+"risks" само за рискови оценки, "checklist" само за списъци със стъпки за оглед.
+Използвай "gauge" САМО за демографски тренд (категория "ethnos") и за ценови тренд на имотите
+(категория "industry"). Никъде другаде. "direction" е посоката на промяната, "value" е величината ѝ в проценти.
+Използвай "cards" САМО за категоризирана обратна връзка с ясно разграничени тонове
+(напр. категория "social": положителни сигнали → emerald, клубове → blue, онлайн общности → purple,
+отрицателни сигнали → rose). Не превръщай обикновени списъци в "cards" без ясно тонално разделение.
 
 /** Стъпка 2: структуриране на грундирания текст в нашия JSON формат (без tools). */
 async function structureCategory(
