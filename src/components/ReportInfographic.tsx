@@ -239,37 +239,51 @@ function SourceArrow({ sources }: { sources?: SourceLink[] | undefined }) {
   );
 }
 
-function Block({ block, accent, ink }: { block: ReportBlock; accent: string; ink: string }) {
+function Block({
+  block,
+  accent,
+  ink,
+  hover = "",
+}: {
+  block: ReportBlock;
+  accent: string;
+  ink: string;
+  hover?: string;
+}) {
   switch (block.kind) {
     case "facts":
       return (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 text-xs sm:grid-cols-2 lg:grid-cols-4">
           {block.items.map((f) => (
             <div
               key={f.label}
-              className="print-card flex flex-col rounded-2xl bg-white/80 p-3 text-center shadow-sm ring-1 ring-black/5"
+              className={`print-card flex flex-col justify-between rounded-2xl border border-slate-200 bg-slate-50 p-4 transition md:p-5 ${hover}`}
             >
-              <div className="text-[10px] font-bold uppercase tracking-wider text-black/40">
-                {f.label}
+              <div>
+                <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  {f.label}
+                </span>
+                <span className="block text-base font-bold text-slate-800">
+                  {f.value}
+                  <SourceArrow sources={f.sources} />
+                </span>
+                {f.description && (
+                  <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">
+                    {f.description}
+                  </p>
+                )}
               </div>
-              <div className="mt-1 text-sm font-bold" style={{ color: ink }}>
-                {f.value}
-                <SourceArrow sources={f.sources} />
+              <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-200/80 pt-2.5">
+                <span className="text-[11px] font-medium text-slate-400">
+                  {f.pillLabel ?? f.label}
+                </span>
+                <span
+                  className="rounded-md px-2.5 py-0.5 text-xs font-bold"
+                  style={{ backgroundColor: `${accent}1a`, color: ink }}
+                >
+                  {f.pillValue ?? f.value}
+                </span>
               </div>
-              {f.description && (
-                <p className="mt-1.5 text-[11px] leading-relaxed text-black/50">{f.description}</p>
-              )}
-              {f.pillValue && (
-                <div className="mt-auto flex items-center justify-between gap-2 border-t border-black/10 pt-2.5 text-[11px]">
-                  <span className="font-medium text-black/40">{f.pillLabel ?? "Стойност:"}</span>
-                  <span
-                    className="rounded-md px-2 py-0.5 text-xs font-bold"
-                    style={{ backgroundColor: `${accent}1a`, color: ink }}
-                  >
-                    {f.pillValue}
-                  </span>
-                </div>
-              )}
             </div>
           ))}
         </div>
@@ -360,21 +374,53 @@ function Block({ block, accent, ink }: { block: ReportBlock; accent: string; ink
       );
 
 
-    case "text":
+    case "text": {
+      if (block.variant === "dark") {
+        return (
+          <div className="print-card space-y-2 rounded-2xl bg-slate-900 p-5 text-xs text-slate-200">
+            {block.title && (
+              <div className="flex items-center gap-2 text-sm font-bold text-amber-400">
+                <Newspaper className="h-4 w-4 shrink-0" />
+                {block.title}
+              </div>
+            )}
+            <p className="leading-relaxed text-slate-300">{block.body}</p>
+          </div>
+        );
+      }
+
+      if (block.variant === "highlight") {
+        return (
+          <div className="folklore-pattern print-card flex items-start gap-4 rounded-2xl p-5 text-white shadow-md">
+            <span className="animated-icon-box flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-400 text-amber-950">
+              <Lightbulb className="h-6 w-6" />
+            </span>
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-amber-300">
+                Интересен факт
+              </span>
+              {block.title && <h4 className="text-base font-bold text-white">{block.title}</h4>}
+              <p className="mt-1 text-xs leading-relaxed text-village-100">{block.body}</p>
+            </div>
+          </div>
+        );
+      }
+
       return (
-        <div>
+        <div className="print-card rounded-2xl border border-slate-200 bg-slate-50 p-4 md:p-5">
           {block.title && (
             <h4 className="mb-1 text-sm font-bold uppercase tracking-wide" style={{ color: accent }}>
               {block.title}
             </h4>
           )}
-          <p className="text-[15px] leading-relaxed text-black/75">{block.body}</p>
+          <p className="text-sm leading-relaxed text-slate-600">{block.body}</p>
         </div>
       );
+    }
 
     case "list":
       return (
-        <div>
+        <div className="print-card rounded-2xl border border-slate-200 bg-slate-50 p-4 md:p-5">
           {block.title && (
             <h4 className="mb-2 text-sm font-bold uppercase tracking-wide" style={{ color: accent }}>
               {block.title}
@@ -382,11 +428,8 @@ function Block({ block, accent, ink }: { block: ReportBlock; accent: string; ink
           )}
           <ul className="space-y-2">
             {block.items.map((item) => (
-              <li key={item} className="flex gap-2 text-[15px] leading-relaxed text-black/75">
-                <span
-                  className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full"
-                  style={{ backgroundColor: accent }}
-                />
+              <li key={item} className="flex gap-2 text-sm leading-relaxed text-slate-600">
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
                 <span>{item}</span>
               </li>
             ))}
