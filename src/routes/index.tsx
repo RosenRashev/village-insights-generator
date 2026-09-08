@@ -1,19 +1,23 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
-import { Check, House, Info, Loader2, RotateCcw, Sparkles } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Loader2, RotateCcw, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 
 import { Input } from "@/components/ui/input";
-import { buildPrompt } from "@/lib/build-prompt";
-import { PROMPT_MODULES, type PlaceType } from "@/lib/prompt-modules";
+import {
+  PROMPT_MODULES,
+  PURPOSE_OPTIONS,
+  type PlaceType,
+  type PurposeId,
+} from "@/lib/prompt-modules";
+import { ADDON_MODULES } from "@/lib/addon-modules";
+import { REPORT_DATA_SOURCE } from "@/lib/report-mode";
+import {
+  generateMockCategory,
+  generateMockPerspectiveSummary,
+} from "@/lib/mock-report-generator";
 import { SettlementCombobox } from "@/components/SettlementCombobox";
 import { ModuleCard } from "@/components/ModuleCard";
 import { TopoBackground } from "@/components/TopoBackground";
