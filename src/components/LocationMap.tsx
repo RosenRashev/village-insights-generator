@@ -45,6 +45,8 @@ export function LocationMap({ place, current = null }: Props) {
         attribution: "© OpenStreetMap",
       }).addTo(map);
 
+      const sizeFix = setTimeout(() => map.invalidateSize(), 100);
+
       const dot = (color: string) =>
         L.divIcon({
           className: "",
@@ -122,7 +124,10 @@ export function LocationMap({ place, current = null }: Props) {
         if (!cancelled) setLoading(false);
       }
 
-      cleanup = () => map.remove();
+      cleanup = () => {
+        clearTimeout(sizeFix);
+        map.remove();
+      };
     })();
 
     return () => {
@@ -130,7 +135,7 @@ export function LocationMap({ place, current = null }: Props) {
       controller.abort();
       cleanup?.();
     };
-  }, [place.lat, place.lng, place.label, current?.lat, current?.lng, current?.label, current]);
+  }, [place.lat, place.lng, place.label, current?.lat, current?.lng, current?.label]);
 
   return (
     <div>
