@@ -15,8 +15,6 @@ import {
   MessagesSquare,
   Minus,
   Newspaper,
-  Printer,
-  RefreshCw,
   Route,
   ShieldHalf,
   Stethoscope,
@@ -54,7 +52,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { REPORT_DATA_SOURCE } from "@/lib/report-mode";
 import type { Settlement } from "@/lib/settlements";
 import { displaySettlement } from "@/lib/settlements";
 
@@ -738,8 +735,6 @@ type InfographicProps = {
   current?: Settlement | null;
   sections?: ReportSection[];
   demo?: boolean;
-  /** Показва бутон „Регенерирай примерни данни“ (само в mock режим). */
-  onRegenerate?: (() => void) | undefined;
 };
 
 /** Координати на с. Медово (ekatte 47665) — fallback за демо режима. */
@@ -751,7 +746,6 @@ export function ReportInfographic({
   current = null,
   sections = MOCK_REPORT,
   demo = true,
-  onRegenerate,
 }: InfographicProps) {
   const mapPoint =
     place && place.lat != null && place.lng != null
@@ -767,44 +761,6 @@ export function ReportInfographic({
 
   return (
     <div className="report-canvas relative left-1/2 w-screen -translate-x-1/2 font-sans print:w-full print:translate-x-0">
-      <header className="sticky top-0 z-40 border-b border-village-600 bg-village-700 text-white shadow-lg print:hidden">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-village-clay text-xl font-bold text-white shadow-inner">
-              <TreePine className="h-5 w-5" />
-            </span>
-            <div className="min-w-0">
-              <h1 className="flex flex-wrap items-center gap-2 text-xl font-extrabold tracking-tight">
-                СЕЛОСКОП
-                <span className="rounded-md border border-amber-400/30 bg-amber-500/20 px-2 py-0.5 text-xs font-normal text-amber-300">
-                  Проучвателен Доклад
-                </span>
-              </h1>
-              <p className="text-xs text-village-200">Пълна характеристика на населеното място</p>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {REPORT_DATA_SOURCE === "mock" && onRegenerate && (
-              <Button
-                variant="ghost"
-                className="h-auto rounded-xl border border-white/10 bg-white/10 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-white/20 hover:text-white"
-                onClick={onRegenerate}
-              >
-                <RefreshCw className="h-4 w-4" />
-                Регенерирай примерни данни
-              </Button>
-            )}
-            <Button
-              className="h-auto rounded-xl bg-village-clay px-3.5 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-village-clay/90"
-              onClick={() => window.print()}
-            >
-              <Printer className="h-4 w-4" />
-              Печат / PDF
-            </Button>
-          </div>
-        </div>
-      </header>
-
       <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 md:py-8">
       <div className="print-card overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md">
         <div className="flex flex-wrap items-center justify-between gap-3 bg-white px-5 py-3.5 md:px-7 md:py-4">
