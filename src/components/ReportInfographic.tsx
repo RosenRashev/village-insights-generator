@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useMemo, type ReactNode } from "react";
 import {
   AlertTriangle,
   Award,
@@ -747,14 +747,21 @@ export function ReportInfographic({
   sections = MOCK_REPORT,
   demo = true,
 }: InfographicProps) {
-  const mapPoint =
-    place && place.lat != null && place.lng != null
-      ? { lat: place.lat, lng: place.lng, label: displaySettlement(place) }
-      : DEMO_MAP_POINT;
-  const currentPoint =
-    place && current && current.lat != null && current.lng != null
-      ? { lat: current.lat, lng: current.lng, label: displaySettlement(current) }
-      : null;
+  // Стабилни референции — иначе LocationMap ре-тригва ефекта си на всеки render.
+  const mapPoint = useMemo(
+    () =>
+      place && place.lat != null && place.lng != null
+        ? { lat: place.lat, lng: place.lng, label: displaySettlement(place) }
+        : DEMO_MAP_POINT,
+    [place],
+  );
+  const currentPoint = useMemo(
+    () =>
+      place && current && current.lat != null && current.lng != null
+        ? { lat: current.lat, lng: current.lng, label: displaySettlement(current) }
+        : null,
+    [place, current],
+  );
 
   const placeLabel = place ? displaySettlement(place) : MOCK_REPORT_PLACE;
   const postalCode = place?.postalCode || DEMO_POSTAL_CODE;
