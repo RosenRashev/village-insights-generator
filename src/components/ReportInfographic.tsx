@@ -428,7 +428,7 @@ function Block({
           )}
           <ul className="space-y-2">
             {block.items.map((item) => (
-              <li key={item} className="flex items-start gap-2 text-xs leading-relaxed text-slate-700">
+              <li key={item} className="flex items-start gap-2 text-sm leading-relaxed text-slate-700">
                 <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" style={{ color: accent }} />
                 <span>{item}</span>
               </li>
