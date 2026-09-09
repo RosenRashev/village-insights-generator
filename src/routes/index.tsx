@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Loader2, RotateCcw, Sparkles } from "lucide-react";
+import { Loader2, RefreshCw, RotateCcw, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,6 @@ import {
   type PlaceType,
   type PurposeId,
 } from "@/lib/prompt-modules";
-import { ADDON_MODULES } from "@/lib/addon-modules";
 import { REPORT_DATA_SOURCE } from "@/lib/report-mode";
 import {
   generateMockCategory,
@@ -58,8 +57,6 @@ function Index() {
   const [currentLocation, setCurrentLocation] = useState<Settlement | null>(null);
   const placeType: PlaceType = place?.isVillage ? "village" : "town";
   const [purpose, setPurpose] = useState<PurposeId | null>(null);
-  const [addons, setAddons] = useState<string[]>([]);
-  const [showReport, setShowReport] = useState(false);
   const [placeNotice, setPlaceNotice] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number }>({ done: 0, total: 0 });
@@ -99,20 +96,12 @@ function Index() {
 
   const hasPlace = place !== null;
 
-  const toggleAddon = (id: string) =>
-    setAddons((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
-
-  const categoryIds = [
-    ...PROMPT_MODULES.map((m) => m.id),
-    ...ADDON_MODULES.filter((a) => addons.includes(a.id)).map((a) => a.id),
-  ];
+  const categoryIds = PROMPT_MODULES.map((m) => m.id);
 
   const generateMock = async () => {
     setGenerating(true);
     setRealSections(null);
-    setProgress({ done: 0, total: categoryIds.length + (purpose ? 1 : 0) });
+    setProgress({ done: 0, total: categoryIds.length + (purpose ? 1 : 0) + 1 });
     const collected: ReportSection[] = [];
 
     for (const categoryId of categoryIds) {
@@ -129,6 +118,11 @@ function Index() {
       setProgress((p) => ({ ...p, done: p.done + 1 }));
     }
 
+    await sleep(150);
+    collected.push(ONSITE_CHECKLIST_SECTION);
+    setRealSections([...collected]);
+    setProgress((p) => ({ ...p, done: p.done + 1 }));
+
     setGenerating(false);
     toast.success("Докладът е готов (примерни данни).");
   };
@@ -143,18 +137,11 @@ function Index() {
     localStorage.setItem("seloskop-access-code", code);
     setGenerating(true);
     setRealSections(null);
-    setProgress({ done: 0, total: categoryIds.length });
+    setProgress({ done: 0, total: categoryIds.length + (purpose ? 1 : 0) + 1 });
     const collected: ReportSection[] = [];
     let failed = 0;
 
     for (const categoryId of categoryIds) {
-      // Чек-листът е статичен — не се генерира от AI и не се кешира.
-      if (categoryId === "onsite-checklist") {
-        collected.push(ONSITE_CHECKLIST_SECTION);
-        setRealSections([...collected]);
-        setProgress((p) => ({ ...p, done: p.done + 1 }));
-        continue;
-      }
       try {
         const res = await getCategory({
           data: {
@@ -187,6 +174,13 @@ function Index() {
 
     // TODO: свържи реалния perspective-summary генератор, когато REPORT_DATA_SOURCE = "live"
     // (все още няма имплементация — пропускаме тихо, ако purpose е избран).
+    if (purpose) {
+      setProgress((p) => ({ ...p, done: p.done + 1 }));
+    }
+
+    collected.push(ONSITE_CHECKLIST_SECTION);
+    setRealSections([...collected]);
+    setProgress((p) => ({ ...p, done: p.done + 1 }));
 
     setGenerating(false);
     if (collected.length === 0) {
@@ -204,7 +198,6 @@ function Index() {
     setPlace(null);
     setCurrentLocation(null);
     setPurpose(null);
-    setAddons([]);
     setRealSections(null);
     setProgress({ done: 0, total: 0 });
   };
@@ -278,18 +271,13 @@ function Index() {
 
         {hasPlace && (
           <section className="mt-12 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <p className="text-sm text-muted-foreground">
-              Проучването винаги включва пълния набор от категории:{" "}
-              {PROMPT_MODULES.map((m) => m.label).join(", ")}.
-            </p>
-
-            <h2 className="mt-8 text-lg font-bold text-destructive">
-              Цел на търсенето
+            <h2 className="text-lg font-bold text-destructive">
+              Кажете ни за какво търсите имота
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
               По желание — изберете една цел, за да добавим обобщена оценка накрая.
             </p>
-            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="mt-4 flex flex-col gap-3">
               {PURPOSE_OPTIONS.map((p) => (
                 <ModuleCard
                   key={p.id}
@@ -297,20 +285,6 @@ function Index() {
                   module={{ id: p.id, label: p.label, info: p.hint }}
                   selected={purpose === p.id}
                   onToggle={() => setPurpose((cur) => (cur === p.id ? null : p.id))}
-                />
-              ))}
-            </div>
-
-            <h2 className="mt-10 text-lg font-bold text-destructive">
-              Допълнителни опции
-            </h2>
-            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {ADDON_MODULES.map((a) => (
-                <ModuleCard
-                  key={a.id}
-                  module={a}
-                  selected={addons.includes(a.id)}
-                  onToggle={() => toggleAddon(a.id)}
                 />
               ))}
             </div>
@@ -364,6 +338,18 @@ function Index() {
                   ? `Генериране… ${progress.done}/${progress.total}`
                   : "Генерирай доклад"}
               </Button>
+              {IS_MOCK && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={generateMock}
+                  disabled={generating || !hasPlace}
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Регенерирай примерни данни
+                </Button>
+              )}
             </div>
 
             {(generating || realSections) && (
@@ -374,7 +360,6 @@ function Index() {
                     current={currentLocation}
                     sections={realSections}
                     demo={false}
-                    onRegenerate={IS_MOCK ? generateMock : undefined}
                   />
                 )}
                 {generating &&
@@ -398,33 +383,6 @@ function Index() {
             )}
           </section>
         )}
-
-        <section className="mt-16">
-          <div className="flex flex-col items-center gap-2 text-center">
-            <h2 className="text-lg font-bold text-destructive">
-              Резултатът като инфографика (демо)
-            </h2>
-            <p className="max-w-md text-sm text-muted-foreground">
-              Вижте как ще изглежда готовият доклад — цветни секции, диаграми и
-              индикатори за риск. Засега с примерни данни.
-            </p>
-            <Button
-              variant={showReport ? "outline" : "default"}
-              onClick={() => setShowReport((v) => !v)}
-            >
-              {showReport ? "Скрий примерния доклад" : "Виж примерния доклад"}
-            </Button>
-          </div>
-          {showReport && (
-            <div className="mt-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              <ReportInfographic
-                place={place}
-                current={currentLocation}
-                onRegenerate={IS_MOCK ? generateMock : undefined}
-              />
-            </div>
-          )}
-        </section>
 
         <footer className="mt-16 border-t border-border pt-6 text-xs text-muted-foreground">
           Проектът е с нестопанска цел, в подкрепа на купувачите на имоти, в процес на активна разработка.
