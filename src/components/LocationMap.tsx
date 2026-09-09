@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { distanceKm } from "@/lib/settlements";
 
@@ -13,13 +13,23 @@ type Props = {
   current?: MapPoint | null;
 };
 
+type RouteInfo =
+  | { kind: "road"; km: number; minutes: number }
+  | { kind: "straight"; km: number };
+
 /** Лека вградена карта (Leaflet + OSM плочки), зарежда се само в браузъра. */
 export function LocationMap({ place, current = null }: Props) {
   const ref = useRef<HTMLDivElement>(null);
+  const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     let cleanup: (() => void) | undefined;
     let cancelled = false;
+    const controller = new AbortController();
+
+    setRouteInfo(null);
+    setLoading(current !== null);
 
     (async () => {
       const L = await import("leaflet");
@@ -47,11 +57,17 @@ export function LocationMap({ place, current = null }: Props) {
         .addTo(map)
         .bindTooltip(place.label, { direction: "top", offset: [0, -8] });
 
-      if (current) {
-        L.marker([current.lat, current.lng], { icon: dot("#059669") })
-          .addTo(map)
-          .bindTooltip(current.label, { direction: "top", offset: [0, -8] });
+      if (!current) {
+        map.setView([place.lat, place.lng], 12);
+        cleanup = () => map.remove();
+        return;
+      }
 
+      L.marker([current.lat, current.lng], { icon: dot("#059669") })
+        .addTo(map)
+        .bindTooltip(current.label, { direction: "top", offset: [0, -8] });
+
+      const drawStraightFallback = () => {
         L.polyline(
           [
             [current.lat, current.lng],
@@ -67,8 +83,43 @@ export function LocationMap({ place, current = null }: Props) {
           ]),
           { padding: [36, 36] },
         );
-      } else {
-        map.setView([place.lat, place.lng], 12);
+
+        const km = distanceKm(place, current);
+        if (!cancelled && km !== null) setRouteInfo({ kind: "straight", km });
+      };
+
+      const timeout = setTimeout(() => controller.abort(), 6000);
+      try {
+        const res = await fetch(
+          `https://router.project-osrm.org/route/v1/driving/${current.lng},${current.lat};${place.lng},${place.lat}?overview=full&geometries=geojson`,
+          { signal: controller.signal },
+        );
+        if (!res.ok) throw new Error(`OSRM ${res.status}`);
+        const json = (await res.json()) as {
+          routes?: { geometry?: { coordinates?: [number, number][] }; distance?: number; duration?: number }[];
+        };
+        const route = json.routes?.[0];
+        const coords = route?.geometry?.coordinates;
+        if (!coords || coords.length < 2 || typeof route?.distance !== "number") {
+          throw new Error("OSRM: няма маршрут");
+        }
+
+        const latLngs = coords.map(([lng, lat]) => [lat, lng] as [number, number]);
+        L.polyline(latLngs, { color: "#059669", weight: 4, opacity: 0.85 }).addTo(map);
+        map.fitBounds(L.latLngBounds(latLngs), { padding: [36, 36] });
+
+        if (!cancelled) {
+          setRouteInfo({
+            kind: "road",
+            km: Math.round((route.distance / 1000) * 10) / 10,
+            minutes: Math.round((route.duration ?? 0) / 60),
+          });
+        }
+      } catch {
+        if (!cancelled) drawStraightFallback();
+      } finally {
+        clearTimeout(timeout);
+        if (!cancelled) setLoading(false);
       }
 
       cleanup = () => map.remove();
@@ -76,11 +127,10 @@ export function LocationMap({ place, current = null }: Props) {
 
     return () => {
       cancelled = true;
+      controller.abort();
       cleanup?.();
     };
   }, [place.lat, place.lng, place.label, current?.lat, current?.lng, current?.label, current]);
-
-  const km = current ? distanceKm(place, current) : null;
 
   return (
     <div>
@@ -90,9 +140,17 @@ export function LocationMap({ place, current = null }: Props) {
         role="img"
         aria-label={`Карта с местоположението на ${place.label}`}
       />
-      {km !== null && (
+      {loading && (
+        <p className="mt-2 text-sm text-black/60">Изчисляване на маршрут…</p>
+      )}
+      {!loading && routeInfo?.kind === "road" && (
         <p className="mt-2 text-sm text-black/60">
-          Права линия до настоящата локация: <b>{km} км</b>
+          Разстояние по път: <b>{routeInfo.km} км</b> (~{routeInfo.minutes} мин)
+        </p>
+      )}
+      {!loading && routeInfo?.kind === "straight" && (
+        <p className="mt-2 text-sm text-black/60">
+          Права линия до настоящата локация: <b>{routeInfo.km} км</b> (маршрутът по път не бе достъпен)
         </p>
       )}
     </div>
