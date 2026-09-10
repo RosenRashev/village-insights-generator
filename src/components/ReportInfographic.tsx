@@ -751,6 +751,7 @@ type InfographicProps = {
   current?: Settlement | null;
   sections?: ReportSection[];
   demo?: boolean;
+  purpose?: PurposeId | null;
 };
 
 /** Координати на с. Медово (ekatte 47665) — fallback за демо режима. */
@@ -762,6 +763,7 @@ export function ReportInfographic({
   current = null,
   sections = MOCK_REPORT,
   demo = true,
+  purpose = null,
 }: InfographicProps) {
   // Стабилни референции — иначе LocationMap ре-тригва ефекта си на всеки render.
   const mapPoint = useMemo(
