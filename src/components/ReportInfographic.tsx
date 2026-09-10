@@ -18,6 +18,7 @@ import {
   Route,
   ShieldHalf,
   Stethoscope,
+  Target,
   ThumbsDown,
   ThumbsUp,
   TreePine,
@@ -54,6 +55,8 @@ import {
 } from "@/components/ui/dialog";
 import type { Settlement } from "@/lib/settlements";
 import { displaySettlement } from "@/lib/settlements";
+import { PURPOSE_INSIGHTS } from "@/lib/purpose-insights";
+import type { PurposeId } from "@/lib/prompt-modules";
 
 
 const ICONS: Record<string, LucideIcon> = {
@@ -665,9 +668,11 @@ function Block({
 function Section({
   section,
   extra,
+  purposeNote,
 }: {
   section: ReportSection;
   extra?: ReactNode;
+  purposeNote?: string | undefined;
 }) {
   const theme = THEMES[section.theme];
   const Icon = ICONS[section.id] ?? MapPin;
@@ -707,16 +712,27 @@ function Section({
 
   return (
     <section className="wrap-anywhere print-card scroll-mt-6 space-y-6 rounded-3xl border border-slate-100 bg-white p-6 shadow-lg md:p-8">
-      <header className="flex items-center gap-3">
-        <span
-          className={`animated-icon-box flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white shadow-md ${theme.box}`}
-        >
-          <Icon className="h-5 w-5" />
-        </span>
-        <div className="min-w-0">
-          <h3 className="text-2xl font-bold leading-tight text-slate-900">{section.title}</h3>
-          {section.subtitle && <p className="text-xs text-slate-500">{section.subtitle}</p>}
+      <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="flex items-center gap-3">
+          <span
+            className={`animated-icon-box flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white shadow-md ${theme.box}`}
+          >
+            <Icon className="h-5 w-5" />
+          </span>
+          <div className="min-w-0">
+            <h3 className="text-2xl font-bold leading-tight text-slate-900">{section.title}</h3>
+            {section.subtitle && <p className="text-xs text-slate-500">{section.subtitle}</p>}
+          </div>
         </div>
+        {purposeNote && (
+          <div
+            className="flex items-start gap-2 rounded-xl border border-dashed bg-muted/50 p-3 text-xs leading-relaxed text-slate-600 md:max-w-xs md:shrink-0"
+            style={{ borderColor: theme.accent }}
+          >
+            <Target className="mt-0.5 h-3.5 w-3.5 shrink-0" style={{ color: theme.accent }} />
+            <span>{purposeNote}</span>
+          </div>
+        )}
       </header>
 
       <div className="space-y-6">
@@ -735,6 +751,7 @@ type InfographicProps = {
   current?: Settlement | null;
   sections?: ReportSection[];
   demo?: boolean;
+  purpose?: PurposeId | null;
 };
 
 /** Координати на с. Медово (ekatte 47665) — fallback за демо режима. */
@@ -746,6 +763,7 @@ export function ReportInfographic({
   current = null,
   sections = MOCK_REPORT,
   demo = true,
+  purpose = null,
 }: InfographicProps) {
   // Стабилни референции — иначе LocationMap ре-тригва ефекта си на всеки render.
   const mapPoint = useMemo(
@@ -798,6 +816,7 @@ export function ReportInfographic({
               <LocationMap place={mapPoint} current={currentPoint} />
             ) : undefined
           }
+          purposeNote={purpose ? PURPOSE_INSIGHTS[purpose]?.[s.id] : undefined}
         />
       ))}
       </div>

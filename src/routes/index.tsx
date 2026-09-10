@@ -365,6 +365,7 @@ function Index() {
                     current={currentLocation}
                     sections={realSections}
                     demo={false}
+                    purpose={purpose}
                   />
                 )}
                 {generating &&
