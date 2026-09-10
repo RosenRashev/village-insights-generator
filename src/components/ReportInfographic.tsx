@@ -816,6 +816,7 @@ export function ReportInfographic({
               <LocationMap place={mapPoint} current={currentPoint} />
             ) : undefined
           }
+          purposeNote={purpose ? PURPOSE_INSIGHTS[purpose]?.[s.id] : undefined}
         />
       ))}
       </div>
