@@ -672,7 +672,7 @@ function Section({
 }: {
   section: ReportSection;
   extra?: ReactNode;
-  purposeNote?: string;
+  purposeNote?: string | undefined;
 }) {
   const theme = THEMES[section.theme];
   const Icon = ICONS[section.id] ?? MapPin;
