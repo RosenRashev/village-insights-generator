@@ -668,9 +668,11 @@ function Block({
 function Section({
   section,
   extra,
+  purposeNote,
 }: {
   section: ReportSection;
   extra?: ReactNode;
+  purposeNote?: string;
 }) {
   const theme = THEMES[section.theme];
   const Icon = ICONS[section.id] ?? MapPin;
@@ -710,16 +712,27 @@ function Section({
 
   return (
     <section className="wrap-anywhere print-card scroll-mt-6 space-y-6 rounded-3xl border border-slate-100 bg-white p-6 shadow-lg md:p-8">
-      <header className="flex items-center gap-3">
-        <span
-          className={`animated-icon-box flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white shadow-md ${theme.box}`}
-        >
-          <Icon className="h-5 w-5" />
-        </span>
-        <div className="min-w-0">
-          <h3 className="text-2xl font-bold leading-tight text-slate-900">{section.title}</h3>
-          {section.subtitle && <p className="text-xs text-slate-500">{section.subtitle}</p>}
+      <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="flex items-center gap-3">
+          <span
+            className={`animated-icon-box flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white shadow-md ${theme.box}`}
+          >
+            <Icon className="h-5 w-5" />
+          </span>
+          <div className="min-w-0">
+            <h3 className="text-2xl font-bold leading-tight text-slate-900">{section.title}</h3>
+            {section.subtitle && <p className="text-xs text-slate-500">{section.subtitle}</p>}
+          </div>
         </div>
+        {purposeNote && (
+          <div
+            className="flex items-start gap-2 rounded-xl border border-dashed bg-muted/50 p-3 text-xs leading-relaxed text-slate-600 md:max-w-xs md:shrink-0"
+            style={{ borderColor: theme.accent }}
+          >
+            <Target className="mt-0.5 h-3.5 w-3.5 shrink-0" style={{ color: theme.accent }} />
+            <span>{purposeNote}</span>
+          </div>
+        )}
       </header>
 
       <div className="space-y-6">
