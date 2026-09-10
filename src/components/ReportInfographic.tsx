@@ -18,6 +18,7 @@ import {
   Route,
   ShieldHalf,
   Stethoscope,
+  Target,
   ThumbsDown,
   ThumbsUp,
   TreePine,
@@ -54,6 +55,8 @@ import {
 } from "@/components/ui/dialog";
 import type { Settlement } from "@/lib/settlements";
 import { displaySettlement } from "@/lib/settlements";
+import { PURPOSE_INSIGHTS } from "@/lib/purpose-insights";
+import type { PurposeId } from "@/lib/prompt-modules";
 
 
 const ICONS: Record<string, LucideIcon> = {
