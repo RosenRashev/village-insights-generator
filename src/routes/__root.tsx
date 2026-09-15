@@ -126,13 +126,48 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+const FOOTER_LINKS = [
+  { to: "/politika-za-poveritelnost", label: "Политика за поверителност" },
+  { to: "/obshti-usloviya", label: "Общи условия" },
+  { to: "/politika-za-biskvitki", label: "Политика за бисквитки" },
+  { to: "/kontakti", label: "Контакти" },
+] as const;
+
+function SiteFooter() {
+  return (
+    <footer className="print:hidden border-t border-border bg-background">
+      <div className="mx-auto flex max-w-5xl flex-col items-center gap-3 px-4 py-6 text-sm">
+        <nav className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+          {FOOTER_LINKS.map((link, i) => (
+            <span key={link.to} className="flex items-center gap-2">
+              {i > 0 && <span className="text-muted-foreground/50">|</span>}
+              <Link
+                to={link.to}
+                className="text-muted-foreground transition-colors hover:text-primary"
+              >
+                {link.label}
+              </Link>
+            </span>
+          ))}
+        </nav>
+        <p className="text-xs text-muted-foreground">© 2026 Къде Да</p>
+      </div>
+    </footer>
+  );
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <div className="flex min-h-screen flex-col">
+        <div className="flex-1">
+          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+          <Outlet />
+        </div>
+        <SiteFooter />
+      </div>
       <Toaster />
     </QueryClientProvider>
   );
