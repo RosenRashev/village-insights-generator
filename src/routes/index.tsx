@@ -87,25 +87,46 @@ const HERO_PHRASES = [
   "намеря спокойствие",
 ];
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
 function Index() {
+  const { user, profile, loading: authLoading } = useAuth();
+  const isSignedIn = user !== null;
+  const isApproved = profile?.is_approved === true;
+
   const [place, setPlace] = useState<Settlement | null>(null);
   const [currentLocation, setCurrentLocation] = useState<Settlement | null>(null);
-  const placeType: PlaceType = place?.isVillage ? "village" : "town";
   const [purpose, setPurpose] = useState<PurposeId | null>(null);
   const [placeNotice, setPlaceNotice] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number }>({ done: 0, total: 0 });
   const [realSections, setRealSections] = useState<ReportSection[] | null>(null);
-  const [accessCode, setAccessCode] = useState("");
+  const [isPrivate, setIsPrivate] = useState(false);
+  const [publicPlaces, setPublicPlaces] = useState<PublicPlace[] | null>(null);
+  const [guestLoading, setGuestLoading] = useState(false);
+  const [guestReport, setGuestReport] = useState<
+    { place: Settlement; current: Settlement | null; purpose: PurposeId | null; sections: ReportSection[] } | null
+  >(null);
   const [activePhrase, setActivePhrase] = useState(0);
   const [maxPhraseWidth, setMaxPhraseWidth] = useState<number | null>(null);
   const [isDesktop, setIsDesktop] = useState(false);
 
   useEffect(() => {
-    setAccessCode(localStorage.getItem("kade-da-access-code") ?? "");
-  }, []);
+    if (isSignedIn) {
+      setPublicPlaces(null);
+      return;
+    }
+    let active = true;
+    listPublicPlaces()
+      .then((rows) => {
+        if (active) setPublicPlaces(rows);
+      })
+      .catch(() => {
+        if (active) setPublicPlaces([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, [isSignedIn]);
+
 
   useEffect(() => {
     const id = setInterval(() => {
