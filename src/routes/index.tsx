@@ -228,17 +228,32 @@ function Index() {
       <div className="mx-auto max-w-3xl px-4 py-12 sm:py-16">
 
         <header className="mount-rise border-b border-border pb-8 text-center">
-          <div className="inline-flex flex-wrap items-baseline justify-center gap-x-2 rounded-xl border border-primary/40 bg-foreground px-5 py-2 text-6xl font-bold tracking-normal shadow-lg sm:flex-nowrap sm:px-7 sm:text-7xl">
-            <h1 className="inline-flex items-baseline gap-x-2">
-              <span className="title-part title-part-1 whitespace-nowrap text-background">Къде</span>
+          <div className="inline-flex flex-wrap items-baseline justify-center gap-x-2 rounded-xl border border-primary/40 bg-foreground px-5 py-2 text-6xl font-bold tracking-normal shadow-lg sm:px-7 sm:text-7xl">
+            <h1 className="inline-block shrink-0">
+              <span className="title-part title-part-1 whitespace-nowrap text-background">Къде</span>{" "}
               <span className="title-part title-part-2 whitespace-nowrap text-destructive">Да</span>
             </h1>
             <span
               aria-hidden="true"
-              className="title-part title-part-3 relative inline-block h-[1.1em] text-primary"
+              className="title-part title-part-3 relative inline-block h-[1.1em] shrink-0 text-primary"
             >
-              <span className="invisible block whitespace-nowrap select-none">Си купя имот</span>
-              {["Живея", "Се преместя", "Си купя имот", "Си купя вила"].map((word, i) => (
+              <span className="invisible block whitespace-nowrap select-none">Прекарам старините си</span>
+              {[
+                "Живея",
+                "Се установя",
+                "Се преместя",
+                "Отгледам дете",
+                "Се пенсионирам",
+                "Си купя имот",
+                "Си купя вила",
+                "Купя земя",
+                "Строя къща",
+                "Инвестирам",
+                "Наема жилище",
+                "Прекарам старините си",
+                "Заживея спокойно",
+                "Намеря спокойствие",
+              ].map((word, i) => (
                 <span
                   key={word}
                   className={`cycle-word cycle-word-${i + 1} absolute inset-0 flex items-center justify-center whitespace-nowrap`}
