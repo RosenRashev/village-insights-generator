@@ -69,6 +69,23 @@ export const Route = createFileRoute("/")({
 
 const IS_MOCK = REPORT_DATA_SOURCE === "mock";
 
+const HERO_PHRASES = [
+  "живея",
+  "се установя",
+  "се преместя",
+  "отгледам дете",
+  "се пенсионирам",
+  "си купя имот",
+  "си купя вила",
+  "купя земя",
+  "строя къща",
+  "инвестирам",
+  "наема жилище",
+  "прекарам старините си",
+  "заживея спокойно",
+  "намеря спокойствие",
+];
+
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 function Index() {
@@ -81,9 +98,17 @@ function Index() {
   const [progress, setProgress] = useState<{ done: number; total: number }>({ done: 0, total: 0 });
   const [realSections, setRealSections] = useState<ReportSection[] | null>(null);
   const [accessCode, setAccessCode] = useState("");
+  const [activePhrase, setActivePhrase] = useState(0);
 
   useEffect(() => {
     setAccessCode(localStorage.getItem("kade-da-access-code") ?? "");
+  }, []);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setActivePhrase((i) => (i + 1) % HERO_PHRASES.length);
+    }, 3000);
+    return () => clearInterval(id);
   }, []);
 
 
@@ -228,32 +253,19 @@ function Index() {
       <div className="mx-auto max-w-3xl px-4 py-12 sm:py-16">
 
         <header className="mount-rise border-b border-border pb-8 text-center">
-          <div className="inline-flex w-fit max-w-full flex-wrap items-baseline justify-center gap-x-1 rounded-xl border border-primary/40 bg-foreground px-4 py-2 text-5xl font-bold tracking-normal shadow-lg sm:flex-nowrap sm:gap-x-2 sm:px-5 sm:text-6xl">
+          <div className="inline-flex w-fit max-w-full flex-col items-center justify-center gap-1 rounded-xl border border-primary/40 bg-foreground px-4 py-2 text-5xl font-bold tracking-normal shadow-lg sm:px-5 sm:text-6xl">
             <h1 className="inline-block shrink-0 whitespace-nowrap">
               <span className="title-part title-part-1 whitespace-nowrap text-background">Къде</span>{" "}
               <span className="title-part title-part-2 whitespace-nowrap text-destructive">Да</span>
             </h1>
             <span
               aria-hidden="true"
-              className="title-part title-part-3 relative inline-block h-[1.1em] shrink-0 text-3xl text-primary"
+              className="title-part title-part-3 relative inline-block h-[1.1em] shrink-0 text-5xl text-primary transition-[width] duration-300 ease-in-out sm:text-6xl"
             >
-              <span className="invisible block whitespace-nowrap select-none">прекарам старините си</span>
-              {[
-                "живея",
-                "се установя",
-                "се преместя",
-                "отгледам дете",
-                "се пенсионирам",
-                "си купя имот",
-                "си купя вила",
-                "купя земя",
-                "строя къща",
-                "инвестирам",
-                "наема жилище",
-                "прекарам старините си",
-                "заживея спокойно",
-                "намеря спокойствие",
-              ].map((word, i) => (
+              <span className="invisible block select-none whitespace-nowrap">
+                {HERO_PHRASES[activePhrase]}
+              </span>
+              {HERO_PHRASES.map((word, i) => (
                 <span
                   key={word}
                   className={`cycle-word cycle-word-${i + 1} absolute inset-0 flex items-center justify-center whitespace-nowrap`}
