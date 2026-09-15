@@ -210,7 +210,7 @@ function Index() {
 
         <header className="mount-rise border-b border-border pb-8 text-center">
           <div className="inline-flex flex-wrap items-baseline justify-center gap-x-2 rounded-xl border border-primary/40 bg-foreground px-5 py-2 text-6xl font-bold tracking-normal shadow-lg sm:flex-nowrap sm:px-7 sm:text-7xl">
-            <h1 className="inline-flex items-baseline gap-x-2 text-inherit font-inherit">
+            <h1 className="inline-flex items-baseline gap-x-2">
               <span className="title-part title-part-1 whitespace-nowrap text-background">Къде</span>
               <span className="title-part title-part-2 whitespace-nowrap text-destructive">Да</span>
             </h1>
