@@ -8,7 +8,7 @@ export type SavedReport = {
   location_query: string;
   ekatte: number | null;
   place_name: string | null;
-  selected_topics: unknown;
+  selected_topics: string[];
   report_content: string;
   is_public: boolean;
   created_at: string;
