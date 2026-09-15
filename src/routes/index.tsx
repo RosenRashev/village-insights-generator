@@ -132,6 +132,13 @@ function Index() {
     setMaxPhraseWidth(max);
   }, []);
 
+  const h1Ref = useRef<HTMLHeadingElement | null>(null);
+  useEffect(() => {
+    if (!h1Ref.current || !maxPhraseWidth) return;
+    const h1Width = h1Ref.current.getBoundingClientRect().width;
+    if (h1Width > maxPhraseWidth) setMaxPhraseWidth(h1Width);
+  }, [maxPhraseWidth]);
+
 
   const [currentNotice, setCurrentNotice] = useState<string | null>(null);
 
