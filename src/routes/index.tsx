@@ -30,9 +30,9 @@ import { ONSITE_CHECKLIST_SECTION } from "@/data/onsite-checklist";
 import { formatSettlement, type Settlement } from "@/lib/settlements";
 
 
-const TITLE = "Да се върнем на село — генератор на промпти за проучване";
+const TITLE = "Къде Да — проучване на населени места";
 const DESCRIPTION =
-  "Съставете готов промпт за задълбочено проучване на село, малък град или квартал: инфраструктура, ВиК, транспорт, сигурност, новини. Копирайте и поставете в любимия си AI чат.";
+  "Къде Да събира подробна информация за села и малки градове: инфраструктура, ВиК, транспорт, сигурност, услуги и местни новини.";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -64,7 +64,7 @@ function Index() {
   const [accessCode, setAccessCode] = useState("");
 
   useEffect(() => {
-    setAccessCode(localStorage.getItem("seloskop-access-code") ?? "");
+    setAccessCode(localStorage.getItem("kade-da-access-code") ?? "");
   }, []);
 
 
@@ -134,7 +134,7 @@ function Index() {
       toast.error("Въведете код за достъп (затворен тест).");
       return;
     }
-    localStorage.setItem("seloskop-access-code", code);
+    localStorage.setItem("kade-da-access-code", code);
     setGenerating(true);
     setRealSections(null);
     setProgress({ done: 0, total: categoryIds.length + (purpose ? 1 : 0) + 1 });
@@ -209,17 +209,16 @@ function Index() {
       <div className="mx-auto max-w-3xl px-4 py-12 sm:py-16">
 
         <header className="mount-rise border-b border-border pb-8 text-center">
-          <h1 className="text-6xl font-bold tracking-tight text-center sm:text-7xl [text-shadow:0_2px_6px_hsl(0_0%_0%/0.35)]">
-            <span className="title-part title-part-1 text-background [-webkit-text-stroke:1px_hsl(0_0%_45%)]">
-              СЕЛО
-            </span>
-            <span className="title-part title-part-2 text-primary">СКО</span>
-            <span className="title-part title-part-3 text-destructive">П</span>
-          </h1>
+          <div className="inline-flex rounded-xl border border-primary/40 bg-foreground px-5 py-2 shadow-lg sm:px-7">
+            <h1 className="text-center text-6xl font-bold tracking-normal sm:text-7xl">
+              <span className="title-part title-part-1 text-background">Къде</span>{" "}
+              <span className="title-part title-part-2 text-destructive">Да</span>
+            </h1>
+          </div>
           <p className="mt-4 text-base text-muted-foreground">
             Приложението е създадено с една основна цел: да ви спести десетки часове в проучвания,
             събирайки на едно място детайлна и труднодостъпна информация за всяко село или град. Вместо
-            да ровите из десетки регистри, форуми и разпокъсани източници, Селоскоп синтезира всичко
+            да ровите из десетки регистри, форуми и разпокъсани източници, Къде Да синтезира всичко
             необходимо в кратък, структуриран и удобен за четене доклад.
           </p>
           <p className="mt-2 text-base text-muted-foreground">
