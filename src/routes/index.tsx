@@ -1,33 +1,34 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Loader2, RefreshCw, RotateCcw, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 
-import { Input } from "@/components/ui/input";
-import {
-  PROMPT_MODULES,
-  PURPOSE_OPTIONS,
-  type PlaceType,
-  type PurposeId,
-} from "@/lib/prompt-modules";
-import { REPORT_DATA_SOURCE } from "@/lib/report-mode";
-import {
-  generateMockCategory,
-  generateMockPerspectiveSummary,
-} from "@/lib/mock-report-generator";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { PURPOSE_OPTIONS, type PurposeId } from "@/lib/prompt-modules";
 import { SettlementCombobox } from "@/components/SettlementCombobox";
 import { ModuleCard } from "@/components/ModuleCard";
 import { TopoBackground } from "@/components/TopoBackground";
 import { FeedbackBox } from "@/components/FeedbackBox";
+import { PendingApproval } from "@/components/PendingApproval";
 import { ReportInfographic } from "@/components/ReportInfographic";
-import { getCategory } from "@/lib/report-cache.functions";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  generateReportSections,
+  serializeReport,
+  parseReport,
+  totalSteps,
+  IS_MOCK,
+} from "@/lib/generate-report";
+import { saveReport } from "@/lib/reports.functions";
+import { getPublicReport, listPublicPlaces, type PublicPlace } from "@/lib/public-reports.functions";
 import type { ReportSection } from "@/data/mock-report";
-import { ONSITE_CHECKLIST_SECTION } from "@/data/onsite-checklist";
 
 
 import { formatSettlement, type Settlement } from "@/lib/settlements";
+
 
 
 const TITLE = "Къде Да — проучване на населени места";
