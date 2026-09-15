@@ -228,14 +228,14 @@ function Index() {
       <div className="mx-auto max-w-3xl px-4 py-12 sm:py-16">
 
         <header className="mount-rise border-b border-border pb-8 text-center">
-          <div className="inline-flex flex-wrap sm:flex-nowrap items-baseline justify-center gap-x-2 rounded-xl border border-primary/40 bg-foreground px-5 py-2 text-6xl font-bold tracking-normal shadow-lg sm:px-7 sm:text-7xl">
+          <div className="inline-flex w-fit max-w-full flex-wrap items-baseline justify-center gap-x-1 rounded-xl border border-primary/40 bg-foreground px-4 py-2 text-5xl font-bold tracking-normal shadow-lg sm:flex-nowrap sm:gap-x-2 sm:px-5 sm:text-6xl lg:text-7xl">
             <h1 className="inline-block shrink-0 whitespace-nowrap">
               <span className="title-part title-part-1 whitespace-nowrap text-background">Къде</span>{" "}
               <span className="title-part title-part-2 whitespace-nowrap text-destructive">Да</span>
             </h1>
             <span
               aria-hidden="true"
-              className="title-part title-part-3 relative inline-block h-[1.1em] shrink-0 text-5xl text-primary sm:text-7xl"
+              className="title-part title-part-3 relative inline-block h-[1.1em] shrink-0 text-3xl text-primary sm:text-4xl lg:text-5xl"
             >
               <span className="invisible block whitespace-nowrap select-none">прекарам старините си</span>
               {[
