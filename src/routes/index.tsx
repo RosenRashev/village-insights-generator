@@ -209,25 +209,27 @@ function Index() {
       <div className="mx-auto max-w-3xl px-4 py-12 sm:py-16">
 
         <header className="mount-rise border-b border-border pb-8 text-center">
-          <div className="inline-flex rounded-xl border border-primary/40 bg-foreground px-5 py-2 shadow-lg sm:px-7">
-            <h1 className="inline-flex flex-wrap items-baseline justify-center gap-x-2 text-6xl font-bold tracking-normal sm:flex-nowrap sm:text-7xl">
+          <div className="inline-flex flex-wrap items-baseline justify-center gap-x-2 rounded-xl border border-primary/40 bg-foreground px-5 py-2 text-6xl font-bold tracking-normal shadow-lg sm:flex-nowrap sm:px-7 sm:text-7xl">
+            <h1 className="inline-flex items-baseline gap-x-2 text-inherit font-inherit">
               <span className="title-part title-part-1 whitespace-nowrap text-background">Къде</span>
               <span className="title-part title-part-2 whitespace-nowrap text-destructive">Да</span>
-              <span className="title-part title-part-3 relative inline-block h-[1.1em] text-primary">
-                <span className="invisible block whitespace-nowrap select-none" aria-hidden="true">
-                  Си купя имот
-                </span>
-                {["Живея", "Се преместя", "Си купя имот", "Си купя вила"].map((word, i) => (
-                  <span
-                    key={word}
-                    className={`cycle-word cycle-word-${i + 1} absolute inset-0 flex items-center justify-center whitespace-nowrap`}
-                  >
-                    {word}
-                  </span>
-                ))}
-              </span>
             </h1>
+            <span
+              aria-hidden="true"
+              className="title-part title-part-3 relative inline-block h-[1.1em] text-primary"
+            >
+              <span className="invisible block whitespace-nowrap select-none">Си купя имот</span>
+              {["Живея", "Се преместя", "Си купя имот", "Си купя вила"].map((word, i) => (
+                <span
+                  key={word}
+                  className={`cycle-word cycle-word-${i + 1} absolute inset-0 flex items-center justify-center whitespace-nowrap`}
+                >
+                  {word}
+                </span>
+              ))}
+            </span>
           </div>
+
           <p className="mt-4 text-base text-muted-foreground">
             Приложението е създадено с една основна цел: да ви спести десетки часове в проучвания,
             събирайки на едно място детайлна и труднодостъпна информация за всяко село или град. Вместо
