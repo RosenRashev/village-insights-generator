@@ -235,7 +235,7 @@ function Index() {
             </h1>
             <span
               aria-hidden="true"
-              className="title-part title-part-3 relative inline-block h-[1.1em] shrink-0 text-primary"
+              className="title-part title-part-3 relative inline-block h-[1.1em] shrink-0 text-5xl text-primary sm:text-7xl"
             >
               <span className="invisible block whitespace-nowrap select-none">прекарам старините си</span>
               {[
