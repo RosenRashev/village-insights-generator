@@ -344,8 +344,20 @@ function Index() {
               value={place}
               onChange={handlePlaceChange}
               excludeLargeCities
+              allowedEkatte={isSignedIn ? null : (publicPlaces?.map((p) => p.ekatte) ?? [])}
               notice={placeNotice}
             />
+
+            {!isSignedIn && !authLoading && (
+              <p className="rounded-lg border border-border bg-card/70 p-3 text-sm text-muted-foreground">
+                Без акаунт можете да разглеждате само вече генерирани публични доклади.{" "}
+                <Link to="/vhod" className="font-medium text-primary underline">
+                  Регистрирайте се
+                </Link>
+                , за да получите нов, персонализиран доклад за избрано от вас място.
+              </p>
+            )}
+
 
 
 
