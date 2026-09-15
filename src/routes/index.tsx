@@ -68,7 +68,7 @@ export const Route = createFileRoute("/")({
 });
 
 
-const IS_MOCK = REPORT_DATA_SOURCE === "mock";
+
 
 const HERO_PHRASES = [
   "живея",
