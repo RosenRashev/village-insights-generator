@@ -10,33 +10,89 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as KontaktiRouteImport } from './routes/kontakti'
+import { Route as ObshtiUsloviyaRouteImport } from './routes/obshti-usloviya'
+import { Route as PolitikaZaBiskvitkiRouteImport } from './routes/politika-za-biskvitki'
+import { Route as PolitikaZaPoveritelnostRouteImport } from './routes/politika-za-poveritelnost'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const KontaktiRoute = KontaktiRouteImport.update({
+  id: '/kontakti',
+  path: '/kontakti',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ObshtiUsloviyaRoute = ObshtiUsloviyaRouteImport.update({
+  id: '/obshti-usloviya',
+  path: '/obshti-usloviya',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PolitikaZaBiskvitkiRoute = PolitikaZaBiskvitkiRouteImport.update({
+  id: '/politika-za-biskvitki',
+  path: '/politika-za-biskvitki',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PolitikaZaPoveritelnostRoute = PolitikaZaPoveritelnostRouteImport.update({
+  id: '/politika-za-poveritelnost',
+  path: '/politika-za-poveritelnost',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/kontakti': typeof KontaktiRoute
+  '/obshti-usloviya': typeof ObshtiUsloviyaRoute
+  '/politika-za-biskvitki': typeof PolitikaZaBiskvitkiRoute
+  '/politika-za-poveritelnost': typeof PolitikaZaPoveritelnostRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/kontakti': typeof KontaktiRoute
+  '/obshti-usloviya': typeof ObshtiUsloviyaRoute
+  '/politika-za-biskvitki': typeof PolitikaZaBiskvitkiRoute
+  '/politika-za-poveritelnost': typeof PolitikaZaPoveritelnostRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/kontakti': typeof KontaktiRoute
+  '/obshti-usloviya': typeof ObshtiUsloviyaRoute
+  '/politika-za-biskvitki': typeof PolitikaZaBiskvitkiRoute
+  '/politika-za-poveritelnost': typeof PolitikaZaPoveritelnostRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/kontakti'
+    | '/obshti-usloviya'
+    | '/politika-za-biskvitki'
+    | '/politika-za-poveritelnost'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/kontakti'
+    | '/obshti-usloviya'
+    | '/politika-za-biskvitki'
+    | '/politika-za-poveritelnost'
+  id:
+    | '__root__'
+    | '/'
+    | '/kontakti'
+    | '/obshti-usloviya'
+    | '/politika-za-biskvitki'
+    | '/politika-za-poveritelnost'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  KontaktiRoute: typeof KontaktiRoute
+  ObshtiUsloviyaRoute: typeof ObshtiUsloviyaRoute
+  PolitikaZaBiskvitkiRoute: typeof PolitikaZaBiskvitkiRoute
+  PolitikaZaPoveritelnostRoute: typeof PolitikaZaPoveritelnostRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +104,43 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/kontakti': {
+      id: '/kontakti'
+      path: '/kontakti'
+      fullPath: '/kontakti'
+      preLoaderRoute: typeof KontaktiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/obshti-usloviya': {
+      id: '/obshti-usloviya'
+      path: '/obshti-usloviya'
+      fullPath: '/obshti-usloviya'
+      preLoaderRoute: typeof ObshtiUsloviyaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/politika-za-biskvitki': {
+      id: '/politika-za-biskvitki'
+      path: '/politika-za-biskvitki'
+      fullPath: '/politika-za-biskvitki'
+      preLoaderRoute: typeof PolitikaZaBiskvitkiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/politika-za-poveritelnost': {
+      id: '/politika-za-poveritelnost'
+      path: '/politika-za-poveritelnost'
+      fullPath: '/politika-za-poveritelnost'
+      preLoaderRoute: typeof PolitikaZaPoveritelnostRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  KontaktiRoute: KontaktiRoute,
+  ObshtiUsloviyaRoute: ObshtiUsloviyaRoute,
+  PolitikaZaBiskvitkiRoute: PolitikaZaBiskvitkiRoute,
+  PolitikaZaPoveritelnostRoute: PolitikaZaPoveritelnostRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
