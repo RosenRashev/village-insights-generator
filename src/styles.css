@@ -196,6 +196,29 @@
   }
 }
 
+@keyframes word-cycle {
+  0% {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  6% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  19% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  25% {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .topo-drift {
     animation: topo-drift 80s ease-in-out infinite;
@@ -229,6 +252,26 @@
 
   .bounce-click {
     animation: bounce-click 0.35s ease-out;
+  }
+
+  .cycle-word {
+    animation: word-cycle 12s ease-in-out infinite;
+  }
+
+  .cycle-word-1 {
+    animation-delay: 0s;
+  }
+
+  .cycle-word-2 {
+    animation-delay: 3s;
+  }
+
+  .cycle-word-3 {
+    animation-delay: 6s;
+  }
+
+  .cycle-word-4 {
+    animation-delay: 9s;
   }
 }
 
