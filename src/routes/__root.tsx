@@ -12,6 +12,8 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { Toaster } from "../components/ui/sonner";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { AuthProvider, useAuth } from "../hooks/useAuth";
+
 
 function NotFoundComponent() {
   return (
@@ -156,19 +158,57 @@ function SiteFooter() {
   );
 }
 
+function SiteHeader() {
+  const { user, profile, signOut } = useAuth();
+
+  return (
+    <header className="border-b border-border bg-background/80">
+      <div className="mx-auto flex max-w-5xl items-center justify-end gap-3 px-4 py-2 text-sm">
+        {user ? (
+          <>
+            {profile?.is_admin && (
+              <Link to="/admin" className="text-muted-foreground hover:text-primary">
+                Админ
+              </Link>
+            )}
+            <Link to="/profil" className="text-muted-foreground hover:text-primary">
+              Моите доклади
+            </Link>
+            <button
+              type="button"
+              onClick={() => void signOut()}
+              className="text-muted-foreground hover:text-primary"
+            >
+              Изход
+            </button>
+          </>
+        ) : (
+          <Link to="/vhod" className="font-medium text-primary hover:underline">
+            Вход / Регистрация
+          </Link>
+        )}
+      </div>
+    </header>
+  );
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="flex min-h-screen flex-col">
-        <div className="flex-1">
-          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-          <Outlet />
+      <AuthProvider>
+        <div className="flex min-h-screen flex-col">
+          <SiteHeader />
+          <div className="flex-1">
+            {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+            <Outlet />
+          </div>
+          <SiteFooter />
         </div>
-        <SiteFooter />
-      </div>
-      <Toaster />
+        <Toaster />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
+

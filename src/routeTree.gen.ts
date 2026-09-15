@@ -10,19 +10,33 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as KontaktiRouteImport } from './routes/kontakti'
+import { Route as NovaParolaRouteImport } from './routes/nova-parola'
 import { Route as ObshtiUsloviyaRouteImport } from './routes/obshti-usloviya'
 import { Route as PolitikaZaBiskvitkiRouteImport } from './routes/politika-za-biskvitki'
 import { Route as PolitikaZaPoveritelnostRouteImport } from './routes/politika-za-poveritelnost'
+import { Route as VhodRouteImport } from './routes/vhod'
+import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedProfilRouteImport } from './routes/_authenticated/profil'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const KontaktiRoute = KontaktiRouteImport.update({
   id: '/kontakti',
   path: '/kontakti',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NovaParolaRoute = NovaParolaRouteImport.update({
+  id: '/nova-parola',
+  path: '/nova-parola',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ObshtiUsloviyaRoute = ObshtiUsloviyaRouteImport.update({
@@ -40,59 +54,103 @@ const PolitikaZaPoveritelnostRoute = PolitikaZaPoveritelnostRouteImport.update({
   path: '/politika-za-poveritelnost',
   getParentRoute: () => rootRouteImport,
 } as any)
+const VhodRoute = VhodRouteImport.update({
+  id: '/vhod',
+  path: '/vhod',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedProfilRoute = AuthenticatedProfilRouteImport.update({
+  id: '/profil',
+  path: '/profil',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/kontakti': typeof KontaktiRoute
+  '/nova-parola': typeof NovaParolaRoute
   '/obshti-usloviya': typeof ObshtiUsloviyaRoute
   '/politika-za-biskvitki': typeof PolitikaZaBiskvitkiRoute
   '/politika-za-poveritelnost': typeof PolitikaZaPoveritelnostRoute
+  '/vhod': typeof VhodRoute
+  '/admin': typeof AuthenticatedAdminRoute
+  '/profil': typeof AuthenticatedProfilRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/kontakti': typeof KontaktiRoute
+  '/nova-parola': typeof NovaParolaRoute
   '/obshti-usloviya': typeof ObshtiUsloviyaRoute
   '/politika-za-biskvitki': typeof PolitikaZaBiskvitkiRoute
   '/politika-za-poveritelnost': typeof PolitikaZaPoveritelnostRoute
+  '/vhod': typeof VhodRoute
+  '/admin': typeof AuthenticatedAdminRoute
+  '/profil': typeof AuthenticatedProfilRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/kontakti': typeof KontaktiRoute
+  '/nova-parola': typeof NovaParolaRoute
   '/obshti-usloviya': typeof ObshtiUsloviyaRoute
   '/politika-za-biskvitki': typeof PolitikaZaBiskvitkiRoute
   '/politika-za-poveritelnost': typeof PolitikaZaPoveritelnostRoute
+  '/vhod': typeof VhodRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRoute
+  '/_authenticated/profil': typeof AuthenticatedProfilRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/kontakti'
+    | '/nova-parola'
     | '/obshti-usloviya'
     | '/politika-za-biskvitki'
     | '/politika-za-poveritelnost'
+    | '/vhod'
+    | '/admin'
+    | '/profil'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/kontakti'
+    | '/nova-parola'
     | '/obshti-usloviya'
     | '/politika-za-biskvitki'
     | '/politika-za-poveritelnost'
+    | '/vhod'
+    | '/admin'
+    | '/profil'
   id:
     | '__root__'
     | '/'
+    | '/_authenticated'
     | '/kontakti'
+    | '/nova-parola'
     | '/obshti-usloviya'
     | '/politika-za-biskvitki'
     | '/politika-za-poveritelnost'
+    | '/vhod'
+    | '/_authenticated/admin'
+    | '/_authenticated/profil'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   KontaktiRoute: typeof KontaktiRoute
+  NovaParolaRoute: typeof NovaParolaRoute
   ObshtiUsloviyaRoute: typeof ObshtiUsloviyaRoute
   PolitikaZaBiskvitkiRoute: typeof PolitikaZaBiskvitkiRoute
   PolitikaZaPoveritelnostRoute: typeof PolitikaZaPoveritelnostRoute
+  VhodRoute: typeof VhodRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -104,11 +162,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/kontakti': {
       id: '/kontakti'
       path: '/kontakti'
       fullPath: '/kontakti'
       preLoaderRoute: typeof KontaktiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/nova-parola': {
+      id: '/nova-parola'
+      path: '/nova-parola'
+      fullPath: '/nova-parola'
+      preLoaderRoute: typeof NovaParolaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/obshti-usloviya': {
@@ -132,15 +204,52 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PolitikaZaPoveritelnostRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/vhod': {
+      id: '/vhod'
+      path: '/vhod'
+      fullPath: '/vhod'
+      preLoaderRoute: typeof VhodRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/admin': {
+      id: '/_authenticated/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthenticatedAdminRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/profil': {
+      id: '/_authenticated/profil'
+      path: '/profil'
+      fullPath: '/profil'
+      preLoaderRoute: typeof AuthenticatedProfilRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
+  AuthenticatedProfilRoute: typeof AuthenticatedProfilRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAdminRoute: AuthenticatedAdminRoute,
+  AuthenticatedProfilRoute: AuthenticatedProfilRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   KontaktiRoute: KontaktiRoute,
+  NovaParolaRoute: NovaParolaRoute,
   ObshtiUsloviyaRoute: ObshtiUsloviyaRoute,
   PolitikaZaBiskvitkiRoute: PolitikaZaBiskvitkiRoute,
   PolitikaZaPoveritelnostRoute: PolitikaZaPoveritelnostRoute,
+  VhodRoute: VhodRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

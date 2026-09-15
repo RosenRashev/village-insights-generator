@@ -1,14 +1,17 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { expiresAtFor, isFresh, type CachedCategory } from "@/lib/report-cache";
 
 /**
  * Връща категория от кеша, ако е валидна; иначе я генерира наново през Gemini
  * (Google Search grounding) и я кешира според TTL правилата.
+ * Достъпна само за одобрени потребители.
  * Частите, зависещи от „Настояща локация“, се смятат отделно и НЕ се кешират.
  */
 export const getCategory = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data) =>
     z
       .object({
@@ -17,20 +20,25 @@ export const getCategory = createServerFn({ method: "POST" })
         placeName: z.string().min(1),
         placeType: z.enum(["village", "town", "district"]),
         currentLocationName: z.string().min(1).optional(),
-        accessCode: z.string().min(1),
       })
       .parse(data),
   )
-  .handler(async ({ data }): Promise<CachedCategory & { fromCache: boolean }> => {
-    const expected = process.env["TESTER_ACCESS_CODE"];
-    if (!expected || data.accessCode !== expected) {
-      throw new Error("Приложението е в затворен тест — нужен е валиден код за достъп.");
+  .handler(async ({ data, context }): Promise<CachedCategory & { fromCache: boolean }> => {
+    const { data: profile } = await context.supabase
+      .from("profiles")
+      .select("is_approved")
+      .eq("id", context.userId)
+      .maybeSingle();
+
+    if (!profile?.is_approved) {
+      throw new Error("Профилът ви още не е одобрен за генериране на доклади.");
     }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { generateCategory, generateDistanceToCurrent } = await import(
       "@/lib/report-generator.server"
     );
+
 
     const { data: row } = await supabaseAdmin
       .from("report_cache")

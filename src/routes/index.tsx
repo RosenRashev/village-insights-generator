@@ -1,33 +1,34 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Loader2, RefreshCw, RotateCcw, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 
-import { Input } from "@/components/ui/input";
-import {
-  PROMPT_MODULES,
-  PURPOSE_OPTIONS,
-  type PlaceType,
-  type PurposeId,
-} from "@/lib/prompt-modules";
-import { REPORT_DATA_SOURCE } from "@/lib/report-mode";
-import {
-  generateMockCategory,
-  generateMockPerspectiveSummary,
-} from "@/lib/mock-report-generator";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { PURPOSE_OPTIONS, type PurposeId } from "@/lib/prompt-modules";
 import { SettlementCombobox } from "@/components/SettlementCombobox";
 import { ModuleCard } from "@/components/ModuleCard";
 import { TopoBackground } from "@/components/TopoBackground";
 import { FeedbackBox } from "@/components/FeedbackBox";
+import { PendingApproval } from "@/components/PendingApproval";
 import { ReportInfographic } from "@/components/ReportInfographic";
-import { getCategory } from "@/lib/report-cache.functions";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  generateReportSections,
+  serializeReport,
+  parseReport,
+  totalSteps,
+  IS_MOCK,
+} from "@/lib/generate-report";
+import { saveReport } from "@/lib/reports.functions";
+import { getPublicReport, listPublicPlaces, type PublicPlace } from "@/lib/public-reports.functions";
 import type { ReportSection } from "@/data/mock-report";
-import { ONSITE_CHECKLIST_SECTION } from "@/data/onsite-checklist";
 
 
 import { formatSettlement, type Settlement } from "@/lib/settlements";
+
 
 
 const TITLE = "Къде Да — проучване на населени места";
@@ -67,7 +68,7 @@ export const Route = createFileRoute("/")({
 });
 
 
-const IS_MOCK = REPORT_DATA_SOURCE === "mock";
+
 
 const HERO_PHRASES = [
   "живея",
@@ -86,25 +87,46 @@ const HERO_PHRASES = [
   "намеря спокойствие",
 ];
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
 function Index() {
+  const { user, profile, loading: authLoading } = useAuth();
+  const isSignedIn = user !== null;
+  const isApproved = profile?.is_approved === true;
+
   const [place, setPlace] = useState<Settlement | null>(null);
   const [currentLocation, setCurrentLocation] = useState<Settlement | null>(null);
-  const placeType: PlaceType = place?.isVillage ? "village" : "town";
   const [purpose, setPurpose] = useState<PurposeId | null>(null);
   const [placeNotice, setPlaceNotice] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number }>({ done: 0, total: 0 });
   const [realSections, setRealSections] = useState<ReportSection[] | null>(null);
-  const [accessCode, setAccessCode] = useState("");
+  const [isPrivate, setIsPrivate] = useState(false);
+  const [publicPlaces, setPublicPlaces] = useState<PublicPlace[] | null>(null);
+  const [guestLoading, setGuestLoading] = useState(false);
+  const [guestReport, setGuestReport] = useState<
+    { place: Settlement; current: Settlement | null; purpose: PurposeId | null; sections: ReportSection[] } | null
+  >(null);
   const [activePhrase, setActivePhrase] = useState(0);
   const [maxPhraseWidth, setMaxPhraseWidth] = useState<number | null>(null);
   const [isDesktop, setIsDesktop] = useState(false);
 
   useEffect(() => {
-    setAccessCode(localStorage.getItem("kade-da-access-code") ?? "");
-  }, []);
+    if (isSignedIn) {
+      setPublicPlaces(null);
+      return;
+    }
+    let active = true;
+    listPublicPlaces()
+      .then((rows) => {
+        if (active) setPublicPlaces(rows);
+      })
+      .catch(() => {
+        if (active) setPublicPlaces([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, [isSignedIn]);
+
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -138,15 +160,42 @@ function Index() {
   const CONFLICT_MSG =
     "Настоящата локация не може да съвпада с търсеното населено място — полето беше изчистено.";
 
+  const loadGuestReport = async (s: Settlement) => {
+    const match = publicPlaces?.find((p) => p.ekatte === s.ekatte);
+    if (!match) return;
+    setGuestLoading(true);
+    setGuestReport(null);
+    try {
+      const row = await getPublicReport({ data: { id: match.reportId } });
+      const payload = row ? parseReport(row.report_content) : null;
+      if (!payload) {
+        toast.error("Докладът не може да бъде показан.");
+        return;
+      }
+      setGuestReport({
+        place: payload.place ?? s,
+        current: payload.current ?? null,
+        purpose: payload.purpose ?? null,
+        sections: payload.sections,
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Неуспешно зареждане на доклада.");
+    } finally {
+      setGuestLoading(false);
+    }
+  };
+
   const handlePlaceChange = (s: Settlement | null) => {
     setPlace(s);
     setPlaceNotice(null);
+    setGuestReport(null);
     if (s && currentLocation && currentLocation.ekatte === s.ekatte) {
       setCurrentLocation(null);
       setCurrentNotice(CONFLICT_MSG);
     } else {
       setCurrentNotice(null);
     }
+    if (s && !isSignedIn) void loadGuestReport(s);
   };
 
   const handleCurrentLocationChange = (s: Settlement | null) => {
@@ -161,111 +210,64 @@ function Index() {
 
   const hasPlace = place !== null;
 
-  const categoryIds = PROMPT_MODULES.map((m) => m.id);
-
-  const generateMock = async () => {
-    setGenerating(true);
-    setRealSections(null);
-    setProgress({ done: 0, total: categoryIds.length + (purpose ? 1 : 0) + 1 });
-    const collected: ReportSection[] = [];
-
-    for (const categoryId of categoryIds) {
-      await sleep(150);
-      collected.push(generateMockCategory(categoryId));
-      setRealSections([...collected]);
-      setProgress((p) => ({ ...p, done: p.done + 1 }));
-    }
-
-    if (purpose) {
-      await sleep(150);
-      collected.push(generateMockPerspectiveSummary(purpose));
-      setRealSections([...collected]);
-      setProgress((p) => ({ ...p, done: p.done + 1 }));
-    }
-
-    await sleep(150);
-    collected.push(ONSITE_CHECKLIST_SECTION);
-    setRealSections([...collected]);
-    setProgress((p) => ({ ...p, done: p.done + 1 }));
-
-    setGenerating(false);
-    toast.success("Докладът е готов (примерни данни).");
-  };
-
-  const generateLive = async () => {
+  const generateReport = async () => {
     if (!place) return;
-    const code = accessCode.trim();
-    if (!code) {
-      toast.error("Въведете код за достъп (затворен тест).");
-      return;
-    }
-    localStorage.setItem("kade-da-access-code", code);
     setGenerating(true);
     setRealSections(null);
-    setProgress({ done: 0, total: categoryIds.length + (purpose ? 1 : 0) + 1 });
-    const collected: ReportSection[] = [];
-    let failed = 0;
+    setProgress({ done: 0, total: totalSteps(purpose) });
 
-    for (const categoryId of categoryIds) {
+    try {
+      const { sections, failed } = await generateReportSections({
+        place,
+        current: currentLocation,
+        purpose,
+        onSections: (s) => setRealSections(s),
+        onStep: () => setProgress((p) => ({ ...p, done: p.done + 1 })),
+      });
+
+      if (sections.length === 0) {
+        toast.error("Докладът не можа да бъде генериран.");
+        return;
+      }
+
       try {
-        const res = await getCategory({
+        await saveReport({
           data: {
+            locationQuery: formatSettlement(place),
             ekatte: place.ekatte,
-            categoryId,
             placeName: formatSettlement(place),
-            placeType,
-            accessCode: code,
-            ...(currentLocation ? { currentLocationName: formatSettlement(currentLocation) } : {}),
+            selectedTopics: purpose ? [purpose] : [],
+            reportContent: serializeReport({ place, current: currentLocation, purpose, sections }),
+            isPublic: !isPrivate,
           },
         });
-
-        const section = res.data as unknown as ReportSection | null;
-        if (section && Array.isArray(section.blocks)) {
-          collected.push({ ...section, id: categoryId });
-          setRealSections([...collected]);
-        } else {
-          failed += 1;
-        }
       } catch (err) {
-        failed += 1;
         toast.error(
-          `Грешка при „${PROMPT_MODULES.find((m) => m.id === categoryId)?.label ?? categoryId}“: ${
-            err instanceof Error ? err.message : "неизвестна грешка"
-          }`,
+          err instanceof Error ? `Докладът не беше запазен: ${err.message}` : "Докладът не беше запазен.",
         );
       }
-      setProgress((p) => ({ ...p, done: p.done + 1 }));
-    }
 
-    // TODO: свържи реалния perspective-summary генератор, когато REPORT_DATA_SOURCE = "live"
-    // (все още няма имплементация — пропускаме тихо, ако purpose е избран).
-    if (purpose) {
-      setProgress((p) => ({ ...p, done: p.done + 1 }));
-    }
-
-    collected.push(ONSITE_CHECKLIST_SECTION);
-    setRealSections([...collected]);
-    setProgress((p) => ({ ...p, done: p.done + 1 }));
-
-    setGenerating(false);
-    if (collected.length === 0) {
-      toast.error("Докладът не можа да бъде генериран.");
-    } else if (failed > 0) {
-      toast.warning(`Готово с ${failed} пропуснати категории.`);
-    } else {
-      toast.success("Докладът е готов.");
+      if (failed > 0) {
+        toast.warning(`Готово с ${failed} пропуснати категории.`);
+      } else {
+        toast.success(IS_MOCK ? "Докладът е готов (примерни данни)." : "Докладът е готов.");
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Грешка при генерирането.");
+    } finally {
+      setGenerating(false);
     }
   };
-
-  const generateReport = () => (IS_MOCK ? generateMock() : generateLive());
 
   const reset = () => {
     setPlace(null);
     setCurrentLocation(null);
     setPurpose(null);
     setRealSections(null);
+    setGuestReport(null);
     setProgress({ done: 0, total: 0 });
   };
+
 
 
   return (
@@ -342,13 +344,26 @@ function Index() {
               value={place}
               onChange={handlePlaceChange}
               excludeLargeCities
+              allowedEkatte={isSignedIn ? null : (publicPlaces?.map((p) => p.ekatte) ?? [])}
               notice={placeNotice}
             />
 
+            {!isSignedIn && !authLoading && (
+              <p className="rounded-lg border border-border bg-card/70 p-3 text-sm text-muted-foreground">
+                Без акаунт можете да разглеждате само вече генерирани публични доклади.{" "}
+                <Link to="/vhod" className="font-medium text-primary underline">
+                  Регистрирайте се
+                </Link>
+                , за да получите нов, персонализиран доклад за избрано от вас място.
+              </p>
+            )}
 
 
 
-            {hasPlace && (
+
+
+            {hasPlace && isSignedIn && (
+
               <div className="space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
                 <SettlementCombobox
                   id="current-location"
@@ -374,7 +389,8 @@ function Index() {
 
 
 
-        {hasPlace && (
+        {hasPlace && isSignedIn && (
+
           <section className="mt-12 animate-in fade-in slide-in-from-bottom-2 duration-300">
             <h2 className="text-lg font-bold text-destructive">
               Кажете ни за какво търсите имота
@@ -403,7 +419,35 @@ function Index() {
           </section>
         )}
 
-        {hasPlace && (
+        {hasPlace && !isSignedIn && (
+          <section className="mt-12">
+            {guestLoading && (
+              <p className="text-center text-sm text-muted-foreground">Зареждане на доклада…</p>
+            )}
+            {guestReport && (
+              <>
+                <p className="mb-4 text-center text-sm text-muted-foreground">
+                  Разглеждате вече генериран публичен доклад (само за четене).
+                </p>
+                <ReportInfographic
+                  place={guestReport.place}
+                  current={guestReport.current}
+                  sections={guestReport.sections}
+                  demo={false}
+                  purpose={guestReport.purpose}
+                />
+              </>
+            )}
+          </section>
+        )}
+
+        {hasPlace && isSignedIn && !isApproved && !authLoading && (
+          <section className="mt-12">
+            <PendingApproval />
+          </section>
+        )}
+
+        {hasPlace && isSignedIn && isApproved && (
           <section className="mt-16">
             <div className="flex flex-col items-center gap-3 text-center">
               <h2 className="text-lg font-bold text-destructive">
@@ -414,26 +458,19 @@ function Index() {
                   ? "Демо режим: докладът се попълва с примерни данни, без реални заявки."
                   : "Приложението ще проучи категориите с Gemini и търсене в Google в реално време и ще покаже резултата тук като инфографика."}
               </p>
-              {!IS_MOCK && (
-                <>
-                  <p className="max-w-md text-xs text-muted-foreground">
-                    Затворен тест: генерирането изисква код за достъп.
-                  </p>
-                  <Input
-                    type="password"
-                    value={accessCode}
-                    onChange={(e) => setAccessCode(e.target.value)}
-                    placeholder="Код за достъп"
-                    aria-label="Код за достъп"
-                    className="max-w-xs text-center"
-                  />
-                </>
-              )}
-              <Button
-                size="lg"
-                onClick={generateReport}
-                disabled={generating || !hasPlace || (!IS_MOCK && !accessCode.trim())}
-              >
+
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="private-report"
+                  checked={isPrivate}
+                  onCheckedChange={(v) => setIsPrivate(v === true)}
+                />
+                <Label htmlFor="private-report" className="text-sm font-normal">
+                  Направи този доклад личен
+                </Label>
+              </div>
+
+              <Button size="lg" onClick={() => void generateReport()} disabled={generating}>
                 {generating ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
@@ -448,8 +485,8 @@ function Index() {
                   type="button"
                   size="sm"
                   variant="outline"
-                  onClick={generateMock}
-                  disabled={generating || !hasPlace}
+                  onClick={() => void generateReport()}
+                  disabled={generating}
                 >
                   <RefreshCw className="h-4 w-4" />
                   Регенерирай примерни данни
@@ -489,6 +526,7 @@ function Index() {
             )}
           </section>
         )}
+
 
         <footer className="mt-16 border-t border-border pt-6 text-xs text-muted-foreground">
           Проектът е с нестопанска цел, в подкрепа на купувачите на имоти, в процес на активна разработка.

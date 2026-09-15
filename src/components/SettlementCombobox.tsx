@@ -22,6 +22,8 @@ type Props = {
   size?: "lg" | "sm";
   /** Скрива големите градове от резултатите (за полето „Търсено място“). */
   excludeLargeCities?: boolean;
+  /** Ограничава резултатите само до тези ЕКАТТЕ кодове (гост режим). */
+  allowedEkatte?: number[] | null;
   /** Inline съобщение под полето (напр. при конфликт между двете полета). */
   notice?: string | null;
 };
@@ -34,8 +36,10 @@ export function SettlementCombobox({
   onChange,
   size = "lg",
   excludeLargeCities = false,
+  allowedEkatte = null,
   notice = null,
 }: Props) {
+
   const [query, setQuery] = useState("");
   const [all, setAll] = useState<Settlement[] | null>(null);
   const [open, setOpen] = useState(false);
@@ -66,10 +70,16 @@ export function SettlementCombobox({
     return () => document.removeEventListener("mousedown", onDocClick);
   }, []);
 
-  const pool = useMemo(
-    () => (all ? (excludeLargeCities ? all.filter((s) => !isLargeCity(s)) : all) : null),
-    [all, excludeLargeCities],
-  );
+  const pool = useMemo(() => {
+    if (!all) return null;
+    let list = excludeLargeCities ? all.filter((s) => !isLargeCity(s)) : all;
+    if (allowedEkatte) {
+      const allowed = new Set(allowedEkatte);
+      list = list.filter((s) => allowed.has(s.ekatte));
+    }
+    return list;
+  }, [all, excludeLargeCities, allowedEkatte]);
+
 
   const results = useMemo(() => (pool ? searchSettlements(pool, query) : []), [pool, query]);
 
