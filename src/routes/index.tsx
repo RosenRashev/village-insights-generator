@@ -282,13 +282,18 @@ function Index() {
             {HERO_PHRASES.map((phrase) => (
               <span
                 key={phrase}
-                className="block whitespace-nowrap text-5xl font-bold sm:text-6xl"
+                className="block whitespace-nowrap text-6xl font-bold"
               >
                 {phrase}
               </span>
             ))}
           </div>
-          <div className="inline-flex w-fit max-w-full flex-col items-center justify-center gap-1 rounded-xl border border-primary/40 bg-foreground px-4 py-2 text-5xl font-bold tracking-normal shadow-lg sm:px-5 sm:text-6xl">
+          <div
+            className="inline-flex w-full max-w-full flex-col items-center justify-center gap-1 rounded-xl border border-primary/40 bg-foreground px-4 py-2 text-5xl font-bold tracking-normal shadow-lg sm:w-fit sm:px-5 sm:text-6xl"
+            style={{
+              width: isDesktop && maxPhraseWidth ? `${maxPhraseWidth + 40}px` : undefined,
+            }}
+          >
             <h1 className="inline-block shrink-0 whitespace-nowrap">
               <span className="title-part title-part-1 whitespace-nowrap text-background">Къде</span>{" "}
               <span className="title-part title-part-2 whitespace-nowrap text-destructive">Да</span>
