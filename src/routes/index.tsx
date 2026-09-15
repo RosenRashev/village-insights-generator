@@ -389,7 +389,8 @@ function Index() {
 
 
 
-        {hasPlace && (
+        {hasPlace && isSignedIn && (
+
           <section className="mt-12 animate-in fade-in slide-in-from-bottom-2 duration-300">
             <h2 className="text-lg font-bold text-destructive">
               Кажете ни за какво търсите имота
