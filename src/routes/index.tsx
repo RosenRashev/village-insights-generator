@@ -98,9 +98,17 @@ function Index() {
   const [progress, setProgress] = useState<{ done: number; total: number }>({ done: 0, total: 0 });
   const [realSections, setRealSections] = useState<ReportSection[] | null>(null);
   const [accessCode, setAccessCode] = useState("");
+  const [activePhrase, setActivePhrase] = useState(0);
 
   useEffect(() => {
     setAccessCode(localStorage.getItem("kade-da-access-code") ?? "");
+  }, []);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setActivePhrase((i) => (i + 1) % HERO_PHRASES.length);
+    }, 3000);
+    return () => clearInterval(id);
   }, []);
 
 
