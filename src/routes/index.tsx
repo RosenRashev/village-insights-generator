@@ -99,6 +99,8 @@ function Index() {
   const [realSections, setRealSections] = useState<ReportSection[] | null>(null);
   const [accessCode, setAccessCode] = useState("");
   const [activePhrase, setActivePhrase] = useState(0);
+  const [maxPhraseWidth, setMaxPhraseWidth] = useState<number | null>(null);
+  const [isDesktop, setIsDesktop] = useState(false);
 
   useEffect(() => {
     setAccessCode(localStorage.getItem("kade-da-access-code") ?? "");
@@ -109,6 +111,13 @@ function Index() {
       setActivePhrase((i) => (i + 1) % HERO_PHRASES.length);
     }, 3000);
     return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    const update = () => setIsDesktop(window.innerWidth >= 640);
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
   }, []);
 
 
