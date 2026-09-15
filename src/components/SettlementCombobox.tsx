@@ -70,10 +70,16 @@ export function SettlementCombobox({
     return () => document.removeEventListener("mousedown", onDocClick);
   }, []);
 
-  const pool = useMemo(
-    () => (all ? (excludeLargeCities ? all.filter((s) => !isLargeCity(s)) : all) : null),
-    [all, excludeLargeCities],
-  );
+  const pool = useMemo(() => {
+    if (!all) return null;
+    let list = excludeLargeCities ? all.filter((s) => !isLargeCity(s)) : all;
+    if (allowedEkatte) {
+      const allowed = new Set(allowedEkatte);
+      list = list.filter((s) => allowed.has(s.ekatte));
+    }
+    return list;
+  }, [all, excludeLargeCities, allowedEkatte]);
+
 
   const results = useMemo(() => (pool ? searchSettlements(pool, query) : []), [pool, query]);
 
