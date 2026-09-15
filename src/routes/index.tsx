@@ -42,11 +42,30 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: TITLE },
       { property: "og:description", content: DESCRIPTION },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://kadeda.eu/" },
       { name: "twitter:card", content: "summary_large_image" },
+    ],
+    links: [{ rel: "canonical", href: "https://kadeda.eu/" }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebApplication",
+          name: "Къде Да",
+          url: "https://kadeda.eu/",
+          description: DESCRIPTION,
+          applicationCategory: "LifestyleApplication",
+          operatingSystem: "Web",
+          inLanguage: "bg",
+          offers: { "@type": "Offer", price: "0", priceCurrency: "BGN" },
+        }),
+      },
     ],
   }),
   component: Index,
 });
+
 
 const IS_MOCK = REPORT_DATA_SOURCE === "mock";
 
