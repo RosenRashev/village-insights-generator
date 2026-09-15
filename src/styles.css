@@ -219,6 +219,15 @@
   }
 }
 
+.cycle-word {
+  opacity: 0;
+  will-change: opacity, transform;
+}
+
+.cycle-word-1 {
+  opacity: 1;
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .topo-drift {
     animation: topo-drift 80s ease-in-out infinite;
