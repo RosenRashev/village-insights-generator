@@ -21,8 +21,7 @@ export const Route = createFileRoute("/kontakti")({
   component: ContactsPage,
 });
 
-// TODO: replace kadeda.bg with final purchased domain
-const DOMAIN = "kadeda.bg";
+const DOMAIN = "kadeda.eu";
 
 function ContactsPage() {
   return (
