@@ -362,7 +362,8 @@ function Index() {
 
 
 
-            {hasPlace && (
+            {hasPlace && isSignedIn && (
+
               <div className="space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
                 <SettlementCombobox
                   id="current-location"
