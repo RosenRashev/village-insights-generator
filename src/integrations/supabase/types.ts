@@ -32,6 +32,30 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          is_admin: boolean
+          is_approved: boolean
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id: string
+          is_admin?: boolean
+          is_approved?: boolean
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_admin?: boolean
+          is_approved?: boolean
+        }
+        Relationships: []
+      }
       report_cache: {
         Row: {
           cached_at: string
@@ -65,12 +89,52 @@ export type Database = {
         }
         Relationships: []
       }
+      reports: {
+        Row: {
+          created_at: string
+          ekatte: number | null
+          id: string
+          is_public: boolean
+          location_query: string
+          place_name: string | null
+          report_content: string
+          selected_topics: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          ekatte?: number | null
+          id?: string
+          is_public?: boolean
+          location_query: string
+          place_name?: string | null
+          report_content: string
+          selected_topics?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          ekatte?: number | null
+          id?: string
+          is_public?: boolean
+          location_query?: string
+          place_name?: string | null
+          report_content?: string
+          selected_topics?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_approved: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
