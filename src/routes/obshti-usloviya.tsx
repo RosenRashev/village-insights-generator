@@ -22,8 +22,7 @@ export const Route = createFileRoute("/obshti-usloviya")({
   component: TermsPage,
 });
 
-// TODO: replace kadeda.bg with final purchased domain
-const DOMAIN = "kadeda.bg";
+const DOMAIN = "kadeda.eu";
 
 function TermsPage() {
   return (
