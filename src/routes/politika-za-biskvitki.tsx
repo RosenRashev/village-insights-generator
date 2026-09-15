@@ -16,7 +16,9 @@ export const Route = createFileRoute("/politika-za-biskvitki")({
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      { property: "og:url", content: "https://kadeda.eu/politika-za-biskvitki" },
     ],
+    links: [{ rel: "canonical", href: "https://kadeda.eu/politika-za-biskvitki" }],
   }),
   component: CookiesPage,
 });

@@ -17,7 +17,9 @@ export const Route = createFileRoute("/politika-za-poveritelnost")({
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      { property: "og:url", content: "https://kadeda.eu/politika-za-poveritelnost" },
     ],
+    links: [{ rel: "canonical", href: "https://kadeda.eu/politika-za-poveritelnost" }],
   }),
   component: PrivacyPage,
 });

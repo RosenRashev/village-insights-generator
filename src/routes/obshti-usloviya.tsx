@@ -17,7 +17,9 @@ export const Route = createFileRoute("/obshti-usloviya")({
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      { property: "og:url", content: "https://kadeda.eu/obshti-usloviya" },
     ],
+    links: [{ rel: "canonical", href: "https://kadeda.eu/obshti-usloviya" }],
   }),
   component: TermsPage,
 });
