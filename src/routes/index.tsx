@@ -237,8 +237,23 @@ function Index() {
               aria-hidden="true"
               className="title-part title-part-3 relative inline-block h-[1.1em] text-primary"
             >
-              <span className="invisible block whitespace-nowrap select-none">Си купя имот</span>
-              {["Живея", "Се преместя", "Си купя имот", "Си купя вила"].map((word, i) => (
+              <span className="invisible block whitespace-nowrap select-none">Прекарам старините си</span>
+              {[
+                "Живея",
+                "Се установя",
+                "Се преместя",
+                "Отгледам дете",
+                "Се пенсионирам",
+                "Си купя имот",
+                "Си купя вила",
+                "Купя земя",
+                "Строя къща",
+                "Инвестирам",
+                "Наема жилище",
+                "Прекарам старините си",
+                "Заживея спокойно",
+                "Намеря спокойствие",
+              ].map((word, i) => (
                 <span
                   key={word}
                   className={`cycle-word cycle-word-${i + 1} absolute inset-0 flex items-center justify-center whitespace-nowrap`}
