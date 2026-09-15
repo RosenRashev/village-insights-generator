@@ -686,7 +686,7 @@ function Section({
             <Award className="h-5 w-5" />
           </span>
           <div>
-            <h3 className="font-accent text-2xl font-bold text-white">Обобщена оценка от Селоскоп</h3>
+            <h3 className="font-accent text-2xl font-bold text-white">Обобщена оценка от Къде Да</h3>
             <p className="text-xs text-village-200">Качествено заключение спрямо избраната цел</p>
           </div>
         </div>

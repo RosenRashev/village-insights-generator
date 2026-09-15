@@ -78,14 +78,19 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "Къде Да — проучване на населени места" },
+      {
+        name: "description",
+        content: "Подробни доклади за инфраструктурата, услугите и средата в села и малки градове.",
+      },
+      { name: "author", content: "Къде Да" },
+      { property: "og:title", content: "Къде Да — проучване на населени места" },
+      {
+        property: "og:description",
+        content: "Подробни доклади за инфраструктурата, услугите и средата в села и малки градове.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {
