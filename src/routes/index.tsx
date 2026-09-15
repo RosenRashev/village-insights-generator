@@ -300,10 +300,7 @@ function Index() {
             </h1>
             <span
               aria-hidden="true"
-              className="title-part title-part-3 relative inline-block h-[1.1em] shrink-0 text-5xl text-primary sm:text-6xl"
-              style={{
-                width: isDesktop && maxPhraseWidth ? `${maxPhraseWidth}px` : "100%",
-              }}
+              className="title-part title-part-3 relative inline-block h-[1.1em] w-full shrink-0 text-5xl text-primary sm:text-6xl"
             >
               <span className="invisible block select-none whitespace-nowrap">
                 {HERO_PHRASES[activePhrase]}
