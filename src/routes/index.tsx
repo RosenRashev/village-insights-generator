@@ -120,6 +120,18 @@ function Index() {
     return () => window.removeEventListener("resize", update);
   }, []);
 
+  const measureRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!measureRef.current) return;
+    const spans = measureRef.current.querySelectorAll("span");
+    let max = 0;
+    spans.forEach((span) => {
+      const width = span.getBoundingClientRect().width;
+      if (width > max) max = width;
+    });
+    setMaxPhraseWidth(max);
+  }, []);
+
 
   const [currentNotice, setCurrentNotice] = useState<string | null>(null);
 
