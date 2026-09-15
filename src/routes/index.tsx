@@ -69,6 +69,23 @@ export const Route = createFileRoute("/")({
 
 const IS_MOCK = REPORT_DATA_SOURCE === "mock";
 
+const HERO_PHRASES = [
+  "живея",
+  "се установя",
+  "се преместя",
+  "отгледам дете",
+  "се пенсионирам",
+  "си купя имот",
+  "си купя вила",
+  "купя земя",
+  "строя къща",
+  "инвестирам",
+  "наема жилище",
+  "прекарам старините си",
+  "заживея спокойно",
+  "намеря спокойствие",
+];
+
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 function Index() {
