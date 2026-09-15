@@ -16,7 +16,9 @@ export const Route = createFileRoute("/kontakti")({
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      { property: "og:url", content: "https://kadeda.eu/kontakti" },
     ],
+    links: [{ rel: "canonical", href: "https://kadeda.eu/kontakti" }],
   }),
   component: ContactsPage,
 });
