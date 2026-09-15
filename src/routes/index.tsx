@@ -419,7 +419,35 @@ function Index() {
           </section>
         )}
 
-        {hasPlace && (
+        {hasPlace && !isSignedIn && (
+          <section className="mt-12">
+            {guestLoading && (
+              <p className="text-center text-sm text-muted-foreground">Зареждане на доклада…</p>
+            )}
+            {guestReport && (
+              <>
+                <p className="mb-4 text-center text-sm text-muted-foreground">
+                  Разглеждате вече генериран публичен доклад (само за четене).
+                </p>
+                <ReportInfographic
+                  place={guestReport.place}
+                  current={guestReport.current}
+                  sections={guestReport.sections}
+                  demo={false}
+                  purpose={guestReport.purpose}
+                />
+              </>
+            )}
+          </section>
+        )}
+
+        {hasPlace && isSignedIn && !isApproved && !authLoading && (
+          <section className="mt-12">
+            <PendingApproval />
+          </section>
+        )}
+
+        {hasPlace && isSignedIn && isApproved && (
           <section className="mt-16">
             <div className="flex flex-col items-center gap-3 text-center">
               <h2 className="text-lg font-bold text-destructive">
@@ -430,26 +458,19 @@ function Index() {
                   ? "Демо режим: докладът се попълва с примерни данни, без реални заявки."
                   : "Приложението ще проучи категориите с Gemini и търсене в Google в реално време и ще покаже резултата тук като инфографика."}
               </p>
-              {!IS_MOCK && (
-                <>
-                  <p className="max-w-md text-xs text-muted-foreground">
-                    Затворен тест: генерирането изисква код за достъп.
-                  </p>
-                  <Input
-                    type="password"
-                    value={accessCode}
-                    onChange={(e) => setAccessCode(e.target.value)}
-                    placeholder="Код за достъп"
-                    aria-label="Код за достъп"
-                    className="max-w-xs text-center"
-                  />
-                </>
-              )}
-              <Button
-                size="lg"
-                onClick={generateReport}
-                disabled={generating || !hasPlace || (!IS_MOCK && !accessCode.trim())}
-              >
+
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="private-report"
+                  checked={isPrivate}
+                  onCheckedChange={(v) => setIsPrivate(v === true)}
+                />
+                <Label htmlFor="private-report" className="text-sm font-normal">
+                  Направи този доклад личен
+                </Label>
+              </div>
+
+              <Button size="lg" onClick={() => void generateReport()} disabled={generating}>
                 {generating ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
@@ -464,8 +485,8 @@ function Index() {
                   type="button"
                   size="sm"
                   variant="outline"
-                  onClick={generateMock}
-                  disabled={generating || !hasPlace}
+                  onClick={() => void generateReport()}
+                  disabled={generating}
                 >
                   <RefreshCw className="h-4 w-4" />
                   Регенерирай примерни данни
@@ -505,6 +526,7 @@ function Index() {
             )}
           </section>
         )}
+
 
         <footer className="mt-16 border-t border-border pt-6 text-xs text-muted-foreground">
           Проектът е с нестопанска цел, в подкрепа на купувачите на имоти, в процес на активна разработка.
