@@ -210,10 +210,13 @@ function Index() {
 
         <header className="mount-rise border-b border-border pb-8 text-center">
           <div className="inline-flex rounded-xl border border-primary/40 bg-foreground px-5 py-2 shadow-lg sm:px-7">
-            <h1 className="inline-flex flex-wrap items-baseline justify-center gap-x-1 text-6xl font-bold tracking-normal sm:text-7xl">
-              <span className="title-part title-part-1 whitespace-nowrap text-background">Къде</span>{" "}
-              <span className="title-part title-part-2 whitespace-nowrap text-destructive">Да</span>{" "}
-              <span className="title-part title-part-3 relative inline-block h-[1.1em] min-w-[13ch] text-primary">
+            <h1 className="inline-flex flex-wrap items-baseline justify-center gap-x-2 text-6xl font-bold tracking-normal sm:text-7xl">
+              <span className="title-part title-part-1 whitespace-nowrap text-background">Къде</span>
+              <span className="title-part title-part-2 whitespace-nowrap text-destructive">Да</span>
+              <span className="title-part title-part-3 relative inline-block h-[1.1em] text-primary">
+                <span className="invisible block whitespace-nowrap select-none" aria-hidden="true">
+                  Си купя имот
+                </span>
                 {["Живея", "Се преместя", "Си купя имот", "Си купя вила"].map((word, i) => (
                   <span
                     key={word}
