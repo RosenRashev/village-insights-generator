@@ -7,4 +7,4 @@
  *           с кеширане както досега.
  * Смени само тази константа, когато трябва да превключиш режима.
  */
-export const REPORT_DATA_SOURCE: "mock" | "live" = "mock";
+export const REPORT_DATA_SOURCE: "mock" | "live" = "live";
