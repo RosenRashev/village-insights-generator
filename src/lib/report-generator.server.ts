@@ -23,7 +23,10 @@ export type GenerateInput = {
 };
 
 /** Модел с добър баланс цена/качество; ползва се и за двете стъпки. */
+/** Модел за грундираното (Google Search) проучване — тук качеството на search резултатите има значение. */
 const MODEL = "gemini-3.5-flash-lite";
+/** По-евтин модел за чисто форматиране на вече готов текст в JSON — не ползва search, не му трябва скъпият модел. */
+const STRUCTURE_MODEL = "gemini-2.5-flash-lite";
 const API = "https://generativelanguage.googleapis.com/v1beta/models";
 
 const THEMES = [
@@ -58,8 +61,8 @@ function apiKey(): string {
   return key;
 }
 
-async function callGemini(body: unknown): Promise<GeminiResponse> {
-  const res = await fetch(`${API}/${MODEL}:generateContent`, {
+async function callGemini(body: unknown, model: string = MODEL): Promise<GeminiResponse> {
+  const res = await fetch(`${API}/${model}:generateContent`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey() },
     body: JSON.stringify(body),
@@ -270,22 +273,25 @@ ${research}
     generationConfig: { responseMimeType: "application/json", temperature: 0.2 },
   };
 
-  let raw = textOf(await callGemini(body));
+  let raw = textOf(await callGemini(body, STRUCTURE_MODEL));
   let parsed: unknown;
   try {
     parsed = JSON.parse(extractJson(raw));
   } catch {
     // Един повторен опит с изрична инструкция за чист JSON.
     raw = textOf(
-      await callGemini({
-        ...body,
-        contents: [
-          {
-            role: "user",
-            parts: [{ text: `${prompt}\n\nВАЖНО: върни само валиден JSON, без обяснения.` }],
-          },
-        ],
-      }),
+      await callGemini(
+        {
+          ...body,
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: `${prompt}\n\nВАЖНО: върни само валиден JSON, без обяснения.` }],
+            },
+          ],
+        },
+        STRUCTURE_MODEL,
+      ),
     );
     try {
       parsed = JSON.parse(extractJson(raw));
