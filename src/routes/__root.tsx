@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -160,33 +161,45 @@ function SiteFooter() {
 
 function SiteHeader() {
   const { user, profile, signOut } = useAuth();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
     <header className="border-b border-border bg-background/80">
-      <div className="mx-auto flex max-w-5xl items-center justify-end gap-3 px-4 py-2 text-sm">
-        {user ? (
-          <>
-            {profile?.is_admin && (
-              <Link to="/admin" className="text-muted-foreground hover:text-primary">
-                Админ
-              </Link>
-            )}
-            <Link to="/profil" className="text-muted-foreground hover:text-primary">
-              Моите доклади
-            </Link>
-            <button
-              type="button"
-              onClick={() => void signOut()}
-              className="text-muted-foreground hover:text-primary"
-            >
-              Изход
-            </button>
-          </>
-        ) : (
-          <Link to="/vhod" className="font-medium text-primary hover:underline">
-            Вход / Регистрация
+      <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-2 text-sm">
+        {pathname !== "/" && (
+          <Link
+            to="/"
+            className="inline-flex items-center gap-1 font-medium text-primary transition-colors hover:text-primary/80"
+          >
+            <span aria-hidden="true">←</span> Начало
           </Link>
         )}
+        {pathname === "/" && <div aria-hidden="true" />}
+        <nav className="flex items-center gap-3">
+          {user ? (
+            <>
+              {profile?.is_admin && (
+                <Link to="/admin" className="text-muted-foreground hover:text-primary">
+                  Админ
+                </Link>
+              )}
+              <Link to="/profil" className="text-muted-foreground hover:text-primary">
+                Моите доклади
+              </Link>
+              <button
+                type="button"
+                onClick={() => void signOut()}
+                className="text-muted-foreground hover:text-primary"
+              >
+                Изход
+              </button>
+            </>
+          ) : (
+            <Link to="/vhod" className="font-medium text-primary hover:underline">
+              Вход / Регистрация
+            </Link>
+          )}
+        </nav>
       </div>
     </header>
   );
