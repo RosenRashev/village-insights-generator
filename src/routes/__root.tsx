@@ -8,7 +8,7 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { Toaster } from "../components/ui/sonner";
@@ -159,6 +159,52 @@ function SiteFooter() {
   );
 }
 
+function ScrollToTop() {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => {
+      setVisible(window.scrollY > 300);
+    };
+
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={scrollToTop}
+      aria-label="Върни се най-горе"
+      className={[
+        "fixed bottom-5 right-5 z-50 grid h-12 w-12 place-items-center rounded-full bg-primary text-primary-foreground shadow-lg ring-offset-background transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+        "hover:bg-primary/90 hover:shadow-xl hover:-translate-y-0.5",
+        visible ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0",
+      ].join(" ")}
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <path d="m18 15-6-6-6 6" />
+      </svg>
+    </button>
+  );
+}
+
 function SiteHeader() {
   const { user, profile, signOut } = useAuth();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -219,6 +265,7 @@ function RootComponent() {
           </div>
           <SiteFooter />
         </div>
+        <ScrollToTop />
         <Toaster />
       </AuthProvider>
     </QueryClientProvider>
