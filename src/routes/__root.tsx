@@ -205,6 +205,46 @@ function ScrollToTop() {
   );
 }
 
+function UserAvatar({ user }: { user: NonNullable<ReturnType<typeof useAuth>["user"]> }) {
+  const metadata = (user.user_metadata ?? {}) as Record<string, unknown>;
+  const avatarUrl =
+    (typeof metadata["avatar_url"] === "string" && metadata["avatar_url"]) ||
+    (typeof metadata["picture"] === "string" && metadata["picture"]) ||
+    null;
+  const displayName =
+    (typeof metadata["full_name"] === "string" && metadata["full_name"]) ||
+    (typeof metadata["name"] === "string" && metadata["name"]) ||
+    user.email ||
+    "";
+  const initial = displayName.trim().charAt(0).toUpperCase() || "?";
+
+  if (avatarUrl) {
+    return (
+      <img
+        src={avatarUrl}
+        alt={displayName ? `Профилна снимка на ${displayName}` : "Профилна снимка"}
+        title={displayName || undefined}
+        referrerPolicy="no-referrer"
+        className="h-7 w-7 rounded-full border border-border object-cover"
+        onError={(e) => {
+          // Ако Google снимката не успее да се зареди, скриваме img-а, за да не остане счупена икона.
+          e.currentTarget.style.display = "none";
+        }}
+      />
+    );
+  }
+
+  return (
+    <span
+      title={displayName || undefined}
+      className="grid h-7 w-7 place-items-center rounded-full bg-primary/10 text-xs font-semibold text-primary"
+      aria-hidden="true"
+    >
+      {initial}
+    </span>
+  );
+}
+
 function SiteHeader() {
   const { user, profile, signOut } = useAuth();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -224,6 +264,7 @@ function SiteHeader() {
         <nav className="flex items-center gap-3">
           {user ? (
             <>
+              <UserAvatar user={user} />
               {profile?.is_admin && (
                 <Link to="/admin" className="text-muted-foreground hover:text-primary">
                   Админ
