@@ -265,6 +265,7 @@ function RootComponent() {
           </div>
           <SiteFooter />
         </div>
+        <ScrollToTop />
         <Toaster />
       </AuthProvider>
     </QueryClientProvider>
