@@ -25,8 +25,11 @@ export type GenerateInput = {
 /** Модел с добър баланс цена/качество; ползва се и за двете стъпки. */
 /** Модел за грундираното (Google Search) проучване — тук качеството на search резултатите има значение. */
 const MODEL = "gemini-3.5-flash-lite";
-/** По-евтин модел за чисто форматиране на вече готов текст в JSON — не ползва search, не му трябва скъпият модел. */
-const STRUCTURE_MODEL = "gemini-2.5-flash-lite";
+/**
+ * Модел за чисто форматиране на вече готов текст в JSON — не ползва search.
+ * gemini-2.5-flash-lite вече не е достъпен за нови проекти (404), затова ползваме 3.5-flash-lite.
+ */
+const STRUCTURE_MODEL = "gemini-3.5-flash-lite";
 const API = "https://generativelanguage.googleapis.com/v1beta/models";
 
 const THEMES = [
