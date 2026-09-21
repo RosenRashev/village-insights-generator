@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 import { useAuth } from "@/hooks/useAuth";
 
 const TITLE = "Вход и регистрация — Къде Да";
@@ -80,16 +79,19 @@ function AuthPage() {
   const googleSignIn = async () => {
     setBusy(true);
     try {
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: window.location.origin },
       });
-      if (result.error) {
+      if (error) {
         toast.error("Входът с Google не бе успешен.");
+        setBusy(false);
         return;
       }
-      if (result.redirected) return;
-      void navigate({ to: "/" });
-    } finally {
+      // Успешният случай пренасочва браузъра към Google, така че компонентът
+      // напуска страницата тук — няма нужда от допълнителна навигация или setBusy(false).
+    } catch {
+      toast.error("Входът с Google не бе успешен.");
       setBusy(false);
     }
   };
