@@ -51,16 +51,22 @@ function AuthPage() {
         toast.success("Успешен вход.");
         void navigate({ to: "/" });
       } else if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: { emailRedirectTo: window.location.origin },
         });
         if (error) throw error;
-        toast.success(
-          "Регистрацията е получена. Потвърдете имейла си — достъпът се активира след одобрение.",
-        );
-        setMode("signin");
+        if (data.session) {
+          // Потвърждението на имейл е изключено в Supabase — сесията идва веднага.
+          toast.success("Регистрацията е успешна. Достъпът се активира след одобрение.");
+          void navigate({ to: "/" });
+        } else {
+          toast.success(
+            "Регистрацията е получена. Потвърдете имейла си — достъпът се активира след одобрение.",
+          );
+          setMode("signin");
+        }
       } else {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
           redirectTo: `${window.location.origin}/nova-parola`,
