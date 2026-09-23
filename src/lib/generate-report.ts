@@ -76,6 +76,8 @@ export async function generateReportSections({
           }`,
         );
       }
+      // Малка пауза между категориите, за да не удряме Gemini rate limit-а на burst.
+      await sleep(400);
     }
     onStep?.();
   }

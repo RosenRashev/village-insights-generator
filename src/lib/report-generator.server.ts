@@ -64,19 +64,38 @@ function apiKey(): string {
   return key;
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function callGemini(body: unknown, model: string = MODEL): Promise<GeminiResponse> {
-  const res = await fetch(`${API}/${model}:generateContent`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey() },
-    body: JSON.stringify(body),
-  });
-  const json = (await res.json()) as GeminiResponse;
-  if (!res.ok || json.error) {
-    throw new Error(
-      `Gemini API грешка (${res.status}): ${json.error?.message ?? "неизвестна грешка"}`,
+  const MAX_ATTEMPTS = 4;
+  let lastError: Error | null = null;
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    const res = await fetch(`${API}/${model}:generateContent`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey() },
+      body: JSON.stringify(body),
+    });
+    const json = (await res.json()) as GeminiResponse;
+
+    if (res.ok && !json.error) return json;
+
+    const status = res.status;
+    const isRateLimited = status === 429 || status === 503;
+    lastError = new Error(
+      `Gemini API грешка (${status}): ${json.error?.message ?? "неизвестна грешка"}`,
     );
+
+    if (!isRateLimited || attempt === MAX_ATTEMPTS) throw lastError;
+
+    // Експоненциално изчакване при 429/503, преди следващия опит (1.5s, 3s, 6s...).
+    const backoffMs = 1500 * 2 ** (attempt - 1);
+    await sleep(backoffMs);
   }
-  return json;
+
+  throw lastError ?? new Error("Gemini API грешка: неуспешен опит.");
 }
 
 function textOf(res: GeminiResponse): string {
