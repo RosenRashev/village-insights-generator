@@ -45,41 +45,59 @@ export async function generateReportSections({
   const collected: ReportSection[] = [];
   let failed = 0;
 
-  for (const categoryId of CATEGORY_IDS) {
-    if (IS_MOCK) {
+  if (IS_MOCK) {
+    for (const categoryId of CATEGORY_IDS) {
       await sleep(150);
       collected.push(generateMockCategory(categoryId));
       onSections?.([...collected]);
-    } else {
-      try {
-        const res = await getCategory({
-          data: {
-            ekatte: place.ekatte,
-            categoryId,
-            placeName: formatSettlement(place),
-            placeType,
-            ...(current ? { currentLocationName: formatSettlement(current) } : {}),
-          },
-        });
-        const section = res.data as unknown as ReportSection | null;
-        if (section && Array.isArray(section.blocks)) {
-          collected.push({ ...section, id: categoryId });
-          onSections?.([...collected]);
+      onStep?.();
+    }
+  } else {
+    const BATCH_SIZE = 14;
+    for (let i = 0; i < CATEGORY_IDS.length; i += BATCH_SIZE) {
+      const batch = CATEGORY_IDS.slice(i, i + BATCH_SIZE);
+      const results = await Promise.allSettled(
+        batch.map((categoryId) =>
+          getCategory({
+            data: {
+              ekatte: place.ekatte,
+              categoryId,
+              placeName: formatSettlement(place),
+              placeType,
+              ...(current ? { currentLocationName: formatSettlement(current) } : {}),
+            },
+          }),
+        ),
+      );
+
+      // Обхождаме резултатите в оригиналния ред на категориите, за да пазим последователността в доклада,
+      // независимо от реалния ред, в който заявките са приключили.
+      results.forEach((result, idx) => {
+        const categoryId = batch[idx];
+        if (!categoryId) return;
+        if (result.status === "fulfilled") {
+          const section = result.value.data as unknown as ReportSection | null;
+          if (section && Array.isArray(section.blocks)) {
+            collected.push({ ...section, id: categoryId });
+          } else {
+            failed += 1;
+          }
         } else {
           failed += 1;
+          const err = result.reason;
+          toast.error(
+            `Грешка при „${PROMPT_MODULES.find((m) => m.id === categoryId)?.label ?? categoryId}“: ${
+              err instanceof Error ? err.message : "неизвестна грешка"
+            }`,
+          );
         }
-      } catch (err) {
-        failed += 1;
-        toast.error(
-          `Грешка при „${PROMPT_MODULES.find((m) => m.id === categoryId)?.label ?? categoryId}“: ${
-            err instanceof Error ? err.message : "неизвестна грешка"
-          }`,
-        );
-      }
-      // Малка пауза между категориите, за да не удряме Gemini rate limit-а на burst.
-      await sleep(400);
+        onStep?.();
+      });
+      onSections?.([...collected]);
+
+      // Кратка пауза между групите (не между всяка отделна заявка), за да не претоварваме rate limit-а.
+      if (i + BATCH_SIZE < CATEGORY_IDS.length) await sleep(500);
     }
-    onStep?.();
   }
 
   if (purpose) {
