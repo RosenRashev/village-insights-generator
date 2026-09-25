@@ -291,18 +291,31 @@ function Index() {
             ))}
           </div>
           <div
-            className="inline-flex w-full max-w-full flex-col items-center justify-center gap-1 rounded-xl border border-primary/40 bg-foreground px-4 py-2 text-5xl font-bold tracking-normal shadow-lg sm:w-fit sm:px-5 sm:text-6xl"
+            className="inline-flex w-full max-w-full flex-col items-center justify-center gap-1 px-4 py-2 text-5xl font-bold tracking-normal sm:w-fit sm:px-5 sm:text-6xl"
             style={{
               width: isDesktop && maxPhraseWidth ? `${maxPhraseWidth + 40}px` : undefined,
             }}
           >
-            <h1 className="inline-block shrink-0 whitespace-nowrap">
-              <span className="title-part title-part-1 whitespace-nowrap text-background">Къде</span>{" "}
-              <span className="title-part title-part-2 whitespace-nowrap text-destructive">Да</span>
-            </h1>
+            <div className="flex items-center justify-center gap-3">
+              <img
+                src="/logo-icon.png"
+                alt="Къде Да лого"
+                width={64}
+                height={64}
+                className="h-12 w-12 shrink-0 sm:h-16 sm:w-16"
+              />
+              <h1 className="inline-block shrink-0 whitespace-nowrap">
+                <span className="title-part title-part-1 logo-text whitespace-nowrap text-white">
+                  Къде
+                </span>{" "}
+                <span className="title-part title-part-2 logo-text whitespace-nowrap text-destructive">
+                  Да
+                </span>
+              </h1>
+            </div>
             <span
               aria-hidden="true"
-              className="title-part title-part-3 relative inline-block h-[1.1em] w-full shrink-0 text-5xl text-primary sm:text-6xl"
+              className="title-part title-part-3 logo-text relative inline-block h-[1.1em] w-full shrink-0 text-5xl text-primary sm:text-6xl"
             >
               <span className="invisible block select-none whitespace-nowrap">
                 {HERO_PHRASES[activePhrase]}

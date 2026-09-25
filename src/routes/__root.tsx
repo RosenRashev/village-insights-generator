@@ -93,7 +93,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content: "Подробни доклади за инфраструктурата, услугите и средата в села и малки градове.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:image", content: "https://kadeda.eu/og-image.jpg" },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { property: "og:image:alt", content: "Къде Да — лого" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:image", content: "https://kadeda.eu/og-image.jpg" },
     ],
     links: [
       {
@@ -104,9 +109,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Marcellus&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Marcellus&family=Baloo+2:wght@700;800&display=swap",
       },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/favicon-32x32.png", type: "image/png", sizes: "32x32" },
+      { rel: "icon", href: "/favicon-16x16.png", type: "image/png", sizes: "16x16" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png", sizes: "180x180" },
+      { rel: "manifest", href: "/site.webmanifest" },
     ],
   }),
   shellComponent: RootShell,
@@ -252,14 +261,14 @@ function SiteHeader() {
   return (
     <header className="border-b border-border bg-background/80">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-2 text-sm">
-        {pathname !== "/" && (
-          <Link
-            to="/"
-            className="inline-flex items-center gap-1 font-medium text-primary transition-colors hover:text-primary/80"
-          >
-            <span aria-hidden="true">←</span> Начало
-          </Link>
-        )}
+        <Link to="/" className="flex items-center gap-2 shrink-0" aria-label="Къде Да — начало">
+          <img src="/logo-icon.png" alt="" width={28} height={28} className="h-7 w-7" />
+          {pathname !== "/" && (
+            <span className="inline-flex items-center gap-1 font-medium text-primary transition-colors hover:text-primary/80">
+              <span aria-hidden="true">←</span> Начало
+            </span>
+          )}
+        </Link>
         {pathname === "/" && <div aria-hidden="true" />}
         <nav className="flex items-center gap-3">
           {user ? (
