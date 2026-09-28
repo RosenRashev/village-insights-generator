@@ -1,4 +1,5 @@
-import { useMemo, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import {
   AlertTriangle,
   Award,
@@ -241,6 +242,56 @@ function SourceArrow({ sources }: { sources?: SourceLink[] | undefined }) {
   );
 }
 
+/** „i“ бутон: при посочване (или докосване) показва пояснение. Рисува се в портал, за да не се реже от таблицата. */
+function InfoTip({ text, label }: { text: string; label: string }) {
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const btn = useRef<HTMLButtonElement>(null);
+  const WIDTH = 288;
+
+  const show = () => {
+    const r = btn.current?.getBoundingClientRect();
+    if (!r) return;
+    const left = Math.min(Math.max(8, r.left + r.width / 2 - WIDTH / 2), window.innerWidth - WIDTH - 8);
+    setPos({ top: r.bottom + 8, left });
+  };
+  const hide = () => setPos(null);
+
+  useEffect(() => {
+    if (!pos) return;
+    window.addEventListener("scroll", hide, true);
+    return () => window.removeEventListener("scroll", hide, true);
+  }, [pos]);
+
+  return (
+    <>
+      <button
+        ref={btn}
+        type="button"
+        aria-label={`Информация: ${label}`}
+        className="ml-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full text-sky-600 transition hover:bg-sky-100 hover:text-sky-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 print:hidden"
+        onMouseEnter={show}
+        onMouseLeave={hide}
+        onFocus={show}
+        onBlur={hide}
+        onClick={() => (pos ? hide() : show())}
+      >
+        <Info className="h-4 w-4" />
+      </button>
+      {pos &&
+        createPortal(
+          <span
+            role="tooltip"
+            style={{ position: "fixed", top: pos.top, left: pos.left, width: WIDTH }}
+            className="z-50 rounded-xl bg-slate-900 p-3 text-sm font-normal leading-relaxed text-slate-100 shadow-xl"
+          >
+            {text}
+          </span>,
+          document.body,
+        )}
+    </>
+  );
+}
+
 /** Карта за подкатегория: заглавие по средата (2× по-голямо от текста), по избор оцветена. */
 function SubCard({
   title,
@@ -284,7 +335,16 @@ function Block({
   switch (block.kind) {
     case "facts":
       return (
-        <div className="grid grid-cols-1 gap-4 text-xs sm:grid-cols-2 lg:grid-cols-4">
+        <div
+          className={
+            block.featured
+              ? "grid grid-cols-1 gap-4 text-xs sm:grid-cols-3"
+              : "grid grid-cols-1 gap-4 text-xs sm:grid-cols-2 lg:grid-cols-4"
+          }
+        >
+          {block.title && (
+            <h4 className="col-span-full text-lg font-bold text-slate-800">{block.title}</h4>
+          )}
           {block.items.map((f) => (
             <div
               key={f.label}
@@ -294,7 +354,9 @@ function Block({
                 <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400">
                   {f.label}
                 </span>
-                <span className="block text-base font-bold text-slate-800">
+                <span
+                  className={`block font-bold text-slate-800 ${block.featured ? "text-3xl" : "text-xl"}`}
+                >
                   {f.value}
                   <SourceArrow sources={f.sources} />
                 </span>
@@ -486,7 +548,10 @@ function Block({
               <tbody>
                 {block.rows.map((r, i) => (
                   <tr key={i} className="border-b border-slate-100 last:border-0">
-                    <td className="py-2 pr-3 font-semibold text-slate-800">{r.to}</td>
+                    <td className="py-2 pr-3 font-semibold text-slate-800">
+                      {r.to}
+                      {r.info && <InfoTip text={r.info} label={r.to} />}
+                    </td>
                     <td className="py-2 pr-3 text-slate-700">{r.distance}</td>
                     <td className="py-2 pr-3 text-slate-700">{r.driveTime}</td>
                     <td className="py-2 pr-3 font-bold" style={r.hasTrain ? { color: accent } : undefined}>
@@ -871,7 +936,7 @@ export function ReportInfographic({
             </span>
             <h2 className="wrap-anywhere font-accent text-2xl font-black tracking-wide text-slate-900 md:text-3xl">
               {placeLabel}
-              {postalCode ? ` · ${postalCode}` : ""}
+              {postalCode ? ` · п.к. ${postalCode}` : ""}
             </h2>
           </div>
         </div>

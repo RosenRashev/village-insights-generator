@@ -38,7 +38,7 @@ export function isBoxValue(value: string): boolean {
 }
 
 const TRANSPORT_RE =
-  /разстоян|отстоян|летищ|гар[аи]|жп|железопът|път|артери|магистрал|време|автомоб|км|мин|курорт|бани|язовир|възел|възли|транспорт|обходен|посока/i;
+  /разстоян|отстоян|летищ|гар[аи]|жп|железопът|път|артери|магистрал|време|автомоб|км|мин|курорт|бани|язовир|възел|възли|транспорт|обходен|посока|маршрут/i;
 
 /** Стойност, която говори за пътуване: „18 минути“, „до 40 км“, „с автомобил“, „с влак“. */
 const TRAVEL_RE = /(\d|час|минут)\s*(км|мин|ч\b|час|минут)|автомобил|влак/i;
@@ -58,27 +58,60 @@ function toneFor(title?: string): CardTone {
  *  - кутийки само за числа / до 2 думи, с приблизителни стойности вместо диапазони;
  *  - всичко останало (описания, дълги стойности) се слива в свободен текст под кутийките.
  */
+type FactItem = Extract<ReportBlock, { kind: "facts" }>["items"][number];
+
+/** Кои кутийки отиват в най-горния ред: надм. височина, областен град, летище (в този ред). */
+function topSlot(label: string): 0 | 1 | 2 | null {
+  if (/летищ/i.test(label)) return 2;
+  if (/височин/i.test(label)) return 0;
+  if (/магистрал|\bАМ\b|тракия|хемус|жп|гара|време/i.test(label)) return null;
+  if (/областн/i.test(label) || /^(разстояние\s+)?до\s+\S/i.test(label)) return 1;
+  return null;
+}
+
+/**
+ * Оформление на категория „Инфраструктура“:
+ *  - без пощенски код в кутийките (той е в заглавието на доклада);
+ *  - горен ред кутийки: надм. височина, най-близък областен град, най-близко летище; под него — останалите;
+ *  - кутийки само за числа / до 2 думи, с приблизителни стойности вместо диапазони;
+ *  - разстояния/транспорт се отделят от останалата информация; подкатегориите са оцветени.
+ */
 export function layoutBasicBlocks(blocks: ReportBlock[]): ReportBlock[] {
-  const out: ReportBlock[] = [];
+  const out: (ReportBlock | null)[] = [];
   const extraLines: string[] = [];
+  const mainBoxes: FactItem[] = [];
+  const titled: ReportBlock[] = [];
+  let boxAt = -1;
+
+  const splitItems = (items: FactItem[], intoBoxes: FactItem[]) => {
+    for (const it of items) {
+      if (/пощенск/i.test(it.label)) continue;
+      const value = approximateRanges(it.value);
+      if (isBoxValue(value)) {
+        intoBoxes.push({
+          label: it.label,
+          value,
+          ...(it.sources ? { sources: it.sources } : {}),
+        });
+      } else {
+        extraLines.push(`${it.label}: ${value}${it.description ? ` — ${it.description}` : ""}`);
+      }
+    }
+  };
 
   for (const b of blocks) {
     if (b.kind === "facts") {
-      const boxes: Extract<ReportBlock, { kind: "facts" }>["items"] = [];
-      for (const it of b.items) {
-        if (/пощенск/i.test(it.label)) continue;
-        const value = approximateRanges(it.value);
-        if (isBoxValue(value)) {
-          boxes.push({
-            label: it.label,
-            value,
-            ...(it.sources ? { sources: it.sources } : {}),
-          });
-        } else {
-          extraLines.push(`${it.label}: ${value}${it.description ? ` — ${it.description}` : ""}`);
+      if (b.title) {
+        const boxes: FactItem[] = [];
+        splitItems(b.items, boxes);
+        if (boxes.length > 0) titled.push({ kind: "facts", title: b.title, items: boxes });
+      } else {
+        if (boxAt < 0) {
+          boxAt = out.length;
+          out.push(null);
         }
+        splitItems(b.items, mainBoxes);
       }
-      if (boxes.length > 0) out.push({ kind: "facts", items: boxes });
     } else if (b.kind === "distances") {
       out.push({
         ...b,
@@ -97,16 +130,36 @@ export function layoutBasicBlocks(blocks: ReportBlock[]): ReportBlock[] {
     }
   }
 
+  // Подреждане на кутийките: горен ред (макс. 3) + останалите под него.
+  const topSlots: (FactItem | undefined)[] = [undefined, undefined, undefined];
+  const rest: FactItem[] = [];
+  for (const it of mainBoxes) {
+    const slot = topSlot(it.label);
+    if (slot !== null && !topSlots[slot]) topSlots[slot] = it;
+    else rest.push(it);
+  }
+  const top = topSlots.filter((x): x is FactItem => Boolean(x));
+  const boxBlocks: ReportBlock[] = [];
+  if (top.length > 0) {
+    boxBlocks.push({ kind: "facts", featured: true, items: top });
+  }
+  if (rest.length > 0) boxBlocks.push({ kind: "facts", items: rest });
+  boxBlocks.push(...titled);
+  if (boxAt >= 0) out.splice(boxAt, 1, ...boxBlocks);
+  else out.unshift(...boxBlocks);
+
+  const result = out.filter((b): b is ReportBlock => b !== null);
+
   // Остатъчната информация се разделя: разстояния/транспорт отделно от останалото.
   const transport = extraLines.filter(
     (l) => TRANSPORT_RE.test(l.split(":")[0] ?? l) || TRAVEL_RE.test(l),
   );
   const place = extraLines.filter((l) => !transport.includes(l));
   if (place.length > 0) {
-    out.push({ kind: "text", title: "Релеф и местоположение", body: place.join("\n"), tone: "emerald" });
+    result.push({ kind: "text", title: "Релеф и местоположение", body: place.join("\n"), tone: "emerald" });
   }
   if (transport.length > 0) {
-    out.push({ kind: "text", title: "Транспорт и разстояния", body: transport.join("\n"), tone: "sky" });
+    result.push({ kind: "text", title: "Транспорт и разстояния", body: transport.join("\n"), tone: "sky" });
   }
-  return out;
+  return result;
 }

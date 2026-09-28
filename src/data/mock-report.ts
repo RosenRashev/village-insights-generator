@@ -15,6 +15,10 @@ export type CardTone =
 export type ReportBlock =
   | {
       kind: "facts";
+      /** Горен, „водещ“ ред с по-едри кутийки (до 3 броя). */
+      featured?: boolean;
+      /** Малко заглавие над кутийките (напр. „От Стара Загора“). */
+      title?: string;
       items: {
         label: string;
         value: string;
@@ -44,6 +48,8 @@ export type ReportBlock =
         /** Само дали има влакова връзка/гара — без време и разписание. */
         hasTrain?: boolean;
         road?: string;
+        /** Защо мястото е известно/релевантно — показва се като „i“ бутон при посочване. */
+        info?: string;
       }[];
     }
   | {
@@ -119,23 +125,32 @@ export const MOCK_REPORT: ReportSection[] = [
     blocks: [
       {
         kind: "facts",
+        featured: true,
         items: [
           { label: "Надм. височина", value: "~275 м" },
-          { label: "До Стара Загора", value: "38 км" },
-          { label: "Време с кола", value: "~38 мин" },
+          { label: "До областния град", value: "~38 км" },
+          { label: "До летище Пловдив", value: "~75 км" },
+        ],
+      },
+      {
+        kind: "facts",
+        items: [
+          { label: "Време до областния град", value: "~38 мин" },
           { label: "До АМ „Тракия“", value: "~25 км" },
+          { label: "До жп гара Чирпан", value: "~22 км" },
         ],
       },
       {
         kind: "distances",
         title: "Отстояние до ключови места",
         rows: [
-          { to: "Стара Загора (областен град)", distance: "~38 км", driveTime: "~38 мин", hasTrain: true, road: "II-66" },
+          { to: "Стара Загора (областен град)", distance: "~38 км", driveTime: "~38 мин", hasTrain: true, road: "II-66", info: "Областен център с университет, областна болница и най-широк избор от услуги в региона." },
           { to: "АМ „Тракия“ (възел)", distance: "~25 км", driveTime: "~25 мин", hasTrain: false, road: "III-664" },
-          { to: "Летище Пловдив", distance: "~75 км", driveTime: "~60 мин", hasTrain: false, road: "II-66, АМ „Тракия“" },
+          { to: "Летище Пловдив", distance: "~75 км", driveTime: "~60 мин", hasTrain: false, road: "II-66, АМ „Тракия“", info: "Най-близкото гражданско летище с редовни полети, използвано най-вече от нискотарифни превозвачи." },
           { to: "Летище София", distance: "~180 км", driveTime: "~120 мин", hasTrain: false, road: "АМ „Тракия“" },
           { to: "ЖП гара Чирпан", distance: "~22 км", driveTime: "~25 мин", hasTrain: true, road: "II-66" },
-          { to: "Язовир Копринка", distance: "~55 км", driveTime: "~50 мин", hasTrain: false, road: "II-66, I-6" },
+          { to: "Старозагорски минерални бани", distance: "~45 км", driveTime: "~45 мин", hasTrain: false, road: "II-66", info: "Балнеологичен курорт с топла минерална вода, известен със санаториуми и SPA центрове." },
+          { to: "Язовир Копринка", distance: "~55 км", driveTime: "~50 мин", hasTrain: false, road: "II-66, I-6", info: "Един от най-големите язовири в региона, популярен за риболов и разходки, с Казанлъшката долина наблизо." },
         ],
       },
       {
