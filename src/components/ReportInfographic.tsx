@@ -31,6 +31,7 @@ import {
   type LucideIcon,
   Info,
 } from "lucide-react";
+import { layoutBasicBlocks } from "@/lib/report-layout";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 
 import {
@@ -416,10 +417,52 @@ function Block({
               {block.title}
             </h4>
           )}
-          <p className="text-xs leading-relaxed text-slate-700">{block.body}</p>
+          <div className="space-y-2 text-xs leading-relaxed text-slate-700">
+            {block.body
+              .split(/\n+/)
+              .filter(Boolean)
+              .map((para, i) => (
+                <p key={i}>{para}</p>
+              ))}
+          </div>
         </div>
       );
     }
+
+    case "distances":
+      return (
+        <div className="print-card rounded-2xl border border-slate-200 bg-slate-50 p-4 md:p-5">
+          {block.title && (
+            <h4 className="mb-3 text-sm font-bold text-slate-900">{block.title}</h4>
+          )}
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[520px] text-left text-xs">
+              <thead>
+                <tr className="border-b border-slate-200 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  <th className="py-2 pr-3">До къде</th>
+                  <th className="py-2 pr-3">Разстояние</th>
+                  <th className="py-2 pr-3">С кола</th>
+                  <th className="py-2 pr-3">С влак</th>
+                  <th className="py-2">По какъв път</th>
+                </tr>
+              </thead>
+              <tbody>
+                {block.rows.map((r, i) => (
+                  <tr key={i} className="border-b border-slate-100 last:border-0">
+                    <td className="py-2 pr-3 font-semibold text-slate-800">{r.to}</td>
+                    <td className="py-2 pr-3 text-slate-700">{r.distance}</td>
+                    <td className="py-2 pr-3 text-slate-700">{r.driveTime}</td>
+                    <td className="py-2 pr-3 font-bold" style={r.hasTrain ? { color: accent } : undefined}>
+                      {r.hasTrain ? "Да" : "—"}
+                    </td>
+                    <td className="py-2 text-slate-700">{r.road || "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
 
     case "list":
       return (
@@ -676,6 +719,7 @@ function Section({
 }) {
   const theme = THEMES[section.theme];
   const Icon = ICONS[section.id] ?? MapPin;
+  const blocks = section.id === "basic" ? layoutBasicBlocks(section.blocks) : section.blocks;
 
   // Финалната обобщена оценка получава тъмния „village“ стил от еталона.
   if (section.id === "perspective-summary") {
@@ -737,7 +781,7 @@ function Section({
 
       <div className="space-y-6">
         {extra}
-        {section.blocks.map((b, i) => (
+        {blocks.map((b, i) => (
           <Block key={i} block={b} accent={theme.accent} ink={theme.ink} hover={theme.hover} />
         ))}
       </div>
@@ -795,11 +839,8 @@ export function ReportInfographic({
             </span>
             <h2 className="wrap-anywhere font-accent text-2xl font-black tracking-wide text-slate-900 md:text-3xl">
               {placeLabel}
+              {postalCode ? ` · ${postalCode}` : ""}
             </h2>
-          </div>
-          <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-1.5 shadow-sm">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-600">Пощенски код:</span>
-            <span className="text-lg font-black text-slate-900">{postalCode}</span>
           </div>
         </div>
         <div className="h-3 w-full bg-flag-green" />
