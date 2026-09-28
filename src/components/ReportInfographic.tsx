@@ -241,6 +241,35 @@ function SourceArrow({ sources }: { sources?: SourceLink[] | undefined }) {
   );
 }
 
+/** Карта за подкатегория: заглавие по средата (2× по-голямо от текста), по избор оцветена. */
+function SubCard({
+  title,
+  tone,
+  children,
+}: {
+  title?: string | undefined;
+  tone?: CardTone | undefined;
+  children: ReactNode;
+}) {
+  const t = tone ? CARD_TONES[tone] : null;
+  return (
+    <div
+      className="print-card rounded-2xl border border-slate-200 bg-slate-50 p-5 md:p-6"
+      style={t ? { backgroundColor: t.bg, borderColor: t.border } : undefined}
+    >
+      {title && (
+        <h4
+          className="mb-4 text-center text-2xl font-bold leading-tight text-slate-900 md:text-3xl"
+          style={t ? { color: t.ink } : undefined}
+        >
+          {title}
+        </h4>
+      )}
+      {children}
+    </div>
+  );
+}
+
 function Block({
   block,
   accent,
@@ -411,21 +440,27 @@ function Block({
       }
 
       return (
-        <div className="print-card rounded-2xl border border-slate-200 bg-slate-50 p-4 md:p-5">
-          {block.title && (
-            <h4 className="mb-2 text-sm font-bold text-slate-900">
-              {block.title}
-            </h4>
-          )}
-          <div className="space-y-2 text-xs leading-relaxed text-slate-700">
+        <SubCard title={block.title} tone={block.tone}>
+          <div className="space-y-3 text-base leading-relaxed text-slate-700">
             {block.body
               .split(/\n+/)
               .filter(Boolean)
-              .map((para, i) => (
-                <p key={i}>{para}</p>
-              ))}
+              .map((para, i) => {
+                const m = /^([^:\d][^:]{1,58}):\s+(.+)$/.exec(para);
+                return (
+                  <p key={i}>
+                    {m ? (
+                      <>
+                        <strong className="font-bold text-slate-900">{m[1]}:</strong> {m[2]}
+                      </>
+                    ) : (
+                      para
+                    )}
+                  </p>
+                );
+              })}
           </div>
-        </div>
+        </SubCard>
       );
     }
 
@@ -433,10 +468,12 @@ function Block({
       return (
         <div className="print-card rounded-2xl border border-slate-200 bg-slate-50 p-4 md:p-5">
           {block.title && (
-            <h4 className="mb-3 text-sm font-bold text-slate-900">{block.title}</h4>
+            <h4 className="mb-4 text-center text-2xl font-bold leading-tight text-slate-900 md:text-3xl">
+              {block.title}
+            </h4>
           )}
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[520px] text-left text-xs">
+            <table className="w-full min-w-[520px] text-left text-sm">
               <thead>
                 <tr className="border-b border-slate-200 text-[10px] font-bold uppercase tracking-wider text-slate-400">
                   <th className="py-2 pr-3">До къде</th>
@@ -466,21 +503,16 @@ function Block({
 
     case "list":
       return (
-        <div className="print-card rounded-2xl border border-slate-200 bg-slate-50 p-4 md:p-5">
-          {block.title && (
-            <h4 className="mb-2 text-sm font-bold text-slate-800">
-              {block.title}
-            </h4>
-          )}
+        <SubCard title={block.title} tone={block.tone}>
           <ul className="space-y-2">
             {block.items.map((item) => (
-              <li key={item} className="flex items-start gap-2 text-sm leading-relaxed text-slate-700">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" style={{ color: accent }} />
+              <li key={item} className="flex items-start gap-2 text-base leading-relaxed text-slate-700">
+                <CheckCircle2 className="mt-1 h-4 w-4 shrink-0" style={{ color: accent }} />
                 <span>{item}</span>
               </li>
             ))}
           </ul>
-        </div>
+        </SubCard>
       );
 
     case "pie": {

@@ -1,4 +1,4 @@
-import type { ReportBlock } from "@/data/mock-report";
+import type { CardTone, ReportBlock } from "@/data/mock-report";
 
 /** Мерни единици, които не се броят за „думи“ при решението кутийка / текст. */
 const UNITS = new Set([
@@ -37,6 +37,21 @@ export function isBoxValue(value: string): boolean {
   return words.length <= 2;
 }
 
+const TRANSPORT_RE =
+  /разстоян|отстоян|летищ|гар[аи]|жп|железопът|път|артери|магистрал|време|автомоб|км|мин|курорт|бани|язовир|възел|възли|транспорт|обходен|посока/i;
+
+/** Стойност, която говори за пътуване: „18 минути“, „до 40 км“, „с автомобил“, „с влак“. */
+const TRAVEL_RE = /(\d|час|минут)\s*(км|мин|ч\b|час|минут)|автомобил|влак/i;
+
+/** Цвят на подкатегория според заглавието ѝ. */
+function toneFor(title?: string): CardTone {
+  const t = title ?? "";
+  if (/транспорт|път|разстоян|отстоян|летищ|гар/i.test(t)) return "sky";
+  if (/отзвук|популярн|известн/i.test(t)) return "violet";
+  if (/вещноправ|сервитут|ограничен/i.test(t)) return "amber";
+  return "emerald";
+}
+
 /**
  * Оформление на категория „Инфраструктура“:
  *  - без пощенски код в кутийките (той е в заглавието на доклада);
@@ -59,7 +74,6 @@ export function layoutBasicBlocks(blocks: ReportBlock[]): ReportBlock[] {
             value,
             ...(it.sources ? { sources: it.sources } : {}),
           });
-          if (it.description) extraLines.push(`${it.label}: ${it.description}`);
         } else {
           extraLines.push(`${it.label}: ${value}${it.description ? ` — ${it.description}` : ""}`);
         }
@@ -74,21 +88,25 @@ export function layoutBasicBlocks(blocks: ReportBlock[]): ReportBlock[] {
           driveTime: approximateRanges(r.driveTime),
         })),
       });
+    } else if (b.kind === "text" && (!b.variant || b.variant === "default")) {
+      out.push({ ...b, tone: b.tone ?? toneFor(b.title) });
+    } else if (b.kind === "list") {
+      out.push({ ...b, tone: b.tone ?? toneFor(b.title) });
     } else {
       out.push(b);
     }
   }
 
-  if (extraLines.length > 0) {
-    const idx = out.findIndex(
-      (b) => b.kind === "text" && (!b.variant || b.variant === "default"),
-    );
-    if (idx >= 0) {
-      const t = out[idx] as Extract<ReportBlock, { kind: "text" }>;
-      out[idx] = { ...t, body: `${t.body}\n${extraLines.join("\n")}` };
-    } else {
-      out.push({ kind: "text", title: "Допълнителна информация", body: extraLines.join("\n") });
-    }
+  // Остатъчната информация се разделя: разстояния/транспорт отделно от останалото.
+  const transport = extraLines.filter(
+    (l) => TRANSPORT_RE.test(l.split(":")[0] ?? l) || TRAVEL_RE.test(l),
+  );
+  const place = extraLines.filter((l) => !transport.includes(l));
+  if (place.length > 0) {
+    out.push({ kind: "text", title: "Релеф и местоположение", body: place.join("\n"), tone: "emerald" });
+  }
+  if (transport.length > 0) {
+    out.push({ kind: "text", title: "Транспорт и разстояния", body: transport.join("\n"), tone: "sky" });
   }
   return out;
 }
