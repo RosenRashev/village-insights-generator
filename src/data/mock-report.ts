@@ -150,6 +150,8 @@ export const MOCK_REPORT: ReportSection[] = [
           { to: "Летище София", distance: "~180 км", driveTime: "~120 мин", hasTrain: false, road: "АМ „Тракия“" },
           { to: "ЖП гара Чирпан", distance: "~22 км", driveTime: "~25 мин", hasTrain: true, road: "II-66" },
           { to: "Старозагорски минерални бани", distance: "~45 км", driveTime: "~45 мин", hasTrain: false, road: "II-66", info: "Балнеологичен курорт с топла минерална вода, известен със санаториуми и SPA центрове." },
+          { to: "Бензиностанция (Lukoil, Чирпан)", distance: "~22 км", driveTime: "~22 мин", hasTrain: false, road: "II-66" },
+          { to: "Зарядна станция за електромобил (Чирпан)", distance: "~22 км", driveTime: "~22 мин", hasTrain: false, road: "II-66" },
           { to: "Язовир Копринка", distance: "~55 км", driveTime: "~50 мин", hasTrain: false, road: "II-66, I-6", info: "Един от най-големите язовири в региона, популярен за риболов и разходки, с Казанлъшката долина наблизо." },
         ],
       },
