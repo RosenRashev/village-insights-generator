@@ -53,6 +53,57 @@ function toneFor(title?: string): CardTone {
 }
 
 /**
+ * Оформление на категория „Демография“:
+ *  - демографски тренд (gauge) най-отгоре;
+ *  - кутийки само за ключови проценти (постоянно живущи, млади, възрастни, образовани);
+ *  - „гъстота на населението“ и „статус на населеното място“ никога не са отделна кутийка —
+ *    преместват се като изречение в текстов/списъчен блок;
+ *  - етническата кръгова диаграма следва веднага след кутийките.
+ */
+export function layoutEthnosBlocks(blocks: ReportBlock[]): ReportBlock[] {
+  const gauges: ReportBlock[] = [];
+  const factBoxes: FactItem[] = [];
+  const pies: ReportBlock[] = [];
+  const rest: ReportBlock[] = [];
+  const extraLines: string[] = [];
+  let listIdx = -1;
+
+  const outRest: ReportBlock[] = [];
+  for (const b of blocks) {
+    if (b.kind === "gauge") {
+      gauges.push(b);
+    } else if (b.kind === "pie") {
+      pies.push(b);
+    } else if (b.kind === "facts") {
+      for (const it of b.items) {
+        if (/гъстота|статус/i.test(it.label)) {
+          extraLines.push(`${it.label}: ${approximateRanges(it.value)}${it.description ? ` — ${it.description}` : ""}`);
+        } else {
+          factBoxes.push(it);
+        }
+      }
+    } else {
+      if (b.kind === "list" && listIdx < 0) listIdx = outRest.length;
+      outRest.push(b);
+    }
+  }
+
+  if (extraLines.length > 0) {
+    if (listIdx >= 0) {
+      const l = outRest[listIdx] as Extract<ReportBlock, { kind: "list" }>;
+      outRest[listIdx] = { ...l, items: [...extraLines, ...l.items] };
+    } else {
+      outRest.unshift({ kind: "list", title: "Допълнителни данни", items: extraLines });
+    }
+  }
+
+  const out: ReportBlock[] = [...gauges];
+  if (factBoxes.length > 0) out.push({ kind: "facts", items: factBoxes });
+  out.push(...pies, ...outRest);
+  return out;
+}
+
+/**
  * Оформление на категория „Инфраструктура“:
  *  - без пощенски код в кутийките (той е в заглавието на доклада);
  *  - кутийки само за числа / до 2 думи, с приблизителни стойности вместо диапазони;

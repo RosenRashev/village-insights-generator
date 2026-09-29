@@ -32,7 +32,7 @@ import {
   type LucideIcon,
   Info,
 } from "lucide-react";
-import { layoutBasicBlocks } from "@/lib/report-layout";
+import { layoutBasicBlocks, layoutEthnosBlocks } from "@/lib/report-layout";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 
 import {
@@ -862,7 +862,12 @@ function Section({
 }) {
   const theme = THEMES[section.theme];
   const Icon = ICONS[section.id] ?? MapPin;
-  const blocks = section.id === "basic" ? layoutBasicBlocks(section.blocks) : section.blocks;
+  const blocks =
+    section.id === "basic"
+      ? layoutBasicBlocks(section.blocks)
+      : section.id === "ethnos"
+        ? layoutEthnosBlocks(section.blocks)
+        : section.blocks;
 
   // Финалната обобщена оценка получава тъмния „village“ стил от еталона.
   if (section.id === "perspective-summary") {
