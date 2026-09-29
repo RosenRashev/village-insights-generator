@@ -38,7 +38,7 @@ function AuthPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (session) void navigate({ to: "/profil" });
+    if (session) void navigate({ to: "/" });
   }, [session, navigate]);
 
   const submit = async (e: React.FormEvent) => {

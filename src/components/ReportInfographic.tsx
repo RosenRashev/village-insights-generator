@@ -198,6 +198,15 @@ const RISK: Record<
   },
 };
 
+const SCALE_LEVELS: Record<
+  "good" | "fair" | "poor",
+  { tone: CardTone; bar: string }
+> = {
+  good: { tone: "emerald", bar: "bg-emerald-500" },
+  fair: { tone: "amber", bar: "bg-amber-500" },
+  poor: { tone: "rose", bar: "bg-rose-500" },
+};
+
 const CARD_TONES: Record<CardTone, { bg: string; border: string; ink: string; icon: string }> = {
   emerald: { bg: "#ecfdf5", border: "#a7f3d0", ink: "#064e3b", icon: "#059669" },
   sky: { bg: "#f0f9ff", border: "#bae6fd", ink: "#0c4a6e", icon: "#0284c7" },
@@ -525,6 +534,43 @@ function Block({
         </SubCard>
       );
     }
+
+    case "scale":
+      return (
+        <div>
+          {block.title && (
+            <h4 className="mb-3 text-sm font-bold uppercase tracking-wide" style={{ color: accent }}>
+              {block.title}
+            </h4>
+          )}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {block.items.map((s) => {
+              const meta = SCALE_LEVELS[s.level];
+              const tone = CARD_TONES[meta.tone];
+              const percent = Math.max(0, Math.min(100, s.percent));
+              return (
+                <div
+                  key={s.label}
+                  className="print-card space-y-3 rounded-2xl border p-5"
+                  style={{ backgroundColor: tone.bg, borderColor: tone.border }}
+                >
+                  <span className="block text-xs font-bold uppercase tracking-wider" style={{ color: tone.ink, opacity: 0.75 }}>
+                    {s.label}
+                    <SourceArrow sources={s.sources} />
+                  </span>
+                  <span className="block text-3xl font-bold" style={{ color: tone.ink }}>
+                    {s.levelText}
+                  </span>
+                  <div className="h-2.5 w-full rounded-full bg-white/60">
+                    <div className={`h-2.5 rounded-full ${meta.bar}`} style={{ width: `${percent}%` }} />
+                  </div>
+                  {s.note && <p className="text-base leading-relaxed text-slate-700">{s.note}</p>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
 
     case "distances":
       return (
