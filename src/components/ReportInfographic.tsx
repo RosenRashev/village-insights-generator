@@ -357,14 +357,14 @@ function Block({
           {block.items.map((f) => (
             <div
               key={f.label}
-              className={`print-card flex flex-col justify-between rounded-2xl border border-slate-200 bg-slate-50 p-4 transition md:p-5 ${hover}`}
+              className={`print-card flex flex-col justify-between rounded-2xl border border-slate-200 bg-slate-50 p-4 transition md:p-5 ${f.size === "md" ? "sm:col-span-2" : ""} ${hover}`}
             >
               <div>
                 <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400">
                   {f.label}
                 </span>
                 <span
-                  className={`block font-bold text-slate-800 ${block.featured ? "text-3xl" : "text-xl"}`}
+                  className={`block font-bold text-slate-800 ${block.featured ? "text-3xl" : f.size === "md" ? "text-2xl" : "text-xl"}`}
                 >
                   {f.value}
                   <SourceArrow sources={f.sources} />
@@ -489,6 +489,34 @@ function Block({
               </div>
             )}
             <p className="leading-relaxed text-slate-300">{block.body}</p>
+          </div>
+        );
+      }
+
+      if (block.variant === "alert") {
+        return (
+          <div
+            className="print-card space-y-2 rounded-2xl border p-5"
+            style={{ backgroundColor: CARD_TONES.rose.bg, borderColor: CARD_TONES.rose.border }}
+          >
+            {block.title && (
+              <h4
+                className="flex items-center justify-center gap-2 text-center text-2xl font-bold leading-tight md:text-3xl"
+                style={{ color: CARD_TONES.rose.ink }}
+              >
+                <AlertTriangle className="h-6 w-6 shrink-0" style={{ color: CARD_TONES.rose.icon }} />
+                {block.title}
+                <AlertTriangle className="h-6 w-6 shrink-0" style={{ color: CARD_TONES.rose.icon }} />
+              </h4>
+            )}
+            <div className="space-y-3 text-base leading-relaxed" style={{ color: CARD_TONES.rose.ink }}>
+              {block.body
+                .split(/\n+/)
+                .filter(Boolean)
+                .map((para, i) => (
+                  <p key={i}>{para}</p>
+                ))}
+            </div>
           </div>
         );
       }

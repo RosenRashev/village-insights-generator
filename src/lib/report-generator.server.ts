@@ -274,8 +274,8 @@ const SCHEMA_DOC = `Върни САМО JSON обект със следната 
 }
 ВАЖНО: структурирай ВСИЧКИ конкретни факти, числа и раздели от изследователския текст — не пропускай информация само защото "блоковете свършват". Ако темите в текста са повече от 5, използвай до 8 блока, вместо да съкращаваш или сливаш несвързани теми в един блок.
 Block е един от:
-{"kind":"facts","items":[{"label":string,"value":string,"description":string}]}  // 2-6 кратки факта; "description" е по избор — едно кратко пояснително изречение под стойността
-{"kind":"text","title":string,"body":string,"variant":"default"|"dark"|"highlight","tone":"emerald"|"sky"|"blue"|"amber"|"violet"|"purple"|"rose"|"teal"}  // "tone" е по избор — само за категория "basic"
+{"kind":"facts","items":[{"label":string,"value":string,"description":string,"size":"sm"|"md"}]}  // 2-6 кратки факта; "description" е по избор; "size" е по избор ("sm" по подразбиране) — "md" прави кутийката двойно по-широка, за стойност с повече обяснителен текст
+{"kind":"text","title":string,"body":string,"variant":"default"|"dark"|"highlight"|"alert","tone":"emerald"|"sky"|"blue"|"amber"|"violet"|"purple"|"rose"|"teal"}  // "tone" е по избор — само за категория "basic". "alert" е оцветен с червеникав фон и удивителни иконки, за важна/критична информация (напр. медиен преглед в категория "security")
 // "variant" е по избор и по подразбиране е "default".
 // "dark" ползвай САМО за обобщаващия медиен преглед в категория "security".
 // "highlight" ползвай САМО за един интересен исторически/фолклорен факт в категория "history"
