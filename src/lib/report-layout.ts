@@ -97,9 +97,24 @@ export function layoutEthnosBlocks(blocks: ReportBlock[]): ReportBlock[] {
     }
   }
 
+  // Защитна мрежа: диаграмата на етническия състав трябва да присъства ВИНАГИ.
+  // Ако моделът въпреки инструкциите не я е върнал, показваме видим placeholder
+  // вместо да изчезне напълно от доклада.
+  const pieBlocks =
+    pies.length > 0
+      ? pies
+      : [
+          {
+            kind: "pie" as const,
+            title: "Етнически състав",
+            note: "Няма налични данни за етническия състав при генерирането на този доклад. Опитайте да прегенерирате доклада.",
+            data: [{ name: "Няма данни", value: 100 }],
+          },
+        ];
+
   const out: ReportBlock[] = [...gauges];
   if (factBoxes.length > 0) out.push({ kind: "facts", items: factBoxes });
-  out.push(...pies, ...outRest);
+  out.push(...pieBlocks, ...outRest);
   return out;
 }
 
