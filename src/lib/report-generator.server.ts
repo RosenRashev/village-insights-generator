@@ -283,12 +283,12 @@ const SCHEMA_DOC = `Върни САМО JSON обект със следната 
 ВАЖНО: структурирай ВСИЧКИ конкретни факти, числа и раздели от изследователския текст — не пропускай информация само защото "блоковете свършват". Ако темите в текста са повече от 5, използвай до 8 блока, вместо да съкращаваш или сливаш несвързани теми в един блок.
 Block е един от:
 {"kind":"facts","items":[{"label":string,"value":string,"description":string,"size":"sm"|"md"}]}  // 2-6 кратки факта; "description" е по избор; "size" е по избор ("sm" по подразбиране) — "md" прави кутийката двойно по-широка, за стойност с повече обяснителен текст
-{"kind":"text","title":string,"body":string,"variant":"default"|"dark"|"highlight"|"alert","tone":"emerald"|"sky"|"blue"|"amber"|"violet"|"purple"|"rose"|"teal"}  // "tone" е по избор — само за категория "basic". "alert" е оцветен с червеникав фон и удивителни иконки, за важна/критична информация (напр. медиен преглед в категория "security")
+{"kind":"text","title":string,"body":string,"variant":"default"|"dark"|"highlight"|"alert","tone":"emerald"|"sky"|"blue"|"amber"|"violet"|"purple"|"rose"|"teal"}  // "tone" оцветява кутийката като в категория "basic" (само за категориите, чиито специални правила по-горе го изискват — напр. "basic", "services"). "alert" е оцветен с червеникав фон и удивителни иконки, за важна/критична информация (напр. медиен преглед в категория "security")
 // "variant" е по избор и по подразбиране е "default".
 // "dark" ползвай САМО за обобщаващия медиен преглед в категория "security".
 // "highlight" ползвай САМО за един интересен исторически/фолклорен факт в категория "history"
 // (в този случай "title" е заглавието на факта).
-{"kind":"list","title":string,"items":string[]}
+{"kind":"list","title":string,"items":string[],"tone":"emerald"|"sky"|"blue"|"amber"|"violet"|"purple"|"rose"|"teal"}  // "tone" е по избор, само когато специалните правила по-горе за категорията го изискват
 {"kind":"distances","title":string,"rows":[{"to":string,"distance":string,"driveTime":string,"hasTrain":boolean,"road":string,"info":string}]}   // "info" е по избор — 1–2 изречения защо обектът е известен/релевантен, САМО за интересни обекти (курорти, бани, язовири, забележителности, градове с особеност), НЕ за летища, гари и магистрали. САМО за категория "basic": таблица с отстояния; "hasTrain" е true само ако има влакова връзка/гара (без времена с влак), "road" — номерата на пътищата
 {"kind":"scale","title":string,"items":[{"label":string,"level":"good"|"fair"|"poor","levelText":string,"percent":number,"note":string}]}   // САМО за категория "vik": двускален индикатор — "levelText" е дума/до 3 думи (напр. "Добро", "Твърда вода", "Сезонни спирания"), "percent" 0-100, "note" е пълно описателно изречение(я)
 {"kind":"pie","title":string,"note":string,"data":[{"name":string,"value":number}]}   // value = процент, сборът ~100
