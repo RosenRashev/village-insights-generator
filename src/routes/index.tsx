@@ -185,16 +185,6 @@ function Index() {
 
   const hasPlace = place !== null;
 
-  // Публичните доклади са еднакви за всички: без лична локация и цел на търсенето.
-  const handlePrivateChange = (value: boolean) => {
-    setIsPrivate(value);
-    if (!value) {
-      setCurrentLocation(null);
-      setCurrentNotice(null);
-      setPurpose(null);
-    }
-  };
-
   const generateReport = async () => {
     if (!place) return;
 
@@ -212,8 +202,10 @@ function Index() {
       }
     }
 
-    const usedCurrent = isPrivate ? currentLocation : null;
-    const usedPurpose = isPrivate && premium ? purpose : null;
+    // Авторът винаги може да зададе настояща локация и цел; публикуването влияе само на това
+    // какво виждат другите (личното им се скрива).
+    const usedCurrent = currentLocation;
+    const usedPurpose = premium ? purpose : null;
 
     setGenerating(true);
     setRealSections(null);
@@ -389,49 +381,49 @@ function Index() {
 
             {hasPlace && isSignedIn && isApproved && (
               <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="space-y-2">
+                  <SettlementCombobox
+                    id="current-location"
+                    label="Настояща локация"
+                    placeholder="напр. Стара Загора"
+                    value={currentLocation}
+                    onChange={handleCurrentLocationChange}
+                    size="sm"
+                    notice={currentNotice}
+                  />
+
+                  <p className="text-sm text-muted-foreground">
+                    Въведете населеното място, в което живеете в момента, за да изчислим
+                    разстоянието, времето за пътуване и транспортната достъпност за имоти купувани с
+                    цел уикенд туризъм за отдих и почивка.
+                  </p>
+                </div>
+
                 <div className="rounded-lg border border-border bg-card/70 p-3">
                   <div className="flex items-center gap-2">
                     <Checkbox
                       id="private-report"
                       checked={isPrivate}
-                      onCheckedChange={(v) => handlePrivateChange(v === true)}
+                      onCheckedChange={(v) => setIsPrivate(v === true)}
                     />
                     <Label htmlFor="private-report" className="text-sm font-medium">
                       Направи този доклад личен
                     </Label>
                   </div>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    Публичните доклади се виждат от всички и са еднакви за всички — без лична
-                    информация. Личният доклад се вижда само от вас и може да включва вашата
-                    настояща локация{premium ? " и цел на търсенето" : ""}.
+                    {isPrivate
+                      ? "Докладът ще се вижда само от вас."
+                      : `Докладът ще се вижда и от другите регистрирани потребители, но без вашата настояща локация${
+                          premium ? " и цел на търсенето" : ""
+                        } — тях виждате само вие.`}
                   </p>
                 </div>
-
-                {isPrivate && (
-                  <div className="space-y-2">
-                    <SettlementCombobox
-                      id="current-location"
-                      label="Настояща локация"
-                      placeholder="напр. Стара Загора"
-                      value={currentLocation}
-                      onChange={handleCurrentLocationChange}
-                      size="sm"
-                      notice={currentNotice}
-                    />
-
-                    <p className="text-sm text-muted-foreground">
-                      Въведете населеното място, в което живеете в момента, за да изчислим
-                      разстоянието, времето за пътуване и транспортната достъпност за имоти купувани
-                      с цел уикенд туризъм за отдих и почивка.
-                    </p>
-                  </div>
-                )}
               </div>
             )}
           </div>
         </section>
 
-        {hasPlace && isSignedIn && isApproved && isPrivate && premium && (
+        {hasPlace && isSignedIn && isApproved && premium && (
           <section className="mt-12 animate-in fade-in slide-in-from-bottom-2 duration-300">
             <h2 className="text-lg font-bold text-destructive">Кажете ни за какво търсите имота</h2>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -522,10 +514,10 @@ function Index() {
                 {realSections && realSections.length > 0 && (
                   <ReportInfographic
                     place={place}
-                    current={isPrivate ? currentLocation : null}
+                    current={currentLocation}
                     sections={realSections}
                     demo={false}
-                    purpose={isPrivate && premium ? purpose : null}
+                    purpose={premium ? purpose : null}
                     generatedAt={generatedAt}
                   />
                 )}

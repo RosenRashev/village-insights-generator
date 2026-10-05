@@ -57,3 +57,38 @@ describe("missingSectionIds", () => {
     expect(missingSectionIds("x", ["basic"])).toEqual(["basic"]);
   });
 });
+
+import { mergePersonal, splitPersonal } from "../src/lib/report-privacy";
+
+describe("splitPersonal / mergePersonal", () => {
+  test("публичната част е без лична информация, а личната се запазва отделно", () => {
+    const { publicContent, personal } = splitPersonal(report());
+    const pub = JSON.parse(publicContent);
+    expect(pub.current).toBeUndefined();
+    expect(pub.purpose).toBeUndefined();
+    expect(pub.sections[0].blocks).toEqual([{ kind: "text", body: "Релеф" }]);
+    expect(personal?.current).toEqual({ ekatte: 2, name: "Стара Загора" });
+    expect(personal?.purpose).toBe("family");
+    expect(personal?.blocks).toHaveLength(1);
+  });
+
+  test("обратното сливане възстановява пълния доклад за автора", () => {
+    const original = JSON.parse(report());
+    const { publicContent, personal } = splitPersonal(report());
+    const merged = JSON.parse(mergePersonal(publicContent, personal));
+    expect(merged.current).toEqual(original.current);
+    expect(merged.purpose).toBe(original.purpose);
+    expect(merged.sections[0].blocks).toEqual(original.sections[0].blocks);
+  });
+
+  test("доклад без лична информация няма лична част", () => {
+    const plain = JSON.stringify({ place: { ekatte: 1 }, sections: [{ id: "basic", blocks: [] }] });
+    expect(splitPersonal(plain).personal).toBeNull();
+    expect(mergePersonal(plain, null)).toBe(plain);
+  });
+
+  test("невалиден JSON не се чупи", () => {
+    expect(splitPersonal("x")).toEqual({ publicContent: "x", personal: null });
+    expect(mergePersonal("x", { current: 1 })).toBe("x");
+  });
+});
