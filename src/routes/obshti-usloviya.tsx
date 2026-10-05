@@ -33,7 +33,7 @@ function TermsPage() {
         Общи условия за ползване
       </h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        Последна актуализация: 15 септември 2026 г.
+        Последна актуализация: 5 октомври 2026 г.
       </p>
 
       <section className="mt-10">

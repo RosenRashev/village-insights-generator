@@ -25,22 +25,6 @@ export const CATEGORY_TTL_DAYS: Record<string, number | null> = {
   "onsite-checklist": null,
 };
 
-/**
- * Части, които НЕ се кешират заедно с категорията, защото зависят от
- * избраната от потребителя „Настояща локация“ или трябва да са винаги свежи.
- */
-export const LIVE_PARTS: Record<string, string[]> = {
-  // разстояние/време до настоящата локация се смята при всяка заявка
-  basic: ["distance-to-current"],
-  // връзка/маршрут до настоящата локация
-  transport: ["route-to-current"],
-  // раздел „новини/аварии“ винаги свеж
-  power: ["outage-news"],
-};
-
-/** Категории, за които събираме линкове към пълните статии. */
-export const SOURCE_LINK_CATEGORIES = ["security", "social"];
-
 export type SourceLink = { label: string; url: string };
 
 export type CachedCategory = {
