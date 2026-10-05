@@ -84,7 +84,7 @@ import "leaflet/dist/leaflet.css";
 
 import { LocationMap } from "@/components/LocationMap";
 import { useAuth } from "@/hooks/useAuth";
-import { isPremium } from "@/lib/plans";
+import { canUsePurpose, isPremium } from "@/lib/plans";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -1314,10 +1314,11 @@ export function ReportInfographic({
 }: InfographicProps) {
   const { profile } = useAuth();
   const premium = isPremium(profile);
+  const purposeAllowed = canUsePurpose(profile);
   // Целта е филтър при гледане: може да се смени без нови заявки (оценката се смята от запазените сигнали).
   const [viewPurpose, setViewPurpose] = useState<PurposeId | null>(initialPurpose);
   useEffect(() => setViewPurpose(initialPurpose), [initialPurpose]);
-  const purpose = premium ? viewPurpose : null;
+  const purpose = purposeAllowed ? viewPurpose : null;
   const purposeLabel = PURPOSE_OPTIONS.find((p) => p.id === purpose)?.label ?? "";
   const sections = useMemo(
     () => withPurposeSection(baseSections, purpose, purposeLabel),
@@ -1378,7 +1379,7 @@ export function ReportInfographic({
               {generatedDate && (
                 <span className="text-xs text-slate-500">Генериран на {generatedDate}</span>
               )}
-              {isPremium(profile) && (
+              {premium && (
                 <Button
                   size="sm"
                   variant="outline"
@@ -1395,7 +1396,7 @@ export function ReportInfographic({
           <div className="h-3 w-full bg-flag-red" />
         </div>
 
-        {premium && !demo && (
+        {purposeAllowed && !demo && (
           <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm print:hidden">
             <label htmlFor="view-purpose" className="font-medium text-slate-700">
               Оценка по цел:

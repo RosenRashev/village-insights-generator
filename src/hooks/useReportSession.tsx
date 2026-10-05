@@ -37,6 +37,9 @@ type ReportSessionState = {
   setProgress: Dispatch<SetStateAction<Progress>>;
   realSections: ReportSection[] | null;
   setRealSections: Dispatch<SetStateAction<ReportSection[] | null>>;
+  /** За кое място и с каква настояща локация е генерираният (или генериращият се) доклад. */
+  reportFor: { place: Settlement; current: Settlement | null } | null;
+  setReportFor: Dispatch<SetStateAction<{ place: Settlement; current: Settlement | null } | null>>;
   generatedAt: string | undefined;
   setGeneratedAt: Dispatch<SetStateAction<string | undefined>>;
   reset: () => void;
@@ -53,6 +56,10 @@ export function ReportSessionProvider({ children }: { children: ReactNode }) {
   const [generating, setGenerating] = useState(false);
   const [progress, setProgress] = useState<Progress>({ done: 0, total: 0 });
   const [realSections, setRealSections] = useState<ReportSection[] | null>(null);
+  const [reportFor, setReportFor] = useState<{
+    place: Settlement;
+    current: Settlement | null;
+  } | null>(null);
   const [generatedAt, setGeneratedAt] = useState<string | undefined>(undefined);
 
   const reset = () => {
@@ -61,6 +68,7 @@ export function ReportSessionProvider({ children }: { children: ReactNode }) {
     setPurpose(null);
     setIsPrivate(false);
     setRealSections(null);
+    setReportFor(null);
     setGeneratedAt(undefined);
     setProgress({ done: 0, total: 0 });
   };
@@ -88,6 +96,8 @@ export function ReportSessionProvider({ children }: { children: ReactNode }) {
     setProgress,
     realSections,
     setRealSections,
+    reportFor,
+    setReportFor,
     generatedAt,
     setGeneratedAt,
     reset,
