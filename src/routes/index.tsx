@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { ExternalLink, Loader2, RefreshCw, RotateCcw, Sparkles } from "lucide-react";
+import { RefreshCw, RotateCcw, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -11,8 +11,8 @@ import { PURPOSE_OPTIONS, type PurposeId } from "@/lib/prompt-modules";
 import { SettlementCombobox } from "@/components/SettlementCombobox";
 import { ModuleCard } from "@/components/ModuleCard";
 import { TopoBackground } from "@/components/TopoBackground";
-import { FeedbackBox } from "@/components/FeedbackBox";
 import { PendingApproval } from "@/components/PendingApproval";
+import { GenerationProgress } from "@/components/GenerationProgress";
 import { ReportInfographic } from "@/components/ReportInfographic";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -470,47 +470,25 @@ function Index() {
                 {IS_MOCK
                   ? "Демо режим: докладът се попълва с примерни данни, без реални заявки."
                   : existingReport
-                    ? `Последно обновен на ${new Date(existingReport.updated_at).toLocaleDateString("bg-BG")}. Можете да го отворите или да го актуализирате с най-новите налични данни.`
+                    ? `Последно обновен на ${new Date(existingReport.updated_at).toLocaleDateString("bg-BG")}. Отворете го от „Моите доклади“ или го актуализирайте с най-новите налични данни.`
                     : "Приложението ще проучи категориите с Gemini и търсене в Google в реално време и ще покаже резултата тук като инфографика."}
               </p>
 
-              {existingReport ? (
-                <div className="flex flex-wrap items-center justify-center gap-3">
-                  <Button asChild size="lg" disabled={generating}>
-                    <Link
-                      to="/report/$ekatte"
-                      params={{ ekatte: String(place.ekatte) }}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                      Отвори доклада
-                    </Link>
-                  </Button>
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    onClick={() => void generateReport()}
-                    disabled={generating}
-                  >
-                    {generating ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <RefreshCw className="h-4 w-4" />
-                    )}
-                    {generating ? `Обновяване… ${progress.done}/${progress.total}` : "Актуализирай"}
-                  </Button>
-                </div>
+              {generating ? (
+                <GenerationProgress
+                  done={progress.done}
+                  total={progress.total}
+                  updating={existingReport !== null}
+                />
+              ) : existingReport ? (
+                <Button size="lg" variant="outline" onClick={() => void generateReport()}>
+                  <RefreshCw className="h-4 w-4" />
+                  Актуализирай
+                </Button>
               ) : (
-                <Button size="lg" onClick={() => void generateReport()} disabled={generating}>
-                  {generating ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Sparkles className="h-4 w-4" />
-                  )}
-                  {generating
-                    ? `Генериране… ${progress.done}/${progress.total}`
-                    : "Генерирай доклад"}
+                <Button size="lg" onClick={() => void generateReport()}>
+                  <Sparkles className="h-4 w-4" />
+                  Генерирай доклад
                 </Button>
               )}
               {IS_MOCK && (
@@ -568,7 +546,6 @@ function Index() {
         <footer className="mt-16 border-t border-border pt-6 text-xs text-muted-foreground">
           Проектът е с нестопанска цел, в подкрепа на купувачите на имоти, в процес на активна
           разработка.
-          <FeedbackBox />
         </footer>
       </div>
     </main>

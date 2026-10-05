@@ -9,10 +9,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { useFavorites } from "@/lib/favorites";
 import { parseReport } from "@/lib/generate-report";
 import {
-  getPublicReportByEkatte,
-  listPublicPlaces,
-  type PublicPlace,
-} from "@/lib/public-reports.functions";
+  getMyReportByEkatte,
+  listMyReportPlaces,
+  type MyReportPlace,
+} from "@/lib/reports.functions";
 import { displaySettlement, type Settlement } from "@/lib/settlements";
 
 const MAX_PLACES = 3;
@@ -61,7 +61,7 @@ function ComparePage() {
   const { favorites, remove, isFavorite, toggle } = useFavorites();
   const { user, loading: authLoading } = useAuth();
 
-  const [publicPlaces, setPublicPlaces] = useState<PublicPlace[] | null>(null);
+  const [myPlaces, setMyPlaces] = useState<MyReportPlace[] | null>(null);
   const [loaded, setLoaded] = useState<Loaded[]>([]);
   const [loading, setLoading] = useState(false);
   const [pickerKey, setPickerKey] = useState(0);
@@ -69,9 +69,9 @@ function ComparePage() {
   useEffect(() => {
     if (!user) return;
     let active = true;
-    listPublicPlaces()
-      .then((rows) => active && setPublicPlaces(rows))
-      .catch(() => active && setPublicPlaces([]));
+    listMyReportPlaces()
+      .then((rows) => active && setMyPlaces(rows))
+      .catch(() => active && setMyPlaces([]));
     return () => {
       active = false;
     };
@@ -87,7 +87,7 @@ function ComparePage() {
     Promise.all(
       ids.map(async (ekatte): Promise<Loaded> => {
         try {
-          const row = await getPublicReportByEkatte({ data: { ekatte } });
+          const row = await getMyReportByEkatte({ data: { ekatte } });
           const payload = row ? parseReport(row.report_content) : null;
           if (!row || !payload) return { ekatte, place: null };
           return {
@@ -128,8 +128,7 @@ function ComparePage() {
 
   const addableFavorites = favorites.filter(
     (f) =>
-      !ids.includes(f.ekatte) &&
-      (publicPlaces === null || publicPlaces.some((p) => p.ekatte === f.ekatte)),
+      !ids.includes(f.ekatte) && (myPlaces === null || myPlaces.some((p) => p.ekatte === f.ekatte)),
   );
 
   let lastGroup = "";
@@ -154,27 +153,71 @@ function ComparePage() {
       <header className="text-center">
         <h1 className="text-3xl font-bold text-foreground sm:text-4xl">Сравнение на места</h1>
         <p className="mt-3 text-base text-muted-foreground">
-          Изберете до {MAX_PLACES} населени места с вече генериран доклад и вижте най-важните им
-          показатели един до друг. Данните са от докладите — без нови заявки и разходи.
+          Изберете до {MAX_PLACES} населени места от вашите генерирани доклади и вижте най-важните
+          им показатели един до друг. Данните са от докладите — без нови заявки и разходи.
         </p>
       </header>
 
-      <section className="mx-auto mt-8 max-w-xl space-y-4">
-        {ids.length < MAX_PLACES && (
-          <SettlementCombobox
-            key={pickerKey}
-            id="compare-place"
-            label="Добавете населено място"
-            placeholder="напр. Баня"
-            value={null}
-            onChange={(s) => s && add(s)}
-            excludeLargeCities
-            allowedEkatte={publicPlaces?.map((p) => p.ekatte) ?? []}
-          />
+      <section className="mt-8 space-y-4">
+        {myPlaces !== null && myPlaces.length === 0 ? (
+          <p className="text-center text-sm text-muted-foreground">
+            Още нямате генерирани доклади. Генерирайте доклад от{" "}
+            <Link to="/" className="font-medium text-primary underline">
+              началната страница
+            </Link>
+            , за да можете да сравнявате.
+          </p>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-3">
+            {Array.from({ length: MAX_PLACES }, (_, i) => {
+              const ekatte = ids[i];
+              if (ekatte !== undefined) {
+                const known =
+                  available.find((l) => l.ekatte === ekatte)?.place.label ??
+                  myPlaces?.find((p) => p.ekatte === ekatte)?.placeName ??
+                  `ЕКАТТЕ ${ekatte}`;
+                return (
+                  <div key={`slot-${i}`} className="space-y-2">
+                    <p className="text-sm font-medium">Място {i + 1}</p>
+                    <div className="flex items-center gap-2 rounded-md border border-primary bg-primary/5 px-3 py-2">
+                      <span className="min-w-0 flex-1 truncate text-sm font-medium" title={known}>
+                        {known}
+                      </span>
+                      <button
+                        type="button"
+                        aria-label="Махни от сравнението"
+                        className="text-muted-foreground hover:text-destructive"
+                        onClick={() => setIds(ids.filter((id) => id !== ekatte))}
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              }
+              return (
+                <SettlementCombobox
+                  key={`slot-${i}-${pickerKey}`}
+                  id={`compare-place-${i}`}
+                  label={`Място ${i + 1}`}
+                  placeholder="Въведете място"
+                  value={null}
+                  onChange={(s) => s && add(s)}
+                  size="sm"
+                  allowedEkatte={(myPlaces ?? [])
+                    .map((p) => p.ekatte)
+                    .filter((id) => !ids.includes(id))}
+                />
+              );
+            })}
+          </div>
         )}
+        <p className="text-center text-xs text-muted-foreground">
+          Можете да сравнявате само места, за които вече сте генерирали доклад в акаунта си.
+        </p>
 
         {addableFavorites.length > 0 && ids.length < MAX_PLACES && (
-          <div>
+          <div className="mx-auto max-w-xl">
             <p className="text-sm font-medium text-foreground">Любими</p>
             <ul className="mt-2 flex flex-wrap gap-2">
               {addableFavorites.map((f) => (
@@ -203,12 +246,6 @@ function ComparePage() {
             </ul>
           </div>
         )}
-        {favorites.length === 0 && ids.length === 0 && (
-          <p className="text-center text-sm text-muted-foreground">
-            Съвет: отворете доклад за населено място и натиснете „Добави в любими“, за да го
-            намирате бързо тук.
-          </p>
-        )}
       </section>
 
       {loading && (
@@ -219,7 +256,7 @@ function ComparePage() {
 
       {missing.length > 0 && !loading && (
         <p className="mt-6 text-center text-sm text-destructive">
-          За някои от избраните места няма публичен доклад и те са пропуснати.
+          За някои от избраните места не е намерен ваш доклад и те са пропуснати.
         </p>
       )}
 

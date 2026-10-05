@@ -777,7 +777,6 @@ function Block({
     }
 
     case "bars": {
-      const unit = block.unit ?? "";
       return (
         <div>
           <h4
@@ -785,9 +784,12 @@ function Block({
             style={{ color: accent }}
           >
             {block.title}
+            {block.unit && (
+              <span className="text-xs font-normal normal-case opacity-70">({block.unit})</span>
+            )}
           </h4>
           <div className="print-card rounded-2xl bg-white/80 p-4 shadow-sm ring-1 ring-black/5">
-            <div className="h-56 w-full">
+            <div className="pointer-events-none h-56 w-full select-none">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={block.data} margin={{ top: 20, right: 8, left: 8, bottom: 0 }}>
                   <XAxis
@@ -797,7 +799,6 @@ function Block({
                     tick={{ fontSize: 12, fill: "#64748b" }}
                   />
                   <YAxis hide domain={[0, "dataMax"]} />
-                  <Tooltip formatter={(v: number) => `${v} ${unit}`.trim()} />
                   <Bar
                     dataKey="value"
                     fill={accent}

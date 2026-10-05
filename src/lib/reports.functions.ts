@@ -107,6 +107,36 @@ export const saveReport = createServerFn({ method: "POST" })
     return { id: row.id as string, updated: false };
   });
 
+export type MyReportPlace = { ekatte: number; placeName: string; updatedAt: string };
+
+/** Населените места, за които потребителят вече има доклад (за страницата „Сравнение“). */
+export const listMyReportPlaces = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<MyReportPlace[]> => {
+    const { data, error } = await context.supabase
+      .from("reports")
+      .select("ekatte, place_name, updated_at")
+      .eq("user_id", context.userId)
+      .not("ekatte", "is", null)
+      .order("updated_at", { ascending: false });
+
+    if (error) throw new Error(error.message);
+
+    const seen = new Set<number>();
+    const out: MyReportPlace[] = [];
+    for (const row of data ?? []) {
+      const ekatte = row.ekatte as number | null;
+      if (ekatte === null || seen.has(ekatte)) continue;
+      seen.add(ekatte);
+      out.push({
+        ekatte,
+        placeName: (row.place_name as string | null) ?? "",
+        updatedAt: row.updated_at as string,
+      });
+    }
+    return out;
+  });
+
 export type MyReportSummary = { id: string; is_public: boolean; updated_at: string };
 
 /** Има ли потребителят вече доклад за това населено място (за бутона „Актуализирай“). */

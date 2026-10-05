@@ -12,6 +12,7 @@ import {
 import { useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
+import { FeedbackBox } from "../components/FeedbackBox";
 import { Toaster } from "../components/ui/sonner";
 import { AuthProvider, useAuth } from "../hooks/useAuth";
 
@@ -331,6 +332,7 @@ function RootComponent() {
           <SiteFooter />
         </div>
         <ScrollToTop />
+        <FeedbackBox />
         <Toaster />
       </AuthProvider>
     </QueryClientProvider>
