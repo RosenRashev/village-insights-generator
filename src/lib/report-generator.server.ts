@@ -1,6 +1,7 @@
 import type { ReportSection } from "@/data/mock-report";
 import type { Json } from "@/integrations/supabase/types";
 import type { SourceLink } from "@/lib/report-cache";
+import { parseBlocks } from "@/lib/report-schema";
 import { PROMPT_MODULES, COMMON_RULES, DISTRICT_RULE, LEVEL_RULE } from "@/lib/prompt-modules";
 
 export type GeneratedCategory = {
@@ -408,16 +409,20 @@ ${research}
     blocks?: unknown;
     incidentCount?: unknown;
   };
-  const blocks = Array.isArray(obj.blocks) ? obj.blocks : [];
+  // Невалидните блокове се изхвърлят поотделно, вместо да счупят цялата категория.
+  const { blocks, dropped } = parseBlocks(obj.blocks);
+  if (dropped > 0) {
+    console.warn(`[report] категория „${input.categoryId}“: изхвърлени ${dropped} невалидни блока.`);
+  }
   if (blocks.length === 0) {
     throw new Error(`Моделът не върна съдържание за категория „${input.categoryId}“.`);
   }
 
   return {
     section: {
-      title: obj.title ?? moduleLabel(input.categoryId),
-      subtitle: obj.subtitle ?? "",
-      blocks: blocks as ReportSection["blocks"],
+      title: typeof obj.title === "string" && obj.title ? obj.title : moduleLabel(input.categoryId),
+      subtitle: typeof obj.subtitle === "string" ? obj.subtitle : "",
+      blocks,
     },
     incidentCount: typeof obj.incidentCount === "number" ? obj.incidentCount : null,
   };

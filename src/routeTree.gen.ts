@@ -21,6 +21,7 @@ import { Route as VhodRouteImport } from './routes/vhod'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedProfilRouteImport } from './routes/_authenticated/profil'
 import { Route as SeloEkatteRouteImport } from './routes/selo/$ekatte'
+import { Route as AuthenticatedAdminFeedbackRouteImport } from './routes/_authenticated/admin_.feedback'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -81,6 +82,12 @@ const SeloEkatteRoute = SeloEkatteRouteImport.update({
   path: '/selo/$ekatte',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAdminFeedbackRoute =
+  AuthenticatedAdminFeedbackRouteImport.update({
+    id: '/admin_/feedback',
+    path: '/admin/feedback',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -94,6 +101,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRoute
   '/profil': typeof AuthenticatedProfilRoute
   '/selo/$ekatte': typeof SeloEkatteRoute
+  '/admin/feedback': typeof AuthenticatedAdminFeedbackRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -107,6 +115,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminRoute
   '/profil': typeof AuthenticatedProfilRoute
   '/selo/$ekatte': typeof SeloEkatteRoute
+  '/admin/feedback': typeof AuthenticatedAdminFeedbackRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -122,6 +131,7 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/profil': typeof AuthenticatedProfilRoute
   '/selo/$ekatte': typeof SeloEkatteRoute
+  '/_authenticated/admin_/feedback': typeof AuthenticatedAdminFeedbackRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -137,6 +147,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/profil'
     | '/selo/$ekatte'
+    | '/admin/feedback'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -150,6 +161,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/profil'
     | '/selo/$ekatte'
+    | '/admin/feedback'
   id:
     | '__root__'
     | '/'
@@ -164,6 +176,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/profil'
     | '/selo/$ekatte'
+    | '/_authenticated/admin_/feedback'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -265,17 +278,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SeloEkatteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/admin_/feedback': {
+      id: '/_authenticated/admin_/feedback'
+      path: '/admin/feedback'
+      fullPath: '/admin/feedback'
+      preLoaderRoute: typeof AuthenticatedAdminFeedbackRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedProfilRoute: typeof AuthenticatedProfilRoute
+  AuthenticatedAdminFeedbackRoute: typeof AuthenticatedAdminFeedbackRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedProfilRoute: AuthenticatedProfilRoute,
+  AuthenticatedAdminFeedbackRoute: AuthenticatedAdminFeedbackRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
