@@ -2,13 +2,25 @@ import type { ReportBlock, ReportSection } from "@/data/mock-report";
 import { normalize, type Settlement } from "@/lib/settlements";
 
 /**
- * Сравнение на населени места от вече запазени доклади — само четене от данните,
- * без никакви заявки към Gemini.
+ * Сравнение на населени места от вече запазени доклади — без заявки към Gemini.
+ * Не се филтрира информация: всеки блок от доклада става ред в таблицата, като дългите
+ * текстове и списъци се показват компактно (свиват се в интерфейса).
  */
 
 export type CompareLevel = "good" | "fair" | "poor";
-export type CompareCell = { text: string; level?: CompareLevel };
-export type CompareRow = { group: string; label: string; cells: (CompareCell | null)[] };
+
+export type CompareCell = {
+  /** Основна кратка стойност. */
+  text?: string;
+  /** Допълнително (обикновено по-дълго) пояснение. */
+  note?: string;
+  /** Кратки редове — елементи на списък, разстояния, разписание, дялове. */
+  lines?: string[];
+  level?: CompareLevel;
+};
+
+export type CompareRow = { label: string; cells: (CompareCell | null)[] };
+export type CompareGroup = { id: string; title: string; rows: CompareRow[] };
 
 export type ComparePlace = {
   label: string;
@@ -16,180 +28,236 @@ export type ComparePlace = {
   sections: ReportSection[];
 };
 
-type Entry = { group: string; label: string; cell: CompareCell };
+type Entry = { label: string; cell: CompareCell };
 
-const GROUPS = {
-  basic: "Общи данни",
-  ratings: "Оценки",
-  facts: "Ключови показатели",
-  risks: "Рискове",
-  trends: "Тенденции",
-} as const;
-
-/** Кутийки (facts), които си струва да се сравняват: [шаблон на етикета, показвано име]. */
-const FACT_LABELS: [RegExp, string][] = [
-  [/надм\.?\s*височин|надморска/i, "Надморска височина"],
-  [/асфалт/i, "Асфалтирани улици"],
-  [/изходи/i, "Изходи от населеното място"],
-  [/жп спирка|жп гара/i, "ЖП спирка в населеното място"],
-  [/автогара/i, "Автогара"],
-  [/канализац/i, "Канализация"],
-  [/покритие.*водопровод|водопровод/i, "Покритие на водопровода"],
-  [/оператор/i, "ВиК оператор"],
-  [/дълбочина/i, "Дълбочина на подземните води"],
-];
-
-const RISK_RANK = { low: 0, medium: 1, high: 2 } as const;
 const RISK_TEXT = { low: "нисък", medium: "среден", high: "висок" } as const;
 const RISK_LEVEL: Record<"low" | "medium" | "high", CompareLevel> = {
   low: "good",
   medium: "fair",
   high: "poor",
 };
+const TONE_LEVEL: Partial<Record<string, CompareLevel>> = {
+  emerald: "good",
+  teal: "good",
+  amber: "fair",
+  rose: "poor",
+};
 
-function factsOf(block: Extract<ReportBlock, { kind: "facts" }>): Entry[] {
-  const out: Entry[] = [];
-  for (const item of block.items) {
-    if (!item.value.trim()) continue;
-    const match = FACT_LABELS.find(([re]) => re.test(item.label));
-    if (match) {
-      out.push({ group: GROUPS.facts, label: match[1], cell: { text: item.value } });
-    } else if (/летищ/i.test(item.label)) {
-      out.push({
-        group: GROUPS.facts,
-        label: "Най-близко летище",
-        cell: { text: `${item.label.replace(/^До\s+(летище\s+)?/i, "")} — ${item.value}` },
-      });
-    }
-  }
+const clean = (s: string | undefined): string | undefined => {
+  const t = s?.trim();
+  return t ? t : undefined;
+};
+
+/** Само ненулевите полета, за да отговаря на `exactOptionalPropertyTypes`. */
+function cell(c: {
+  text?: string | undefined;
+  note?: string | undefined;
+  lines?: string[] | undefined;
+  level?: CompareLevel | undefined;
+}): CompareCell {
+  const out: CompareCell = {};
+  const text = clean(c.text);
+  const note = clean(c.note);
+  const lines = c.lines?.map((l) => l.trim()).filter(Boolean);
+  if (text) out.text = text;
+  if (note) out.note = note;
+  if (lines && lines.length > 0) out.lines = lines;
+  if (c.level) out.level = c.level;
   return out;
 }
 
-function riskEntries(block: Extract<ReportBlock, { kind: "risks" }>): Entry[] {
-  if (block.items.length === 0) return [];
-  const counts = { high: 0, medium: 0, low: 0 };
-  let worst = block.items[0]!;
-  for (const r of block.items) {
-    counts[r.level] += 1;
-    if (RISK_RANK[r.level] > RISK_RANK[worst.level]) worst = r;
+function blockEntries(block: ReportBlock): Entry[] {
+  switch (block.kind) {
+    case "facts":
+      return block.items.map((it) => ({
+        label: it.label,
+        cell: cell({
+          text: it.value,
+          note: [it.description, it.pillValue ? `${it.pillLabel ?? ""} ${it.pillValue}` : ""]
+            .filter(Boolean)
+            .join(" · "),
+        }),
+      }));
+
+    case "scale":
+      return block.items.map((it) => ({
+        label: it.label,
+        cell: cell({ text: it.levelText, note: it.note, level: it.level }),
+      }));
+
+    case "risks":
+      return block.items.map((it) => ({
+        label: it.label,
+        cell: cell({
+          text: `${RISK_TEXT[it.level]}${it.incidentCount ? ` · ${it.incidentCount} случая` : ""}`,
+          note: it.note,
+          level: RISK_LEVEL[it.level],
+        }),
+      }));
+
+    case "gauge": {
+      const sign = block.direction === "down" ? "−" : block.direction === "up" ? "+" : "";
+      return [
+        {
+          label: block.title,
+          cell: cell({
+            text: `${sign}${block.value}%${block.periodLabel ? ` (${block.periodLabel})` : ""}`,
+            note: block.note,
+            level:
+              block.direction === "up" ? "good" : block.direction === "down" ? "poor" : undefined,
+          }),
+        },
+      ];
+    }
+
+    case "bars": {
+      const first = block.data[0];
+      const last = block.data[block.data.length - 1];
+      if (!first || !last) return [];
+      const unit = block.unit ? ` ${block.unit}` : "";
+      return [
+        {
+          label: block.title,
+          cell: cell({
+            text:
+              first === last
+                ? `${last.value}${unit} (${last.label})`
+                : `${first.value} → ${last.value}${unit}`,
+            note: block.data.map((d) => `${d.label}: ${d.value}`).join(" · "),
+            level: first === last ? undefined : last.value >= first.value ? "good" : "poor",
+          }),
+        },
+      ];
+    }
+
+    case "pie":
+      return [
+        {
+          label: block.title,
+          cell: cell({ lines: block.data.map((d) => `${d.name} — ${d.value}%`) }),
+        },
+      ];
+
+    case "distances":
+      return [
+        {
+          label: block.title ?? "Разстояния",
+          cell: cell({
+            lines: block.rows.map(
+              (r) =>
+                `${r.to}: ${r.distance}${r.driveTime ? `, ${r.driveTime}` : ""}${r.road ? ` (${r.road})` : ""}`,
+            ),
+          }),
+        },
+      ];
+
+    case "schedule":
+      return [
+        {
+          label: block.title,
+          cell: cell({
+            lines: block.rows.map(
+              (r) => `${r.route}: ${r.days}, ${r.runs}${r.last ? ` (последен ${r.last})` : ""}`,
+            ),
+          }),
+        },
+      ];
+
+    case "cards":
+      return block.items.map((it) => ({
+        label: it.label,
+        cell: cell({ note: it.body, level: TONE_LEVEL[it.tone] }),
+      }));
+
+    case "text":
+      return [
+        {
+          label: block.title ?? "Описание",
+          cell: cell({ note: block.body, level: block.tone ? TONE_LEVEL[block.tone] : undefined }),
+        },
+      ];
+
+    case "list":
+      return [
+        {
+          label: block.title ?? "Списък",
+          cell: cell({
+            lines: block.items,
+            level: block.tone ? TONE_LEVEL[block.tone] : undefined,
+          }),
+        },
+      ];
+
+    case "checklist":
+      return block.items.map((it) => ({ label: it.title, cell: cell({ lines: it.points }) }));
+
+    default:
+      return [];
   }
-  return [
-    {
-      group: GROUPS.risks,
-      label: "Най-сериозен риск",
-      cell: { text: `${worst.label} (${RISK_TEXT[worst.level]})`, level: RISK_LEVEL[worst.level] },
-    },
-    {
-      group: GROUPS.risks,
-      label: "Брой рискове: високи / средни / ниски",
-      cell: {
-        text: `${counts.high} / ${counts.medium} / ${counts.low}`,
-        level: counts.high > 0 ? "poor" : counts.medium > 0 ? "fair" : "good",
-      },
-    },
-  ];
 }
 
-function entriesFor(p: ComparePlace): Entry[] {
-  const out: Entry[] = [];
+/** Редове и групи се сравняват по нормализирано заглавие (без регистър и пунктуация). */
+type PlaceData = { groups: Map<string, { title: string; entries: Map<string, Entry> }> };
+
+function collect(p: ComparePlace): PlaceData {
+  const groups: PlaceData["groups"] = new Map();
+  const group = (id: string, title: string) => {
+    let g = groups.get(id);
+    if (!g) groups.set(id, (g = { title, entries: new Map() }));
+    return g;
+  };
 
   if (p.place) {
-    out.push({ group: GROUPS.basic, label: "Община", cell: { text: p.place.municipality } });
-    out.push({ group: GROUPS.basic, label: "Област", cell: { text: p.place.province } });
+    const g = group("general", "Общи данни");
+    g.entries.set("obshtina", { label: "Община", cell: cell({ text: p.place.municipality }) });
+    g.entries.set("oblast", { label: "Област", cell: cell({ text: p.place.province }) });
     if (typeof p.place.population === "number") {
-      out.push({
-        group: GROUPS.basic,
+      g.entries.set("naselenie", {
         label: "Население (НСИ)",
-        cell: { text: `${p.place.population.toLocaleString("bg-BG")} души` },
+        cell: cell({ text: `${p.place.population.toLocaleString("bg-BG")} души` }),
       });
     }
   }
 
   for (const section of p.sections) {
+    if (section.id === "onsite-checklist") continue;
+    const g = group(section.id, section.title);
+    const seen = new Map<string, number>();
     for (const block of section.blocks) {
-      switch (block.kind) {
-        case "scale":
-          for (const it of block.items) {
-            out.push({
-              group: GROUPS.ratings,
-              label: it.label,
-              cell: { text: it.levelText, level: it.level },
-            });
-          }
-          break;
-        case "facts":
-          out.push(...factsOf(block));
-          break;
-        case "risks":
-          out.push(...riskEntries(block));
-          break;
-        case "gauge": {
-          const sign = block.direction === "down" ? "−" : block.direction === "up" ? "+" : "";
-          const level: CompareLevel | undefined =
-            block.direction === "up" ? "good" : block.direction === "down" ? "poor" : undefined;
-          out.push({
-            group: GROUPS.trends,
-            label: block.title,
-            cell: {
-              text: `${sign}${block.value}%${block.periodLabel ? ` (${block.periodLabel})` : ""}`,
-              ...(level ? { level } : {}),
-            },
-          });
-          break;
-        }
-        case "bars": {
-          const first = block.data[0];
-          const last = block.data[block.data.length - 1];
-          if (first && last && first !== last) {
-            out.push({
-              group: GROUPS.trends,
-              label: block.title,
-              cell: {
-                text: `${first.value} (${first.label}) → ${last.value} (${last.label})`,
-                level: last.value >= first.value ? "good" : "poor",
-              },
-            });
-          }
-          break;
-        }
-        default:
-          break;
+      for (const e of blockEntries(block)) {
+        const base = `${block.kind === "facts" ? "f" : block.kind}|${normalize(e.label)}`;
+        const n = (seen.get(base) ?? 0) + 1;
+        seen.set(base, n);
+        g.entries.set(n === 1 ? base : `${base}#${n}`, e);
       }
     }
   }
-  return out;
+  return { groups };
 }
 
-const GROUP_ORDER: string[] = Object.values(GROUPS);
+/** Подрежда всичко от докладите на няколко места в общи редове, групирани по категория. */
+export function buildComparison(places: ComparePlace[]): CompareGroup[] {
+  const data = places.map(collect);
 
-/** Подрежда данните на няколко места в общи редове; ред без данни за нито едно място се пропуска. */
-export function buildComparison(places: ComparePlace[]): CompareRow[] {
-  const perPlace = places.map((p) => {
-    const map = new Map<string, Entry>();
-    for (const e of entriesFor(p)) {
-      const key = `${e.group}|${normalize(e.label)}`;
-      if (!map.has(key)) map.set(key, e);
+  const groupIds: string[] = [];
+  for (const d of data)
+    for (const id of d.groups.keys()) if (!groupIds.includes(id)) groupIds.push(id);
+
+  const out: CompareGroup[] = [];
+  for (const id of groupIds) {
+    const title = data.map((d) => d.groups.get(id)?.title).find(Boolean) ?? id;
+    const keys: string[] = [];
+    for (const d of data) {
+      for (const key of d.groups.get(id)?.entries.keys() ?? []) {
+        if (!keys.includes(key)) keys.push(key);
+      }
     }
-    return map;
-  });
-
-  const keys: string[] = [];
-  for (const map of perPlace) {
-    for (const key of map.keys()) if (!keys.includes(key)) keys.push(key);
+    const rows: CompareRow[] = keys.map((key) => {
+      const entries = data.map((d) => d.groups.get(id)?.entries.get(key) ?? null);
+      const first = entries.find((e) => e !== null)!;
+      return { label: first.label, cells: entries.map((e) => e?.cell ?? null) };
+    });
+    if (rows.length > 0) out.push({ id, title, rows });
   }
-
-  const rows: CompareRow[] = keys.map((key) => {
-    const entries = perPlace.map((m) => m.get(key) ?? null);
-    const first = entries.find((e) => e !== null)!;
-    return { group: first.group, label: first.label, cells: entries.map((e) => e?.cell ?? null) };
-  });
-
-  // Групите са в зададен ред; в рамките на група редът е от първото място, в което се срещат.
-  return rows
-    .map((row, index) => ({ row, index }))
-    .sort((a, b) => {
-      const g = GROUP_ORDER.indexOf(a.row.group) - GROUP_ORDER.indexOf(b.row.group);
-      return g !== 0 ? g : a.index - b.index;
-    })
-    .map((x) => x.row);
+  return out;
 }

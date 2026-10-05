@@ -41,14 +41,15 @@ const vikPoor = section("vik", [
 ]);
 
 describe("buildComparison", () => {
-  test("оценките от двете места попадат в един ред", () => {
-    const rows = buildComparison([
+  test("групите са по категории, а оценките от местата са в един ред", () => {
+    const groups = buildComparison([
       { label: "А", sections: [vikGood] },
       { label: "Б", sections: [vikPoor] },
     ]);
-    expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({
-      group: "Оценки",
+    expect(groups).toHaveLength(1);
+    expect(groups[0]?.id).toBe("vik");
+    expect(groups[0]?.rows).toHaveLength(1);
+    expect(groups[0]?.rows[0]).toMatchObject({
       label: "Качество на питейната вода",
       cells: [
         { text: "Добро", level: "good" },
@@ -57,37 +58,16 @@ describe("buildComparison", () => {
     });
   });
 
-  test("липсваща информация е null, а ред без данни не се показва", () => {
-    const rows = buildComparison([
+  test("липсваща информация е null", () => {
+    const groups = buildComparison([
       { label: "А", sections: [vikGood] },
       { label: "Б", sections: [] },
     ]);
-    expect(rows[0]?.cells[1]).toBeNull();
+    expect(groups[0]?.rows[0]?.cells[1]).toBeNull();
   });
 
-  test("рисковете се обобщават до най-сериозния", () => {
-    const [worst] = buildComparison([
-      {
-        label: "А",
-        sections: [
-          section("risks", [
-            {
-              kind: "risks",
-              title: "Рискове",
-              items: [
-                { label: "Наводнения", level: "low" },
-                { label: "Пожари", level: "high" },
-              ],
-            },
-          ]),
-        ],
-      },
-    ]);
-    expect(worst?.cells[0]).toEqual({ text: "Пожари (висок)", level: "poor" });
-  });
-
-  test("само избраните кутийки се сравняват", () => {
-    const rows = buildComparison([
+  test("нищо не се филтрира — и кутийки без „важно“ име влизат", () => {
+    const groups = buildComparison([
       {
         label: "А",
         sections: [
@@ -96,29 +76,115 @@ describe("buildComparison", () => {
               kind: "facts",
               items: [
                 { label: "Надм. височина", value: "~420 м" },
-                { label: "Нещо друго", value: "5" },
+                { label: "Нещо друго", value: "5", description: "Пояснение" },
               ],
             },
           ]),
         ],
       },
     ]);
-    expect(rows.map((r) => r.label)).toEqual(["Надморска височина"]);
+    expect(groups[0]?.rows.map((r) => r.label)).toEqual(["Надм. височина", "Нещо друго"]);
+    expect(groups[0]?.rows[1]?.cells[0]).toEqual({ text: "5", note: "Пояснение" });
   });
 
-  test("групите са в ред: общи → оценки → показатели → рискове → тенденции", () => {
-    const rows = buildComparison([
+  test("всички рискове са отделни редове с ниво", () => {
+    const [g] = buildComparison([
       {
         label: "А",
         sections: [
-          section("x", [
-            { kind: "gauge", title: "Демографски тренд", value: 20, direction: "down" },
-            ...vikGood.blocks,
+          section("risks", [
+            {
+              kind: "risks",
+              title: "Рискове",
+              items: [
+                { label: "Наводнения", level: "low", incidentCount: 0 },
+                { label: "Пожари", level: "high", incidentCount: 3, note: "Сухо лято" },
+              ],
+            },
           ]),
         ],
       },
     ]);
-    expect(rows.map((r) => r.group)).toEqual(["Оценки", "Тенденции"]);
+    expect(g?.rows).toHaveLength(2);
+    expect(g?.rows[1]?.cells[0]).toEqual({
+      text: "висок · 3 случая",
+      note: "Сухо лято",
+      level: "poor",
+    });
+  });
+
+  test("диаграма, списък и текст запазват цялата информация", () => {
+    const [g] = buildComparison([
+      {
+        label: "А",
+        sections: [
+          section("history", [
+            {
+              kind: "pie",
+              title: "Състав",
+              data: [
+                { name: "Българи", value: 70 },
+                { name: "Роми", value: 30 },
+              ],
+            },
+            { kind: "list", title: "Събития", items: ["едно", "две"] },
+            { kind: "text", title: "Тенденция", body: "Дълъг текст" },
+            {
+              kind: "bars",
+              title: "Население",
+              unit: "души",
+              data: [
+                { label: "1946", value: 600 },
+                { label: "2021", value: 130 },
+              ],
+            },
+          ]),
+        ],
+      },
+    ]);
+    expect(g?.rows[0]?.cells[0]).toEqual({ lines: ["Българи — 70%", "Роми — 30%"] });
+    expect(g?.rows[1]?.cells[0]).toEqual({ lines: ["едно", "две"] });
+    expect(g?.rows[2]?.cells[0]).toEqual({ note: "Дълъг текст" });
+    expect(g?.rows[3]?.cells[0]).toMatchObject({
+      text: "600 → 130 души",
+      note: "1946: 600 · 2021: 130",
+      level: "poor",
+    });
+  });
+
+  test("еднакви заглавия в една категория не се губят", () => {
+    const [g] = buildComparison([
+      {
+        label: "А",
+        sections: [
+          section("x", [
+            { kind: "list", title: "Забележки", items: ["a"] },
+            { kind: "list", title: "Забележки", items: ["b"] },
+          ]),
+        ],
+      },
+    ]);
+    expect(g?.rows).toHaveLength(2);
+  });
+
+  test("общите данни са първа група, а чек-листът за оглед се пропуска", () => {
+    const groups = buildComparison([
+      {
+        label: "А",
+        place: {
+          ekatte: 1,
+          isVillage: true,
+          name: "А",
+          municipality: "Община",
+          province: "Област",
+          postalCode: "1000",
+          population: 1558,
+        },
+        sections: [vikGood, section("onsite-checklist", [{ kind: "list", items: ["x"] }])],
+      },
+    ]);
+    expect(groups.map((g) => g.id)).toEqual(["general", "vik"]);
+    expect(groups[0]?.rows.map((r) => r.label)).toEqual(["Община", "Област", "Население (НСИ)"]);
   });
 });
 

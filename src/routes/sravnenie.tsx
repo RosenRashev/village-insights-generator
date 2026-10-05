@@ -4,7 +4,8 @@ import { Loader2, Star, X } from "lucide-react";
 
 import { SettlementCombobox } from "@/components/SettlementCombobox";
 import { Button } from "@/components/ui/button";
-import { buildComparison, type CompareLevel, type ComparePlace } from "@/lib/compare";
+import { CompareTable } from "@/components/CompareTable";
+import { buildComparison, type ComparePlace } from "@/lib/compare";
 import { useAuth } from "@/hooks/useAuth";
 import { useFavorites } from "@/lib/favorites";
 import { parseReport } from "@/lib/generate-report";
@@ -45,12 +46,6 @@ function parseEkatte(m: string | undefined): number[] {
   }
   return out.slice(0, MAX_PLACES);
 }
-
-const LEVEL_STYLE: Record<CompareLevel, string> = {
-  good: "bg-emerald-50 text-emerald-900 ring-emerald-200",
-  fair: "bg-amber-50 text-amber-900 ring-amber-200",
-  poor: "bg-rose-50 text-rose-900 ring-rose-200",
-};
 
 type Loaded = { ekatte: number; place: ComparePlace | null };
 
@@ -124,14 +119,12 @@ function ComparePage() {
 
   const available = loaded.filter((l): l is { ekatte: number; place: ComparePlace } => !!l.place);
   const missing = loaded.filter((l) => !l.place);
-  const rows = useMemo(() => buildComparison(available.map((l) => l.place)), [available]);
+  const groups = useMemo(() => buildComparison(available.map((l) => l.place)), [available]);
 
   const addableFavorites = favorites.filter(
     (f) =>
       !ids.includes(f.ekatte) && (myPlaces === null || myPlaces.some((p) => p.ekatte === f.ekatte)),
   );
-
-  let lastGroup = "";
 
   if (!authLoading && !user) {
     return (
@@ -149,7 +142,7 @@ function ComparePage() {
   }
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-10 sm:py-14">
+    <main className="mx-auto max-w-6xl px-4 py-10 sm:py-14">
       <header className="text-center">
         <h1 className="text-3xl font-bold text-foreground sm:text-4xl">Сравнение на места</h1>
         <p className="mt-3 text-base text-muted-foreground">
@@ -261,91 +254,54 @@ function ComparePage() {
       )}
 
       {available.length > 0 && !loading && (
-        <div className="mt-10 overflow-x-auto rounded-2xl border border-border bg-card shadow-sm">
-          <table className="w-full min-w-[32rem] border-collapse text-sm">
-            <thead>
+        <div className="mt-10">
+          <CompareTable
+            groups={groups}
+            columns={available.length}
+            header={
               <tr className="border-b border-border">
-                <th className="sticky left-0 z-10 w-44 bg-card px-4 py-3 text-left font-medium text-muted-foreground">
+                <th className="sticky left-0 z-10 bg-card px-3 py-3 text-left font-medium text-muted-foreground">
                   &nbsp;
                 </th>
                 {available.map((l) => (
-                  <th key={l.ekatte} className="px-4 py-3 text-left align-top">
+                  <th key={l.ekatte} className="px-3 py-3 text-left align-top">
                     <div className="flex items-start justify-between gap-2">
                       <Link
                         to="/report/$ekatte"
                         params={{ ekatte: String(l.ekatte) }}
-                        className="font-semibold text-primary hover:underline"
+                        className="text-sm font-semibold text-primary hover:underline"
                       >
                         {l.place.label}
                       </Link>
-                      <button
-                        type="button"
-                        aria-label={isFavorite(l.ekatte) ? "Махни от любимите" : "Добави в любими"}
-                        title={isFavorite(l.ekatte) ? "В любими" : "Добави в любими"}
-                        className="ml-auto text-muted-foreground hover:text-amber-500"
-                        onClick={() => toggle({ ekatte: l.ekatte, label: l.place.label })}
-                      >
-                        <Star
-                          className={`h-4 w-4 ${isFavorite(l.ekatte) ? "fill-amber-400 text-amber-500" : ""}`}
-                        />
-                      </button>
-                      <button
-                        type="button"
-                        aria-label="Махни от сравнението"
-                        className="text-muted-foreground hover:text-destructive"
-                        onClick={() => setIds(ids.filter((id) => id !== l.ekatte))}
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
+                      <span className="flex shrink-0 items-center gap-1.5">
+                        <button
+                          type="button"
+                          aria-label={
+                            isFavorite(l.ekatte) ? "Махни от любимите" : "Добави в любими"
+                          }
+                          title={isFavorite(l.ekatte) ? "В любими" : "Добави в любими"}
+                          className="text-muted-foreground hover:text-amber-500"
+                          onClick={() => toggle({ ekatte: l.ekatte, label: l.place.label })}
+                        >
+                          <Star
+                            className={`h-4 w-4 ${isFavorite(l.ekatte) ? "fill-amber-400 text-amber-500" : ""}`}
+                          />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label="Махни от сравнението"
+                          className="text-muted-foreground hover:text-destructive"
+                          onClick={() => setIds(ids.filter((id) => id !== l.ekatte))}
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </span>
                     </div>
                   </th>
                 ))}
               </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => {
-                const header = row.group !== lastGroup;
-                lastGroup = row.group;
-                return [
-                  header && (
-                    <tr key={`g-${row.group}`} className="bg-muted/50">
-                      <td
-                        colSpan={available.length + 1}
-                        className="px-4 py-2 text-xs font-bold uppercase tracking-wide text-muted-foreground"
-                      >
-                        {row.group}
-                      </td>
-                    </tr>
-                  ),
-                  <tr key={`${row.group}-${row.label}`} className="border-t border-border/60">
-                    <th
-                      scope="row"
-                      className="sticky left-0 z-10 bg-card px-4 py-2.5 text-left font-medium text-foreground"
-                    >
-                      {row.label}
-                    </th>
-                    {row.cells.map((cell, i) => (
-                      <td key={i} className="px-4 py-2.5 align-top">
-                        {cell ? (
-                          <span
-                            className={
-                              cell.level
-                                ? `inline-block rounded-md px-2 py-0.5 ring-1 ${LEVEL_STYLE[cell.level]}`
-                                : ""
-                            }
-                          >
-                            {cell.text}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </td>
-                    ))}
-                  </tr>,
-                ];
-              })}
-            </tbody>
-          </table>
+            }
+          />
         </div>
       )}
 
