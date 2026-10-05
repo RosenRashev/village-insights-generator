@@ -5,6 +5,7 @@ import {
   Award,
   Bus,
   CheckCircle2,
+  ChevronDown,
   ClipboardCheck,
   Droplet,
   Globe,
@@ -33,6 +34,7 @@ import {
   type LucideIcon,
   Info,
 } from "lucide-react";
+import { summaryChips, type SummaryChip } from "@/lib/section-summary";
 import {
   checklistsToLists,
   layoutBasicBlocks,
@@ -994,14 +996,41 @@ function ListItemText({ text }: { text: string }) {
   );
 }
 
+const CHIP_STYLE = {
+  good: "bg-emerald-50 text-emerald-900 ring-emerald-200",
+  fair: "bg-amber-50 text-amber-900 ring-amber-200",
+  poor: "bg-rose-50 text-rose-900 ring-rose-200",
+  none: "bg-slate-50 text-slate-700 ring-slate-200",
+} as const;
+
+function SummaryChips({ chips }: { chips: SummaryChip[] }) {
+  if (chips.length === 0) return null;
+  return (
+    <span className="mt-2 flex flex-wrap gap-1.5 print:hidden">
+      {chips.map((c, i) => (
+        <span
+          key={i}
+          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${CHIP_STYLE[c.level ?? "none"]}`}
+        >
+          {c.text}
+        </span>
+      ))}
+    </span>
+  );
+}
+
 function Section({
   section,
   extra,
   purposeNote,
+  open,
+  onToggle,
 }: {
   section: ReportSection;
   extra?: ReactNode;
   purposeNote?: string | undefined;
+  open: boolean;
+  onToggle: () => void;
 }) {
   const theme = THEMES[section.theme];
   const Icon = ICONS[section.id] ?? MapPin;
@@ -1052,21 +1081,52 @@ function Section({
     );
   }
 
+  const bodyId = `section-body-${section.id}`;
+  const chips = summaryChips(section);
+
   return (
-    <section className="wrap-anywhere print-card scroll-mt-6 space-y-6 rounded-3xl border border-slate-100 bg-white p-6 shadow-lg md:p-8">
+    <section
+      id={`section-${section.id}`}
+      className="wrap-anywhere print-card scroll-mt-6 rounded-3xl border border-slate-100 bg-white p-6 shadow-lg md:p-8"
+    >
       <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div className="flex items-center gap-3">
-          <span
-            className={`animated-icon-box flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white shadow-md ${theme.box}`}
+        <h3 className="min-w-0 flex-1">
+          <button
+            type="button"
+            onClick={onToggle}
+            aria-expanded={open}
+            aria-controls={bodyId}
+            className="group flex w-full items-start gap-3 rounded-xl text-left outline-none focus-visible:ring-2 focus-visible:ring-ring print:cursor-default"
           >
-            <Icon className="h-5 w-5" />
-          </span>
-          <div className="min-w-0">
-            <h3 className="text-2xl font-bold leading-tight text-slate-900">{section.title}</h3>
-            {section.subtitle && <p className="text-xs text-slate-500">{section.subtitle}</p>}
-          </div>
-        </div>
-        {purposeNote && (
+            <span
+              className={`animated-icon-box flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white shadow-md ${theme.box}`}
+            >
+              <Icon className="h-5 w-5" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-2xl font-bold leading-tight text-slate-900">
+                {section.title}
+              </span>
+              {section.summary ? (
+                <span className="mt-1 block text-sm font-normal leading-snug text-slate-600">
+                  {section.summary}
+                </span>
+              ) : (
+                section.subtitle && (
+                  <span className="block text-xs font-normal text-slate-500">
+                    {section.subtitle}
+                  </span>
+                )
+              )}
+              {!open && <SummaryChips chips={chips} />}
+            </span>
+            <ChevronDown
+              className={`mt-1.5 h-6 w-6 shrink-0 text-slate-400 transition-transform duration-200 group-hover:text-slate-700 print:hidden ${open ? "rotate-180" : ""}`}
+              aria-hidden="true"
+            />
+          </button>
+        </h3>
+        {open && purposeNote && (
           <div
             className="flex items-start gap-2 rounded-xl border border-dashed bg-muted/50 p-3 text-xs leading-relaxed text-slate-600 md:max-w-xs md:shrink-0 print:hidden"
             style={{ borderColor: theme.accent }}
@@ -1077,17 +1137,35 @@ function Section({
         )}
       </header>
 
-      <div className="space-y-6">
-        {extra}
-        {blocks.map((b, i) => (
-          // Личната информация (разстояние от настоящата локация) не се печата и не излиза в PDF.
-          <div key={i} className={isCurrentLocationBlock(b) ? "print:hidden" : undefined}>
-            <Block block={b} accent={theme.accent} ink={theme.ink} hover={theme.hover} />
-          </div>
-        ))}
-      </div>
+      {/* Съдържанието остава подредено в страницата и когато е свито (височина 0, невидимо), за да
+          се оразмеряват графиките и картата; при печат винаги се показва. */}
+      <div
+        id={bodyId}
+        inert={!open}
+        className={`grid transition-[grid-template-rows] duration-300 ease-out print:grid-rows-[1fr] ${
+          open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+        }`}
+      >
+        <div
+          className={`min-h-0 overflow-hidden print:visible print:overflow-visible ${
+            open ? "" : "invisible"
+          }`}
+        >
+          <div className="space-y-6 pt-6">
+            <div className="space-y-6">
+              {extra}
+              {blocks.map((b, i) => (
+                // Личната информация (разстояние от настоящата локация) не се печата и не излиза в PDF.
+                <div key={i} className={isCurrentLocationBlock(b) ? "print:hidden" : undefined}>
+                  <Block block={b} accent={theme.accent} ink={theme.ink} hover={theme.hover} />
+                </div>
+              ))}
+            </div>
 
-      <SectionFooter cachedAt={section.cachedAt} sources={section.sources} />
+            <SectionFooter cachedAt={section.cachedAt} sources={section.sources} />
+          </div>
+        </div>
+      </div>
     </section>
   );
 }
@@ -1186,6 +1264,18 @@ export function ReportInfographic({
     [place, current],
   );
 
+  // Категориите са затворени при отваряне на доклада; отворените се помнят само докато страницата е отворена.
+  const [openIds, setOpenIds] = useState<Set<string>>(new Set());
+  const collapsibleIds = sections.filter((x) => x.id !== "perspective-summary").map((x) => x.id);
+  const allOpen = collapsibleIds.length > 0 && collapsibleIds.every((id) => openIds.has(id));
+  const toggleSection = (id: string) =>
+    setOpenIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
   const placeLabel = place ? displaySettlement(place) : MOCK_REPORT_PLACE;
   const postalCode = place?.postalCode || DEMO_POSTAL_CODE;
 
@@ -1224,9 +1314,23 @@ export function ReportInfographic({
           <div className="h-3 w-full bg-flag-red" />
         </div>
 
+        {collapsibleIds.length > 1 && (
+          <div className="flex justify-end print:hidden">
+            <button
+              type="button"
+              onClick={() => setOpenIds(allOpen ? new Set() : new Set(collapsibleIds))}
+              className="rounded-full border border-slate-200 bg-white px-4 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+            >
+              {allOpen ? "Свий всички категории" : "Разгъни всички категории"}
+            </button>
+          </div>
+        )}
+
         {sections.map((s) => (
           <Section
             key={s.id}
+            open={openIds.has(s.id)}
+            onToggle={() => toggleSection(s.id)}
             section={s}
             extra={
               s.id === "basic" && mapPoint ? (

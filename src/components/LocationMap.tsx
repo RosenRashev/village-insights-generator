@@ -44,6 +44,12 @@ export function LocationMap({ place, current = null }: Props) {
       }).addTo(map);
 
       const sizeFix = setTimeout(() => map.invalidateSize(), 100);
+      // Картата е в категория, която може да е свита при създаването ѝ — оразмерява се, щом се покаже.
+      const resizeObserver =
+        typeof ResizeObserver !== "undefined"
+          ? new ResizeObserver(() => map.invalidateSize())
+          : null;
+      if (ref.current) resizeObserver?.observe(ref.current);
 
       const dot = (color: string) =>
         L.divIcon({
@@ -128,6 +134,7 @@ export function LocationMap({ place, current = null }: Props) {
 
       cleanup = () => {
         clearTimeout(sizeFix);
+        resizeObserver?.disconnect();
         map.remove();
       };
     })();

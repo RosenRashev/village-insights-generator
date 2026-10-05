@@ -214,3 +214,16 @@ export function parseBlocks(raw: unknown): ParsedBlocks {
 
   return { blocks, dropped };
 }
+
+const SUMMARY_MAX = 200;
+
+/** Резюмето на категорията: само текст, без излишни интервали, най-много ~200 знака. */
+export function parseSummary(raw: unknown): string | undefined {
+  if (typeof raw !== "string") return undefined;
+  const text = raw.replace(/\s+/g, " ").trim();
+  if (!text) return undefined;
+  if (text.length <= SUMMARY_MAX) return text;
+  const cut = text.slice(0, SUMMARY_MAX);
+  const lastSpace = cut.lastIndexOf(" ");
+  return `${cut.slice(0, lastSpace > 120 ? lastSpace : SUMMARY_MAX).trim()}…`;
+}

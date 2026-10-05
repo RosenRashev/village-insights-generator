@@ -1,7 +1,7 @@
 import type { ReportSection } from "@/data/mock-report";
 import type { Json } from "@/integrations/supabase/types";
 import type { SourceLink } from "@/lib/report-cache";
-import { parseBlocks } from "@/lib/report-schema";
+import { parseBlocks, parseSummary } from "@/lib/report-schema";
 import { PROMPT_MODULES, COMMON_RULES, DISTRICT_RULE, LEVEL_RULE } from "@/lib/prompt-modules";
 
 export type GeneratedCategory = {
@@ -321,6 +321,7 @@ const SCHEMA_DOC = `Върни САМО JSON обект със следната 
 {
   "title": string,                       // кратко заглавие на секцията на български
   "subtitle": string,                    // едно изречение пояснение
+  "summary": string,                     // ЕДНО изречение (до 140 знака) с главния извод за категорията — какво е състоянието; без диапазони, без URL
   "blocks": Block[],                     // 2 до 8 блока — толкова, колкото реално има теми/факти в текста; НЕ съкращавай съдържание само за да се вместиш в по-малко блокове
   "incidentCount": number | null         // само за категория "risks": брой регистрирани рискови събития, иначе null
 }
@@ -416,6 +417,7 @@ ${research}
   const obj = parsed as {
     title?: string;
     subtitle?: string;
+    summary?: unknown;
     blocks?: unknown;
     incidentCount?: unknown;
   };
@@ -434,6 +436,7 @@ ${research}
     section: {
       title: typeof obj.title === "string" && obj.title ? obj.title : moduleLabel(input.categoryId),
       subtitle: typeof obj.subtitle === "string" ? obj.subtitle : "",
+      ...(parseSummary(obj.summary) ? { summary: parseSummary(obj.summary)! } : {}),
       blocks,
     },
     incidentCount: typeof obj.incidentCount === "number" ? obj.incidentCount : null,
@@ -458,6 +461,7 @@ export async function generateCategory(input: GenerateInput): Promise<GeneratedC
     id: input.categoryId,
     title: section.title,
     ...(section.subtitle ? { subtitle: section.subtitle } : {}),
+    ...(section.summary ? { summary: section.summary } : {}),
     theme: themeFor(input.categoryId),
     blocks: section.blocks,
   };
