@@ -110,6 +110,8 @@ function Index() {
     setProgress,
     realSections,
     setRealSections,
+    reportFor,
+    setReportFor,
     generatedAt,
     setGeneratedAt,
     reset: resetSession,
@@ -158,6 +160,10 @@ function Index() {
   });
   const existingReport: MyReportSummary | null =
     placeEkatte && isSignedIn && isApproved ? (existingQuery.data ?? null) : null;
+
+  // Докладът на екрана се показва само за мястото, за което е генериран — иначе при смяна на
+  // избраното място заглавието би било за едно място, а данните за друго.
+  const showReport = realSections !== null && reportFor?.place.ekatte === place?.ekatte;
 
   const CONFLICT_MSG =
     "Настоящата локация не може да съвпада с търсеното населено място — полето беше изчистено.";
@@ -208,6 +214,7 @@ function Index() {
     const usedPurpose = premium ? purpose : null;
 
     setGenerating(true);
+    setReportFor({ place, current: usedCurrent });
     setRealSections(null);
     setGeneratedAt(new Date().toISOString());
     setProgress({ done: 0, total: totalSteps(usedPurpose) });
@@ -510,12 +517,18 @@ function Index() {
               </Button>
             </div>
 
-            {(generating || realSections) && (
+            {(generating || showReport) && (
               <div className="mt-8 space-y-6">
-                {realSections && realSections.length > 0 && (
+                {generating && reportFor && reportFor.place.ekatte !== place?.ekatte && (
+                  <p className="text-center text-sm text-muted-foreground">
+                    В момента се генерира доклад за {reportFor.place.name} — той ще се покаже,
+                    когато изберете това място отново.
+                  </p>
+                )}
+                {showReport && realSections && realSections.length > 0 && reportFor && (
                   <ReportInfographic
-                    place={place}
-                    current={currentLocation}
+                    place={reportFor.place}
+                    current={reportFor.current}
                     sections={realSections}
                     demo={false}
                     purpose={premium ? purpose : null}
