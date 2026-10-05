@@ -15,6 +15,8 @@ export type ReportPayload = {
   current: Settlement | null;
   purpose: PurposeId | null;
   sections: ReportSection[];
+  /** Кога е генериран докладът (ISO). Липсва в доклади, запазени преди добавянето на полето. */
+  generatedAt?: string;
 };
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -78,7 +80,14 @@ export async function generateReportSections({
         if (result.status === "fulfilled") {
           const section = result.value.data as unknown as ReportSection | null;
           if (section && Array.isArray(section.blocks)) {
-            collected.push({ ...section, id: categoryId });
+            collected.push({
+              ...section,
+              id: categoryId,
+              ...(result.value.sourceLinks && result.value.sourceLinks.length > 0
+                ? { sources: result.value.sourceLinks }
+                : {}),
+              cachedAt: result.value.cachedAt,
+            });
           } else {
             failed += 1;
           }

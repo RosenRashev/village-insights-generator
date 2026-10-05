@@ -19,10 +19,8 @@ export type GenerateInput = {
   categoryId: string;
   placeName: string;
   placeType: "village" | "town" | "district";
-  currentLocationName?: string | undefined;
 };
 
-/** Модел с добър баланс цена/качество; ползва се и за двете стъпки. */
 /** Модел за грундираното (Google Search) проучване — тук качеството на search резултатите има значение. */
 const MODEL = "gemini-3.5-flash-lite";
 /**
@@ -68,31 +66,59 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/** Максимално време за една заявка към Gemini (търсенето в Google може да е бавно). */
+const REQUEST_TIMEOUT_MS = 90_000;
+
 async function callGemini(body: unknown, model: string = MODEL): Promise<GeminiResponse> {
   const MAX_ATTEMPTS = 4;
+  const MAX_TIMEOUTS = 2;
+  let timeouts = 0;
   let lastError: Error | null = null;
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    const res = await fetch(`${API}/${model}:generateContent`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey() },
-      body: JSON.stringify(body),
-    });
-    const json = (await res.json()) as GeminiResponse;
+    let retryable = false;
+    try {
+      const res = await fetch(`${API}/${model}:generateContent`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey() },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      });
 
-    if (res.ok && !json.error) return json;
+      // Отговорът при грешка не винаги е JSON (напр. HTML страница от прокси).
+      const rawText = await res.text();
+      let json: GeminiResponse;
+      try {
+        json = JSON.parse(rawText) as GeminiResponse;
+      } catch {
+        json = { error: { message: rawText.slice(0, 200) || "празен отговор" } };
+      }
 
-    const status = res.status;
-    const isRateLimited = status === 429 || status === 503;
-    lastError = new Error(
-      `Gemini API грешка (${status}): ${json.error?.message ?? "неизвестна грешка"}`,
-    );
+      if (res.ok && !json.error) return json;
 
-    if (!isRateLimited || attempt === MAX_ATTEMPTS) throw lastError;
+      retryable = res.status === 429 || res.status === 503;
+      lastError = new Error(
+        `Gemini API грешка (${res.status}): ${json.error?.message ?? "неизвестна грешка"}`,
+      );
+    } catch (err) {
+      const name = err instanceof Error ? err.name : "";
+      if (name === "TimeoutError" || name === "AbortError") {
+        timeouts += 1;
+        retryable = timeouts < MAX_TIMEOUTS;
+        lastError = new Error("Gemini API не отговори навреме. Опитайте отново.");
+      } else if (err instanceof TypeError) {
+        // Мрежова грешка (fetch failed) — рядко, но си струва един повторен опит.
+        retryable = true;
+        lastError = new Error("Мрежова грешка при връзката с Gemini API.");
+      } else {
+        throw err;
+      }
+    }
 
-    // Експоненциално изчакване при 429/503, преди следващия опит (1.5s, 3s, 6s...).
-    const backoffMs = 1500 * 2 ** (attempt - 1);
-    await sleep(backoffMs);
+    if (!retryable || attempt === MAX_ATTEMPTS) throw lastError;
+
+    // Експоненциално изчакване преди следващия опит (1.5s, 3s, 6s...).
+    await sleep(1500 * 2 ** (attempt - 1));
   }
 
   throw lastError ?? new Error("Gemini API грешка: неуспешен опит.");
@@ -205,7 +231,6 @@ async function researchCategory(
 ОБЕКТ НА ПРОУЧВАНЕТО:
 Тип: ${PLACE_TYPE_LABEL[input.placeType]}
 ${identityBlock(id)}
-${input.currentLocationName ? `Настояща локация на потребителя: ${input.currentLocationName}` : ""}
 
 ${anchorRule(id)}
 

@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
 import type { Database } from "@/integrations/supabase/types";
+import { sanitizeForPublic } from "@/lib/report-privacy";
 
 function publicClient() {
   const key = process.env["SUPABASE_PUBLISHABLE_KEY"]!;
@@ -53,17 +54,49 @@ export const listPublicPlaces = createServerFn({ method: "GET" }).handler(
   },
 );
 
+export type PublicReport = {
+  id: string;
+  place_name: string | null;
+  ekatte: number | null;
+  report_content: string;
+  updated_at: string;
+};
+
+const PUBLIC_REPORT_COLUMNS = "id, place_name, ekatte, report_content, updated_at";
+
+/** Старите публични доклади може да съдържат лична локация — изчистваме я при всяко четене. */
+function cleaned(row: PublicReport | null): PublicReport | null {
+  return row ? { ...row, report_content: sanitizeForPublic(row.report_content) } : null;
+}
+
 /** Съдържанието на конкретен публичен доклад. */
 export const getPublicReport = createServerFn({ method: "POST" })
   .inputValidator((data) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data }) => {
     const { data: row, error } = await publicClient()
       .from("reports")
-      .select("id, place_name, ekatte, report_content, updated_at")
+      .select(PUBLIC_REPORT_COLUMNS)
       .eq("id", data.id)
       .eq("is_public", true)
       .maybeSingle();
 
     if (error) throw new Error(error.message);
-    return row ?? null;
+    return cleaned(row as PublicReport | null);
+  });
+
+/** Най-новият публичен доклад за населено място (за страницата /selo/$ekatte). */
+export const getPublicReportByEkatte = createServerFn({ method: "GET" })
+  .inputValidator((data) => z.object({ ekatte: z.number().int().positive() }).parse(data))
+  .handler(async ({ data }) => {
+    const { data: row, error } = await publicClient()
+      .from("reports")
+      .select(PUBLIC_REPORT_COLUMNS)
+      .eq("ekatte", data.ekatte)
+      .eq("is_public", true)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) throw new Error(error.message);
+    return cleaned(row as PublicReport | null);
   });

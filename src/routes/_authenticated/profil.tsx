@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Eye, EyeOff, Loader2, RefreshCw, Trash2 } from "lucide-react";
+import { Eye, EyeOff, Loader2, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,10 +11,9 @@ import {
   deleteReport,
   listMyReports,
   setReportVisibility,
-  updateReportContent,
   type SavedReport,
 } from "@/lib/reports.functions";
-import { generateReportSections, parseReport, serializeReport } from "@/lib/generate-report";
+import { parseReport } from "@/lib/generate-report";
 
 export const Route = createFileRoute("/_authenticated/profil")({
   head: () => ({
@@ -90,31 +89,6 @@ function ProfilePage() {
     }
   };
 
-  const regenerate = async (r: SavedReport) => {
-    const payload = parseReport(r.report_content);
-    if (!payload) {
-      toast.error("Този доклад не може да се регенерира автоматично.");
-      return;
-    }
-    setBusyId(r.id);
-    try {
-      const { sections } = await generateReportSections({
-        place: payload.place,
-        current: payload.current ?? null,
-        purpose: payload.purpose ?? null,
-      });
-      await updateReportContent({
-        data: { id: r.id, reportContent: serializeReport({ ...payload, sections }) },
-      });
-      await load();
-      toast.success("Докладът е обновен.");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Неуспешно регенериране.");
-    } finally {
-      setBusyId(null);
-    }
-  };
-
   return (
     <main className="mx-auto max-w-3xl px-4 py-12">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -158,19 +132,6 @@ function ProfilePage() {
                   <Button
                     size="sm"
                     variant="outline"
-                    disabled={busyId === r.id}
-                    onClick={() => void regenerate(r)}
-                  >
-                    {busyId === r.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <RefreshCw className="h-4 w-4" />
-                    )}
-                    Регенерирай
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
                     onClick={() => setOpenId((id) => (id === r.id ? null : r.id))}
                   >
                     {openId === r.id ? "Скрий" : "Виж"}
@@ -193,6 +154,7 @@ function ProfilePage() {
                     sections={payload.sections}
                     demo={false}
                     purpose={payload.purpose ?? null}
+                    generatedAt={payload.generatedAt ?? r.updated_at}
                   />
                 </div>
               )}

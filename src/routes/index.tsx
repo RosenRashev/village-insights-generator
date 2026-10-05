@@ -22,7 +22,8 @@ import {
   totalSteps,
   IS_MOCK,
 } from "@/lib/generate-report";
-import { saveReport } from "@/lib/reports.functions";
+import { getMyQuota, saveReport } from "@/lib/reports.functions";
+import { isPremium } from "@/lib/plans";
 import { getPublicReport, listPublicPlaces, type PublicPlace } from "@/lib/public-reports.functions";
 import type { ReportSection } from "@/data/mock-report";
 
@@ -91,6 +92,7 @@ function Index() {
   const { user, profile, loading: authLoading } = useAuth();
   const isSignedIn = user !== null;
   const isApproved = profile?.is_approved === true;
+  const premium = isPremium(profile);
 
   const [place, setPlace] = useState<Settlement | null>(null);
   const [currentLocation, setCurrentLocation] = useState<Settlement | null>(null);
@@ -100,11 +102,14 @@ function Index() {
   const [progress, setProgress] = useState<{ done: number; total: number }>({ done: 0, total: 0 });
   const [realSections, setRealSections] = useState<ReportSection[] | null>(null);
   const [isPrivate, setIsPrivate] = useState(false);
+  const [generatedAt, setGeneratedAt] = useState<string | undefined>(undefined);
   const [publicPlaces, setPublicPlaces] = useState<PublicPlace[] | null>(null);
   const [guestLoading, setGuestLoading] = useState(false);
-  const [guestReport, setGuestReport] = useState<
-    { place: Settlement; current: Settlement | null; purpose: PurposeId | null; sections: ReportSection[] } | null
-  >(null);
+  const [guestReport, setGuestReport] = useState<{
+    place: Settlement;
+    sections: ReportSection[];
+    generatedAt?: string | undefined;
+  } | null>(null);
   const [activePhrase, setActivePhrase] = useState(0);
   const [maxPhraseWidth, setMaxPhraseWidth] = useState<number | null>(null);
   const [isDesktop, setIsDesktop] = useState(false);
@@ -174,9 +179,8 @@ function Index() {
       }
       setGuestReport({
         place: payload.place ?? s,
-        current: payload.current ?? null,
-        purpose: payload.purpose ?? null,
         sections: payload.sections,
+        generatedAt: payload.generatedAt ?? row?.updated_at,
       });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Неуспешно зареждане на доклада.");
@@ -210,17 +214,43 @@ function Index() {
 
   const hasPlace = place !== null;
 
+  // Публичните доклади са еднакви за всички: без лична локация и цел на търсенето.
+  const handlePrivateChange = (value: boolean) => {
+    setIsPrivate(value);
+    if (!value) {
+      setCurrentLocation(null);
+      setCurrentNotice(null);
+      setPurpose(null);
+    }
+  };
+
   const generateReport = async () => {
     if (!place) return;
+
+    try {
+      const quota = await getMyQuota({ data: undefined });
+      if (!quota.allowed) {
+        toast.error("Достигнахте дневния лимит от доклади. Опитайте отново утре.");
+        return;
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Неуспешна проверка на лимита.");
+      return;
+    }
+
+    const usedCurrent = isPrivate ? currentLocation : null;
+    const usedPurpose = isPrivate && premium ? purpose : null;
+
     setGenerating(true);
     setRealSections(null);
-    setProgress({ done: 0, total: totalSteps(purpose) });
+    setGeneratedAt(new Date().toISOString());
+    setProgress({ done: 0, total: totalSteps(usedPurpose) });
 
     try {
       const { sections, failed } = await generateReportSections({
         place,
-        current: currentLocation,
-        purpose,
+        current: usedCurrent,
+        purpose: usedPurpose,
         onSections: (s) => setRealSections(s),
         onStep: () => setProgress((p) => ({ ...p, done: p.done + 1 })),
       });
@@ -230,27 +260,36 @@ function Index() {
         return;
       }
 
+      if (failed > 0) {
+        // Непълен доклад не се запазва (иначе би се показвал на гостите като „официален“).
+        // Успешните категории вече са в кеша, така че повторният опит е евтин.
+        toast.warning(
+          `Докладът е непълен — ${failed} категории не успяха и той не беше запазен. Опитайте отново след малко.`,
+        );
+        return;
+      }
+
       try {
         await saveReport({
           data: {
             locationQuery: formatSettlement(place),
             ekatte: place.ekatte,
             placeName: formatSettlement(place),
-            selectedTopics: purpose ? [purpose] : [],
-            reportContent: serializeReport({ place, current: currentLocation, purpose, sections }),
+            selectedTopics: usedPurpose ? [usedPurpose] : [],
+            reportContent: serializeReport({
+              place,
+              current: usedCurrent,
+              purpose: usedPurpose,
+              sections,
+            }),
             isPublic: !isPrivate,
           },
         });
+        toast.success(IS_MOCK ? "Докладът е готов (примерни данни)." : "Докладът е готов.");
       } catch (err) {
         toast.error(
           err instanceof Error ? `Докладът не беше запазен: ${err.message}` : "Докладът не беше запазен.",
         );
-      }
-
-      if (failed > 0) {
-        toast.warning(`Готово с ${failed} пропуснати категории.`);
-      } else {
-        toast.success(IS_MOCK ? "Докладът е готов (примерни данни)." : "Докладът е готов.");
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Грешка при генерирането.");
@@ -263,6 +302,7 @@ function Index() {
     setPlace(null);
     setCurrentLocation(null);
     setPurpose(null);
+    setIsPrivate(false);
     setRealSections(null);
     setGuestReport(null);
     setProgress({ done: 0, total: 0 });
@@ -375,25 +415,45 @@ function Index() {
 
 
 
-            {hasPlace && isSignedIn && (
+            {hasPlace && isSignedIn && isApproved && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="rounded-lg border border-border bg-card/70 p-3">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="private-report"
+                      checked={isPrivate}
+                      onCheckedChange={(v) => handlePrivateChange(v === true)}
+                    />
+                    <Label htmlFor="private-report" className="text-sm font-medium">
+                      Направи този доклад личен
+                    </Label>
+                  </div>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Публичните доклади се виждат от всички и са еднакви за всички — без лична
+                    информация. Личният доклад се вижда само от вас и може да включва вашата
+                    настояща локация{premium ? " и цел на търсенето" : ""}.
+                  </p>
+                </div>
 
-              <div className="space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <SettlementCombobox
-                  id="current-location"
-                  label="Настояща локация"
-                  placeholder="напр. Стара Загора"
-                  value={currentLocation}
-                  onChange={handleCurrentLocationChange}
-                  size="sm"
-                  notice={currentNotice}
-                />
+                {isPrivate && (
+                  <div className="space-y-2">
+                    <SettlementCombobox
+                      id="current-location"
+                      label="Настояща локация"
+                      placeholder="напр. Стара Загора"
+                      value={currentLocation}
+                      onChange={handleCurrentLocationChange}
+                      size="sm"
+                      notice={currentNotice}
+                    />
 
-                <p className="text-sm text-muted-foreground">
-                  Въведете населеното място, в което живеете в момента, за да
-                  изчислим разстоянието, времето за пътуване и транспортната
-                  достъпност за имоти купувани с цел уикенд туризъм за отдих и
-                  почивка.
-                </p>
+                    <p className="text-sm text-muted-foreground">
+                      Въведете населеното място, в което живеете в момента, за да изчислим
+                      разстоянието, времето за пътуване и транспортната достъпност за имоти
+                      купувани с цел уикенд туризъм за отдих и почивка.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -402,8 +462,7 @@ function Index() {
 
 
 
-        {hasPlace && isSignedIn && (
-
+        {hasPlace && isSignedIn && isApproved && isPrivate && premium && (
           <section className="mt-12 animate-in fade-in slide-in-from-bottom-2 duration-300">
             <h2 className="text-lg font-bold text-destructive">
               Кажете ни за какво търсите имота
@@ -422,13 +481,6 @@ function Index() {
                 />
               ))}
             </div>
-
-            <div className="mt-6 flex justify-center">
-              <Button onClick={reset} variant="outline" size="sm">
-                <RotateCcw className="h-4 w-4" />
-                Изчисти
-              </Button>
-            </div>
           </section>
         )}
 
@@ -444,10 +496,9 @@ function Index() {
                 </p>
                 <ReportInfographic
                   place={guestReport.place}
-                  current={guestReport.current}
                   sections={guestReport.sections}
                   demo={false}
-                  purpose={guestReport.purpose}
+                  generatedAt={guestReport.generatedAt}
                 />
               </>
             )}
@@ -472,17 +523,6 @@ function Index() {
                   : "Приложението ще проучи категориите с Gemini и търсене в Google в реално време и ще покаже резултата тук като инфографика."}
               </p>
 
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="private-report"
-                  checked={isPrivate}
-                  onCheckedChange={(v) => setIsPrivate(v === true)}
-                />
-                <Label htmlFor="private-report" className="text-sm font-normal">
-                  Направи този доклад личен
-                </Label>
-              </div>
-
               <Button size="lg" onClick={() => void generateReport()} disabled={generating}>
                 {generating ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -505,6 +545,10 @@ function Index() {
                   Регенерирай примерни данни
                 </Button>
               )}
+              <Button onClick={reset} variant="outline" size="sm" disabled={generating}>
+                <RotateCcw className="h-4 w-4" />
+                Изчисти
+              </Button>
             </div>
 
             {(generating || realSections) && (
@@ -512,10 +556,11 @@ function Index() {
                 {realSections && realSections.length > 0 && (
                   <ReportInfographic
                     place={place}
-                    current={currentLocation}
+                    current={isPrivate ? currentLocation : null}
                     sections={realSections}
                     demo={false}
-                    purpose={purpose}
+                    purpose={isPrivate && premium ? purpose : null}
+                    generatedAt={generatedAt}
                   />
                 )}
                 {generating &&

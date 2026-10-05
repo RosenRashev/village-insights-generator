@@ -137,6 +137,10 @@ export type ReportSection = {
     | "fuchsia"
     | "slate";
   blocks: ReportBlock[];
+  /** Страниците, на които се е опряло търсенето в Google за тази категория. */
+  sources?: SourceLink[];
+  /** Кога са проучени данните за тази категория (ISO) — кешът може да е по-стар от доклада. */
+  cachedAt?: string;
 };
 
 export const MOCK_REPORT_PLACE = "с. Медово, общ. Братя Даскалови, обл. Стара Загора";

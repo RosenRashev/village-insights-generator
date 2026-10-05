@@ -8,7 +8,9 @@ import { expiresAtFor, isFresh, type CachedCategory } from "@/lib/report-cache";
  * Връща категория от кеша, ако е валидна; иначе я генерира наново през Gemini
  * (Google Search grounding) и я кешира според TTL правилата.
  * Достъпна само за одобрени потребители.
- * Частите, зависещи от „Настояща локация“, се смятат отделно и НЕ се кешират.
+ * Частите, зависещи от „Настояща локация“, се смятат отделно и НЕ се кешират —
+ * настоящата локация никога не влиза в промптовете за кешируемите категории,
+ * защото кешът е споделен между всички потребители.
  */
 export const getCategory = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -59,12 +61,17 @@ export const getCategory = createServerFn({ method: "POST" })
         fromCache: true,
       };
     } else {
+      // Нова (платена за нас) заявка към Gemini — само ако има остатък от дневния лимит.
+      const { getQuotaStatus } = await import("@/lib/quota.server");
+      const quota = await getQuotaStatus(context.supabase, context.userId);
+      if (!quota.allowed) {
+        throw new Error("Достигнахте дневния лимит от доклади. Опитайте отново утре.");
+      }
       const generated = await generateCategory({
         ekatte: data.ekatte,
         categoryId: data.categoryId,
         placeName: data.placeName,
         placeType: data.placeType,
-        currentLocationName: data.currentLocationName,
       });
       const expiresAt = expiresAtFor(data.categoryId);
       const cachedAt = new Date().toISOString();

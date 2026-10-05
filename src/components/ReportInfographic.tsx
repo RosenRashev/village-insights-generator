@@ -16,6 +16,7 @@ import {
   MessagesSquare,
   Minus,
   Newspaper,
+  Printer,
   Route,
   ShieldHalf,
   Stethoscope,
@@ -70,6 +71,8 @@ import {
 import "leaflet/dist/leaflet.css";
 
 import { LocationMap } from "@/components/LocationMap";
+import { useAuth } from "@/hooks/useAuth";
+import { isPremium } from "@/lib/plans";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -1029,7 +1032,54 @@ function Section({
           <Block key={i} block={b} accent={theme.accent} ink={theme.ink} hover={theme.hover} />
         ))}
       </div>
+
+      <SectionFooter cachedAt={section.cachedAt} sources={section.sources} />
     </section>
+  );
+}
+
+function formatDate(iso: string | undefined): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? null : d.toLocaleDateString("bg-BG");
+}
+
+/** Дата на данните и списък с източниците, на които се е опряло проучването. */
+function SectionFooter({
+  cachedAt,
+  sources,
+}: {
+  cachedAt?: string | undefined;
+  sources?: SourceLink[] | undefined;
+}) {
+  const date = formatDate(cachedAt);
+  if (!date && (!sources || sources.length === 0)) return null;
+
+  return (
+    <footer className="space-y-2 border-t border-slate-100 pt-3 text-xs text-slate-500">
+      {date && <p>Данни към {date}</p>}
+      {sources && sources.length > 0 && (
+        <details className="group">
+          <summary className="cursor-pointer select-none font-medium text-slate-600 hover:text-slate-900 print:hidden">
+            Източници ({sources.length})
+          </summary>
+          <ul className="mt-2 space-y-1 print:block">
+            {sources.map((src) => (
+              <li key={src.url} className="truncate">
+                <a
+                  href={src.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sky-700 underline-offset-2 hover:underline"
+                >
+                  {src.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </footer>
   );
 }
 
@@ -1040,6 +1090,8 @@ type InfographicProps = {
   sections?: ReportSection[];
   demo?: boolean;
   purpose?: PurposeId | null;
+  /** Кога е генериран докладът (ISO) — показва се в заглавието. */
+  generatedAt?: string | undefined;
 };
 
 /** Координати на с. Медово (ekatte 47665) — fallback за демо режима. */
@@ -1052,7 +1104,10 @@ export function ReportInfographic({
   sections = MOCK_REPORT,
   demo = true,
   purpose = null,
+  generatedAt,
 }: InfographicProps) {
+  const { profile } = useAuth();
+  const generatedDate = formatDate(generatedAt);
   // Стабилни референции — иначе LocationMap ре-тригва ефекта си на всеки render.
   const mapPoint = useMemo(
     () =>
@@ -1085,6 +1140,17 @@ export function ReportInfographic({
               {placeLabel}
               {postalCode ? ` · п.к. ${postalCode}` : ""}
             </h2>
+          </div>
+          <div className="flex items-center gap-3 print:hidden">
+            {generatedDate && (
+              <span className="text-xs text-slate-500">Генериран на {generatedDate}</span>
+            )}
+            {isPremium(profile) && (
+              <Button size="sm" variant="outline" onClick={() => window.print()}>
+                <Printer className="h-4 w-4" />
+                Печат / PDF
+              </Button>
+            )}
           </div>
         </div>
         <div className="h-3 w-full bg-flag-green" />
