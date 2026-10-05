@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { PendingApproval } from "@/components/PendingApproval";
 import {
   deleteReport,
+  getMyQuota,
   listMyReports,
   type MyReportListItem,
   setReportVisibility,
@@ -47,6 +48,13 @@ function ProfilePage() {
     staleTime: 5 * 60_000,
   });
   const reports = reportsQuery.data ?? null;
+  const quotaQuery = useQuery({
+    queryKey: ["my-quota", user?.id],
+    queryFn: () => getMyQuota({ data: undefined }),
+    enabled: !!user && profile?.is_approved === true,
+    staleTime: 60_000,
+  });
+  const quota = quotaQuery.data;
   const load = async () => {
     await queryClient.invalidateQueries({ queryKey: ["my-reports"] });
   };
@@ -108,6 +116,14 @@ function ProfilePage() {
         <div>
           <h1 className="text-2xl font-bold text-primary">Моите доклади</h1>
           <p className="text-sm text-muted-foreground">{user?.email}</p>
+          {quota && !quota.unlimited && (
+            <p className="mt-1 text-sm">
+              Оставащи нови доклади: <strong>{quota.credits}</strong>
+              {quota.credits === 0 && (
+                <span className="text-muted-foreground"> — свържете се с администратора</span>
+              )}
+            </p>
+          )}
         </div>
         <Button variant="outline" size="sm" onClick={() => void signOut()}>
           Изход
