@@ -15,6 +15,8 @@ export type ReportPayload = {
   current: Settlement | null;
   purpose: PurposeId | null;
   sections: ReportSection[];
+  /** Кога е генериран докладът (ISO). Липсва в доклади, запазени преди добавянето на полето. */
+  generatedAt?: string;
 };
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -53,12 +55,19 @@ export async function generateReportSections({
       onStep?.();
     }
   } else {
-    const BATCH_SIZE = 14;
-    for (let i = 0; i < CATEGORY_IDS.length; i += BATCH_SIZE) {
-      const batch = CATEGORY_IDS.slice(i, i + BATCH_SIZE);
-      const results = await Promise.allSettled(
-        batch.map((categoryId) =>
-          getCategory({
+    // Всички категории тръгват едновременно, но броячът и докладът се обновяват още щом
+    // приключи всяка една — така потребителят вижда поетапно как се попълва.
+    const done = new Map<string, ReportSection>();
+    const inOrder = () =>
+      CATEGORY_IDS.flatMap((id) => {
+        const section = done.get(id);
+        return section ? [section] : [];
+      });
+
+    await Promise.all(
+      CATEGORY_IDS.map(async (categoryId) => {
+        try {
+          const result = await getCategory({
             data: {
               ekatte: place.ekatte,
               categoryId,
@@ -66,38 +75,33 @@ export async function generateReportSections({
               placeType,
               ...(current ? { currentLocationName: formatSettlement(current) } : {}),
             },
-          }),
-        ),
-      );
-
-      // Обхождаме резултатите в оригиналния ред на категориите, за да пазим последователността в доклада,
-      // независимо от реалния ред, в който заявките са приключили.
-      results.forEach((result, idx) => {
-        const categoryId = batch[idx];
-        if (!categoryId) return;
-        if (result.status === "fulfilled") {
-          const section = result.value.data as unknown as ReportSection | null;
+          });
+          const section = result.data as unknown as ReportSection | null;
           if (section && Array.isArray(section.blocks)) {
-            collected.push({ ...section, id: categoryId });
+            done.set(categoryId, {
+              ...section,
+              id: categoryId,
+              ...(result.sourceLinks && result.sourceLinks.length > 0
+                ? { sources: result.sourceLinks }
+                : {}),
+              cachedAt: result.cachedAt,
+            });
           } else {
             failed += 1;
           }
-        } else {
+        } catch (err) {
           failed += 1;
-          const err = result.reason;
           toast.error(
             `Грешка при „${PROMPT_MODULES.find((m) => m.id === categoryId)?.label ?? categoryId}“: ${
               err instanceof Error ? err.message : "неизвестна грешка"
             }`,
           );
         }
+        onSections?.(inOrder());
         onStep?.();
-      });
-      onSections?.([...collected]);
-
-      // Кратка пауза между групите (не между всяка отделна заявка), за да не претоварваме rate limit-а.
-      if (i + BATCH_SIZE < CATEGORY_IDS.length) await sleep(500);
-    }
+      }),
+    );
+    collected.push(...inOrder());
   }
 
   if (purpose) {

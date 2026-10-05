@@ -1,20 +1,18 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Eye, EyeOff, Loader2, RefreshCw, Trash2 } from "lucide-react";
+import { ExternalLink, Eye, EyeOff, Loader2, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { PendingApproval } from "@/components/PendingApproval";
-import { ReportInfographic } from "@/components/ReportInfographic";
 import {
   deleteReport,
   listMyReports,
+  type MyReportListItem,
   setReportVisibility,
-  updateReportContent,
-  type SavedReport,
 } from "@/lib/reports.functions";
-import { generateReportSections, parseReport, serializeReport } from "@/lib/generate-report";
 
 export const Route = createFileRoute("/_authenticated/profil")({
   head: () => ({
@@ -33,21 +31,33 @@ export const Route = createFileRoute("/_authenticated/profil")({
 
 function ProfilePage() {
   const { profile, loading, user, signOut } = useAuth();
-  const [reports, setReports] = useState<SavedReport[] | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [openId, setOpenId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const refreshCompare = () => {
+    void queryClient.invalidateQueries({ queryKey: ["my-report-places"] });
+    void queryClient.invalidateQueries({ queryKey: ["my-report"] });
+    void queryClient.invalidateQueries({ queryKey: ["my-report-summary"] });
+  };
 
+  // Списъкът се пази в кеша: при връщане на страницата се показва веднага, без „Зареждане…“.
+  const reportsQuery = useQuery({
+    queryKey: ["my-reports", user?.id],
+    queryFn: () => listMyReports({ data: undefined }),
+    enabled: !!user && profile?.is_approved === true,
+    staleTime: 5 * 60_000,
+  });
+  const reports = reportsQuery.data ?? null;
   const load = async () => {
-    try {
-      setReports(await listMyReports({ data: undefined }));
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Неуспешно зареждане.");
-    }
+    await queryClient.invalidateQueries({ queryKey: ["my-reports"] });
   };
 
   useEffect(() => {
-    if (profile?.is_approved) void load();
-  }, [profile?.is_approved]);
+    if (reportsQuery.error) {
+      toast.error(
+        reportsQuery.error instanceof Error ? reportsQuery.error.message : "Неуспешно зареждане.",
+      );
+    }
+  }, [reportsQuery.error]);
 
   if (loading) {
     return (
@@ -65,10 +75,11 @@ function ProfilePage() {
     );
   }
 
-  const toggle = async (r: SavedReport) => {
+  const toggle = async (r: MyReportListItem) => {
     setBusyId(r.id);
     try {
       await setReportVisibility({ data: { id: r.id, isPublic: !r.is_public } });
+      refreshCompare();
       await load();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Неуспешна промяна.");
@@ -77,39 +88,15 @@ function ProfilePage() {
     }
   };
 
-  const remove = async (r: SavedReport) => {
+  const remove = async (r: MyReportListItem) => {
     setBusyId(r.id);
     try {
       await deleteReport({ data: { id: r.id } });
+      refreshCompare();
       await load();
       toast.success("Докладът е изтрит.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Неуспешно изтриване.");
-    } finally {
-      setBusyId(null);
-    }
-  };
-
-  const regenerate = async (r: SavedReport) => {
-    const payload = parseReport(r.report_content);
-    if (!payload) {
-      toast.error("Този доклад не може да се регенерира автоматично.");
-      return;
-    }
-    setBusyId(r.id);
-    try {
-      const { sections } = await generateReportSections({
-        place: payload.place,
-        current: payload.current ?? null,
-        purpose: payload.purpose ?? null,
-      });
-      await updateReportContent({
-        data: { id: r.id, reportContent: serializeReport({ ...payload, sections }) },
-      });
-      await load();
-      toast.success("Докладът е обновен.");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Неуспешно регенериране.");
     } finally {
       setBusyId(null);
     }
@@ -134,7 +121,6 @@ function ProfilePage() {
 
       <div className="mt-8 space-y-4">
         {reports?.map((r) => {
-          const payload = parseReport(r.report_content);
           return (
             <div key={r.id} className="rounded-xl border border-border p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
@@ -155,26 +141,19 @@ function ProfilePage() {
                     {r.is_public ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     {r.is_public ? "Направи личен" : "Направи публичен"}
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={busyId === r.id}
-                    onClick={() => void regenerate(r)}
-                  >
-                    {busyId === r.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <RefreshCw className="h-4 w-4" />
-                    )}
-                    Регенерирай
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setOpenId((id) => (id === r.id ? null : r.id))}
-                  >
-                    {openId === r.id ? "Скрий" : "Виж"}
-                  </Button>
+                  {r.ekatte != null && (
+                    <Button asChild size="sm" variant="outline">
+                      <Link
+                        to="/report/$ekatte"
+                        params={{ ekatte: String(r.ekatte) }}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                        Отвори
+                      </Link>
+                    </Button>
+                  )}
                   <Button
                     size="sm"
                     variant="ghost"
@@ -185,17 +164,6 @@ function ProfilePage() {
                   </Button>
                 </div>
               </div>
-              {openId === r.id && payload && (
-                <div className="mt-6">
-                  <ReportInfographic
-                    place={payload.place}
-                    current={payload.current ?? null}
-                    sections={payload.sections}
-                    demo={false}
-                    purpose={payload.purpose ?? null}
-                  />
-                </div>
-              )}
             </div>
           );
         })}

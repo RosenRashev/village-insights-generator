@@ -7,30 +7,39 @@ import {
   useRouterState,
   HeadContent,
   Scripts,
+  type ErrorComponentProps,
 } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
+import { FeedbackBox } from "../components/FeedbackBox";
 import { Toaster } from "../components/ui/sonner";
-import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AuthProvider, useAuth } from "../hooks/useAuth";
-
+import { ReportSessionProvider } from "../hooks/useReportSession";
 
 function NotFoundComponent() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <div className="flex min-h-[70vh] items-center justify-center bg-background px-4 py-16">
       <div className="max-w-md text-center">
-        <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
+        <img
+          src="/logo-icon.png"
+          alt="Къде Да"
+          width={96}
+          height={96}
+          className="mx-auto h-24 w-24"
+        />
+        <h1 className="logo-text mt-4 text-7xl font-bold text-destructive">404</h1>
+        <h2 className="mt-4 text-xl font-semibold text-foreground">Страницата не е намерена</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          The page you're looking for doesn't exist or has been moved.
+          Адресът може да е грешен или страницата да е преместена. Върнете се в началото и потърсете
+          населеното място, което ви интересува.
         </p>
         <div className="mt-6">
           <Link
             to="/"
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Go home
+            Към началната страница
           </Link>
         </div>
       </div>
@@ -38,37 +47,41 @@ function NotFoundComponent() {
   );
 }
 
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+function ErrorComponent({ error, reset }: ErrorComponentProps) {
   console.error(error);
   const router = useRouter();
-  useEffect(() => {
-    reportLovableError(error, { boundary: "tanstack_root_error_component" });
-  }, [error]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <div className="flex min-h-[70vh] items-center justify-center bg-background px-4 py-16">
       <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          This page didn't load
+        <img
+          src="/logo-icon.png"
+          alt="Къде Да"
+          width={72}
+          height={72}
+          className="mx-auto h-[72px] w-[72px]"
+        />
+        <h1 className="mt-4 text-xl font-semibold tracking-tight text-foreground">
+          Страницата не се зареди
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Something went wrong on our end. You can try refreshing or head back home.
+          Нещо се обърка от наша страна. Опитайте да презаредите или се върнете в началото.
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             onClick={() => {
-              router.invalidate();
+              void router.invalidate();
               reset();
             }}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Try again
+            Опитай отново
           </button>
           <a
             href="/"
             className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
           >
-            Go home
+            Към началото
           </a>
         </div>
       </div>
@@ -191,6 +204,7 @@ function ScrollToTop() {
       onClick={scrollToTop}
       aria-label="Върни се най-горе"
       className={[
+        "print:hidden",
         "fixed bottom-5 right-5 z-50 grid h-12 w-12 place-items-center rounded-full bg-primary text-primary-foreground shadow-lg ring-offset-background transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         "hover:bg-primary/90 hover:shadow-xl hover:-translate-y-0.5",
         visible ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0",
@@ -259,7 +273,7 @@ function SiteHeader() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
-    <header className="border-b border-border bg-background/80">
+    <header className="print:hidden border-b border-border bg-background/80">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-2 text-sm">
         <Link to="/" className="flex items-center gap-2 shrink-0" aria-label="Къде Да — начало">
           <img src="/logo-icon.png" alt="" width={28} height={28} className="h-7 w-7" />
@@ -271,6 +285,9 @@ function SiteHeader() {
         </Link>
         {pathname === "/" && <div aria-hidden="true" />}
         <nav className="flex items-center gap-3">
+          <Link to="/sravnenie" className="text-muted-foreground hover:text-primary">
+            Сравнение
+          </Link>
           {user ? (
             <>
               <UserAvatar user={user} />
@@ -307,18 +324,20 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <div className="flex min-h-screen flex-col">
-          <SiteHeader />
-          <div className="flex-1">
-            {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-            <Outlet />
+        <ReportSessionProvider>
+          <div className="flex min-h-screen flex-col">
+            <SiteHeader />
+            <div className="flex-1">
+              {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+              <Outlet />
+            </div>
+            <SiteFooter />
           </div>
-          <SiteFooter />
-        </div>
-        <ScrollToTop />
-        <Toaster />
+          <ScrollToTop />
+          <FeedbackBox />
+          <Toaster />
+        </ReportSessionProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
 }
-

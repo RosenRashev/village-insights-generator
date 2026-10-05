@@ -152,7 +152,13 @@ function AuthPage() {
             <span className="text-xs text-muted-foreground">или</span>
             <span className="h-px flex-1 bg-border" />
           </div>
-          <Button type="button" variant="outline" className="w-full" onClick={googleSignIn} disabled={busy}>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={googleSignIn}
+            disabled={busy}
+          >
             Продължи с Google
           </Button>
         </>
@@ -161,7 +167,11 @@ function AuthPage() {
       <div className="mt-6 space-y-2 text-center text-sm">
         {mode === "signin" && (
           <>
-            <button type="button" className="text-primary underline" onClick={() => setMode("signup")}>
+            <button
+              type="button"
+              className="text-primary underline"
+              onClick={() => setMode("signup")}
+            >
               Нямате акаунт? Регистрирайте се
             </button>
             <br />
@@ -175,7 +185,11 @@ function AuthPage() {
           </>
         )}
         {mode !== "signin" && (
-          <button type="button" className="text-primary underline" onClick={() => setMode("signin")}>
+          <button
+            type="button"
+            className="text-primary underline"
+            onClick={() => setMode("signin")}
+          >
             Назад към вход
           </button>
         )}

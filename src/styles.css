@@ -416,7 +416,16 @@
 }
 
 /* Печат: бял фон, без интерактивни елементи, секциите не се режат. */
+@page {
+  margin: 12mm;
+}
+
 @media print {
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
   body {
     background: #fff !important;
   }
@@ -425,10 +434,18 @@
     display: none !important;
   }
 
-  section,
   .print-card {
-    break-inside: avoid;
     box-shadow: none !important;
+  }
+
+  /* Малките карти не се режат между страниците; целите секции могат (иначе остават празни страници). */
+  .print-card:not(section) {
+    break-inside: avoid;
+  }
+
+  /* Бутоните за мащабиране на картата нямат смисъл на хартия. */
+  .leaflet-control-zoom {
+    display: none !important;
   }
 }
 

@@ -2,6 +2,18 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { PROMPT_MODULES } from "@/lib/prompt-modules";
+import { missingSectionIds, sanitizeForPublic, stampGeneratedAt } from "@/lib/report-privacy";
+
+const REQUIRED_SECTION_IDS = PROMPT_MODULES.map((m) => m.id);
+
+/** Колко доклада може да генерира потребителят още днес (администраторът е без ограничения). */
+export const getMyQuota = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { getQuotaStatus } = await import("@/lib/quota.server");
+    return getQuotaStatus(context.supabase, context.userId);
+  });
 
 export type SavedReport = {
   id: string;
@@ -15,7 +27,10 @@ export type SavedReport = {
   updated_at: string;
 };
 
-/** Създава нов запис за доклад към текущия (одобрен) потребител. */
+/**
+ * Запазва доклад за текущия (одобрен) потребител. За всяко населено място има един доклад
+ * на акаунт: ако вече има такъв, той се обновява (а не се създава втори).
+ */
 export const saveReport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) =>
@@ -31,38 +46,154 @@ export const saveReport = createServerFn({ method: "POST" })
       .parse(data),
   )
   .handler(async ({ data, context }) => {
+    const missing = missingSectionIds(data.reportContent, REQUIRED_SECTION_IDS);
+    if (missing.length > 0) {
+      throw new Error("Докладът е непълен и не може да бъде запазен.");
+    }
+
+    let existingId: string | null = null;
+    if (data.ekatte != null) {
+      const { data: existing, error: findError } = await context.supabase
+        .from("reports")
+        .select("id")
+        .eq("user_id", context.userId)
+        .eq("ekatte", data.ekatte)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (findError) throw new Error(findError.message);
+      existingId = existing?.id ?? null;
+    }
+
+    // Лимитът важи за нови доклади; актуализацията на съществуващ не е нов доклад.
+    if (!existingId) {
+      const { getQuotaStatus } = await import("@/lib/quota.server");
+      const quota = await getQuotaStatus(context.supabase, context.userId);
+      if (!quota.allowed) {
+        throw new Error("Достигнахте дневния лимит от доклади. Опитайте отново утре.");
+      }
+    }
+
+    const stamped = stampGeneratedAt(data.reportContent, new Date().toISOString());
+    // Публичните доклади никога не съдържат личната локация и целта на автора им.
+    const content = data.isPublic ? sanitizeForPublic(stamped) : stamped;
+
+    const fields = {
+      location_query: data.locationQuery,
+      ekatte: data.ekatte ?? null,
+      place_name: data.placeName ?? null,
+      selected_topics: data.selectedTopics,
+      report_content: content,
+      is_public: data.isPublic,
+    };
+
+    if (existingId) {
+      const { error } = await context.supabase
+        .from("reports")
+        .update(fields)
+        .eq("id", existingId)
+        .eq("user_id", context.userId);
+      if (error) throw new Error(error.message);
+      return { id: existingId, updated: true };
+    }
+
     const { data: row, error } = await context.supabase
       .from("reports")
-      .insert({
-        user_id: context.userId,
-        location_query: data.locationQuery,
-        ekatte: data.ekatte ?? null,
-        place_name: data.placeName ?? null,
-        selected_topics: data.selectedTopics,
-        report_content: data.reportContent,
-        is_public: data.isPublic,
-      })
+      .insert({ user_id: context.userId, ...fields })
       .select("id")
       .single();
 
     if (error) throw new Error(error.message);
-    return { id: row.id as string };
+    return { id: row.id as string, updated: false };
   });
 
-/** Всички доклади на текущия потребител (публични и лични). */
-export const listMyReports = createServerFn({ method: "POST" })
+export type MyReportPlace = { ekatte: number; placeName: string; updatedAt: string };
+
+/** Населените места, за които потребителят вече има доклад (за страницата „Сравнение“). */
+export const listMyReportPlaces = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .handler(async ({ context }): Promise<MyReportPlace[]> => {
     const { data, error } = await context.supabase
+      .from("reports")
+      .select("ekatte, place_name, updated_at")
+      .eq("user_id", context.userId)
+      .not("ekatte", "is", null)
+      .order("updated_at", { ascending: false });
+
+    if (error) throw new Error(error.message);
+
+    const seen = new Set<number>();
+    const out: MyReportPlace[] = [];
+    for (const row of data ?? []) {
+      const ekatte = row.ekatte as number | null;
+      if (ekatte === null || seen.has(ekatte)) continue;
+      seen.add(ekatte);
+      out.push({
+        ekatte,
+        placeName: (row.place_name as string | null) ?? "",
+        updatedAt: row.updated_at as string,
+      });
+    }
+    return out;
+  });
+
+export type MyReportSummary = { id: string; is_public: boolean; updated_at: string };
+
+/** Има ли потребителят вече доклад за това населено място (за бутона „Актуализирай“). */
+export const findMyReportByEkatte = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ ekatte: z.number().int().positive() }).parse(data))
+  .handler(async ({ data, context }): Promise<MyReportSummary | null> => {
+    const { data: row, error } = await context.supabase
+      .from("reports")
+      .select("id, is_public, updated_at")
+      .eq("user_id", context.userId)
+      .eq("ekatte", data.ekatte)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) throw new Error(error.message);
+    return row ? (row as MyReportSummary) : null;
+  });
+
+/** Собственият доклад за населено място — за страницата /report/<ЕКАТТЕ>. */
+export const getMyReportByEkatte = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ ekatte: z.number().int().positive() }).parse(data))
+  .handler(async ({ data, context }): Promise<SavedReport | null> => {
+    const { data: row, error } = await context.supabase
       .from("reports")
       .select(
         "id, location_query, ekatte, place_name, selected_topics, report_content, is_public, created_at, updated_at",
       )
       .eq("user_id", context.userId)
+      .eq("ekatte", data.ekatte)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) throw new Error(error.message);
+    return row ? (row as SavedReport) : null;
+  });
+
+export type MyReportListItem = Pick<
+  SavedReport,
+  "id" | "location_query" | "ekatte" | "place_name" | "is_public" | "created_at" | "updated_at"
+>;
+
+/** Докладите на текущия потребител за списъка „Моите доклади“ — без самото съдържание (по-леко и бързо). */
+export const listMyReports = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<MyReportListItem[]> => {
+    const { data, error } = await context.supabase
+      .from("reports")
+      .select("id, location_query, ekatte, place_name, is_public, created_at, updated_at")
+      .eq("user_id", context.userId)
       .order("updated_at", { ascending: false });
 
     if (error) throw new Error(error.message);
-    return (data ?? []) as SavedReport[];
+    return (data ?? []) as MyReportListItem[];
   });
 
 /** Превключва публичен/личен статус на собствен доклад. */
@@ -70,26 +201,27 @@ export const setReportVisibility = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => z.object({ id: z.string().uuid(), isPublic: z.boolean() }).parse(data))
   .handler(async ({ data, context }) => {
+    const update: { is_public: boolean; report_content?: string } = { is_public: data.isPublic };
+
+    if (data.isPublic) {
+      // При публикуване личната информация се изчиства от доклада завинаги.
+      const { data: row, error: readError } = await context.supabase
+        .from("reports")
+        .select("report_content")
+        .eq("id", data.id)
+        .eq("user_id", context.userId)
+        .maybeSingle();
+      if (readError) throw new Error(readError.message);
+      if (!row) throw new Error("Докладът не е намерен.");
+      if (missingSectionIds(row.report_content, REQUIRED_SECTION_IDS).length > 0) {
+        throw new Error("Непълен доклад не може да бъде публикуван.");
+      }
+      update.report_content = sanitizeForPublic(row.report_content);
+    }
+
     const { error } = await context.supabase
       .from("reports")
-      .update({ is_public: data.isPublic })
-      .eq("id", data.id)
-      .eq("user_id", context.userId);
-
-    if (error) throw new Error(error.message);
-    return { ok: true };
-  });
-
-/** Обновява съдържанието на съществуващ доклад (регенериране). */
-export const updateReportContent = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((data) =>
-    z.object({ id: z.string().uuid(), reportContent: z.string().min(1) }).parse(data),
-  )
-  .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
-      .from("reports")
-      .update({ report_content: data.reportContent })
+      .update(update)
       .eq("id", data.id)
       .eq("user_id", context.userId);
 

@@ -5,6 +5,7 @@ import {
   Award,
   Bus,
   CheckCircle2,
+  ChevronDown,
   ClipboardCheck,
   Droplet,
   Globe,
@@ -16,6 +17,7 @@ import {
   MessagesSquare,
   Minus,
   Newspaper,
+  Printer,
   Route,
   ShieldHalf,
   Stethoscope,
@@ -32,7 +34,14 @@ import {
   type LucideIcon,
   Info,
 } from "lucide-react";
-import { layoutBasicBlocks, layoutEthnosBlocks, sortBlocksBySize } from "@/lib/report-layout";
+import { summaryChips, type SummaryChip } from "@/lib/section-summary";
+import {
+  checklistsToLists,
+  layoutBasicBlocks,
+  layoutEthnosBlocks,
+  layoutHistoryBlocks,
+  sortBlocksBySize,
+} from "@/lib/report-layout";
 
 /**
  * Категории с изрично зададена, ръчна подредба на блоковете в промпта
@@ -41,7 +50,17 @@ import { layoutBasicBlocks, layoutEthnosBlocks, sortBlocksBySize } from "@/lib/r
  * скалите над кутийките).
  */
 const HAS_BESPOKE_LAYOUT = new Set(["basic", "vik", "ethnos", "transport", "security", "services"]);
-import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+import {
+  Bar,
+  BarChart,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 import {
   MOCK_REPORT,
@@ -55,6 +74,8 @@ import {
 import "leaflet/dist/leaflet.css";
 
 import { LocationMap } from "@/components/LocationMap";
+import { useAuth } from "@/hooks/useAuth";
+import { isPremium } from "@/lib/plans";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -67,7 +88,6 @@ import type { Settlement } from "@/lib/settlements";
 import { displaySettlement } from "@/lib/settlements";
 import { PURPOSE_INSIGHTS } from "@/lib/purpose-insights";
 import type { PurposeId } from "@/lib/prompt-modules";
-
 
 const ICONS: Record<string, LucideIcon> = {
   basic: Route,
@@ -206,10 +226,7 @@ const RISK: Record<
   },
 };
 
-const SCALE_LEVELS: Record<
-  "good" | "fair" | "poor",
-  { tone: CardTone; bar: string }
-> = {
+const SCALE_LEVELS: Record<"good" | "fair" | "poor", { tone: CardTone; bar: string }> = {
   good: { tone: "emerald", bar: "bg-emerald-500" },
   fair: { tone: "amber", bar: "bg-amber-500" },
   poor: { tone: "rose", bar: "bg-rose-500" },
@@ -268,7 +285,10 @@ function InfoTip({ text, label }: { text: string; label: string }) {
   const show = () => {
     const r = btn.current?.getBoundingClientRect();
     if (!r) return;
-    const left = Math.min(Math.max(8, r.left + r.width / 2 - WIDTH / 2), window.innerWidth - WIDTH - 8);
+    const left = Math.min(
+      Math.max(8, r.left + r.width / 2 - WIDTH / 2),
+      window.innerWidth - WIDTH - 8,
+    );
     setPos({ top: r.bottom + 8, left });
   };
   const hide = () => setPos(null);
@@ -438,7 +458,7 @@ function Block({
                   {value}%
                 </span>
                 {block.periodLabel && (
-                  <span className="text-[9px] font-bold uppercase tracking-wider text-black/40">
+                  <span className="line-clamp-2 max-w-[5.5rem] text-balance break-words px-1 text-center text-[9px] font-bold uppercase leading-tight tracking-wide text-black/40">
                     {block.periodLabel}
                   </span>
                 )}
@@ -458,7 +478,10 @@ function Block({
       return (
         <div>
           {block.title && (
-            <h4 className="mb-2 text-sm font-bold uppercase tracking-wide" style={{ color: accent }}>
+            <h4
+              className="mb-2 text-sm font-bold uppercase tracking-wide"
+              style={{ color: accent }}
+            >
               {block.title}
             </h4>
           )}
@@ -487,7 +510,6 @@ function Block({
         </div>
       );
 
-
     case "text": {
       if (block.variant === "dark") {
         return (
@@ -514,12 +536,21 @@ function Block({
                 className="flex items-center justify-center gap-2 text-center text-2xl font-bold leading-tight md:text-3xl"
                 style={{ color: CARD_TONES.rose.ink }}
               >
-                <AlertTriangle className="h-6 w-6 shrink-0" style={{ color: CARD_TONES.rose.icon }} />
+                <AlertTriangle
+                  className="h-6 w-6 shrink-0"
+                  style={{ color: CARD_TONES.rose.icon }}
+                />
                 {block.title}
-                <AlertTriangle className="h-6 w-6 shrink-0" style={{ color: CARD_TONES.rose.icon }} />
+                <AlertTriangle
+                  className="h-6 w-6 shrink-0"
+                  style={{ color: CARD_TONES.rose.icon }}
+                />
               </h4>
             )}
-            <div className="space-y-3 text-base leading-relaxed" style={{ color: CARD_TONES.rose.ink }}>
+            <div
+              className="space-y-3 text-base leading-relaxed"
+              style={{ color: CARD_TONES.rose.ink }}
+            >
               {block.body
                 .split(/\n+/)
                 .filter(Boolean)
@@ -577,7 +608,10 @@ function Block({
       return (
         <div>
           {block.title && (
-            <h4 className="mb-3 text-sm font-bold uppercase tracking-wide" style={{ color: accent }}>
+            <h4
+              className="mb-3 text-sm font-bold uppercase tracking-wide"
+              style={{ color: accent }}
+            >
               {block.title}
             </h4>
           )}
@@ -592,7 +626,10 @@ function Block({
                   className="print-card space-y-3 rounded-2xl border p-5"
                   style={{ backgroundColor: tone.bg, borderColor: tone.border }}
                 >
-                  <span className="block text-xs font-bold uppercase tracking-wider" style={{ color: tone.ink, opacity: 0.75 }}>
+                  <span
+                    className="block text-xs font-bold uppercase tracking-wider"
+                    style={{ color: tone.ink, opacity: 0.75 }}
+                  >
                     {s.label}
                     <SourceArrow sources={s.sources} />
                   </span>
@@ -600,7 +637,10 @@ function Block({
                     {s.levelText}
                   </span>
                   <div className="h-2.5 w-full rounded-full bg-white/60">
-                    <div className={`h-2.5 rounded-full ${meta.bar}`} style={{ width: `${percent}%` }} />
+                    <div
+                      className={`h-2.5 rounded-full ${meta.bar}`}
+                      style={{ width: `${percent}%` }}
+                    />
                   </div>
                   {s.note && <p className="text-base leading-relaxed text-slate-700">{s.note}</p>}
                 </div>
@@ -638,7 +678,10 @@ function Block({
                     </td>
                     <td className="py-2 pr-3 text-slate-700">{r.distance}</td>
                     <td className="py-2 pr-3 text-slate-700">{r.driveTime}</td>
-                    <td className="py-2 pr-3 font-bold" style={r.hasTrain ? { color: accent } : undefined}>
+                    <td
+                      className="py-2 pr-3 font-bold"
+                      style={r.hasTrain ? { color: accent } : undefined}
+                    >
                       {r.hasTrain ? "Да" : "—"}
                     </td>
                     <td className="py-2 text-slate-700">{r.road || "—"}</td>
@@ -655,9 +698,12 @@ function Block({
         <SubCard title={block.title} tone={block.tone}>
           <ul className="space-y-2">
             {block.items.map((item) => (
-              <li key={item} className="flex items-start gap-2 text-base leading-relaxed text-slate-700">
+              <li
+                key={item}
+                className="flex items-start gap-2 text-base leading-relaxed text-slate-700"
+              >
                 <CheckCircle2 className="mt-1 h-4 w-4 shrink-0" style={{ color: accent }} />
-                <span>{item}</span>
+                <ListItemText text={item} />
               </li>
             ))}
           </ul>
@@ -679,7 +725,7 @@ function Block({
                 "Данните може да са приблизителни или на общинско ниво (Преброяване 2021 г., НСИ)."
               }
               aria-label="Пояснение към данните"
-              className="inline-flex cursor-help items-center opacity-70"
+              className="inline-flex cursor-help items-center opacity-70 print:hidden"
             >
               <Info className="h-3.5 w-3.5" />
             </span>
@@ -721,11 +767,52 @@ function Block({
             </ul>
           </div>
           {block.note && (
-            <p className="mt-3 rounded-xl border border-dashed p-3 text-sm font-medium"
-               style={{ borderColor: accent, color: ink }}>
+            <p
+              className="mt-3 rounded-xl border border-dashed p-3 text-sm font-medium"
+              style={{ borderColor: accent, color: ink }}
+            >
               {block.note}
             </p>
           )}
+        </div>
+      );
+    }
+
+    case "bars": {
+      return (
+        <div>
+          <h4
+            className="mb-2 flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide"
+            style={{ color: accent }}
+          >
+            {block.title}
+            {block.unit && (
+              <span className="text-xs font-normal normal-case opacity-70">({block.unit})</span>
+            )}
+          </h4>
+          <div className="print-card rounded-2xl bg-white/80 p-4 shadow-sm ring-1 ring-black/5">
+            <div className="pointer-events-none h-56 w-full select-none">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={block.data} margin={{ top: 20, right: 8, left: 8, bottom: 0 }}>
+                  <XAxis
+                    dataKey="label"
+                    tickLine={false}
+                    axisLine={false}
+                    tick={{ fontSize: 12, fill: "#64748b" }}
+                  />
+                  <YAxis hide domain={[0, "dataMax"]} />
+                  <Bar
+                    dataKey="value"
+                    fill={accent}
+                    radius={[6, 6, 0, 0]}
+                    isAnimationActive={false}
+                    label={{ position: "top", fontSize: 12, fontWeight: 700, fill: "#334155" }}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            {block.note && <p className="mt-2 text-xs font-medium text-slate-500">{block.note}</p>}
+          </div>
         </div>
       );
     }
@@ -769,14 +856,11 @@ function Block({
                     </tbody>
                   </table>
                 </div>
-                {block.note && (
-                  <p className="text-sm italic text-muted-foreground">{block.note}</p>
-                )}
+                {block.note && <p className="text-sm italic text-muted-foreground">{block.note}</p>}
               </DialogContent>
             </Dialog>
           </div>
           <div className="space-y-3">
-
             {block.rows.map((r, i) => (
               <div
                 key={`${r.route}-${i}`}
@@ -784,7 +868,9 @@ function Block({
               >
                 <div className="flex flex-wrap items-start gap-2">
                   <Bus className="mt-0.5 h-4 w-4 shrink-0" style={{ color: accent }} />
-                  <span className="min-w-0 flex-1 font-semibold text-black/80 wrap-anywhere">{r.route}</span>
+                  <span className="min-w-0 flex-1 font-semibold text-black/80 wrap-anywhere">
+                    {r.route}
+                  </span>
                   <span
                     className="ml-auto max-w-full shrink rounded-2xl px-2 py-0.5 text-xs font-bold leading-snug text-white wrap-anywhere"
                     style={{ backgroundColor: accent }}
@@ -794,8 +880,12 @@ function Block({
                 </div>
 
                 <div className="mt-2 flex flex-wrap gap-4 text-sm text-black/70">
-                  <span>Курсове: <b>{r.runs}</b></span>
-                  <span>Часови обхват: <b>{r.last}</b></span>
+                  <span>
+                    Курсове: <b>{r.runs}</b>
+                  </span>
+                  <span>
+                    Часови обхват: <b>{r.last}</b>
+                  </span>
                 </div>
               </div>
             ))}
@@ -864,7 +954,10 @@ function Block({
       return (
         <div className="space-y-3">
           {block.items.map((group, gi) => (
-            <div key={group.title} className="rounded-2xl bg-white/70 p-4 shadow-sm ring-1 ring-black/5">
+            <div
+              key={group.title}
+              className="rounded-2xl bg-white/70 p-4 shadow-sm ring-1 ring-black/5"
+            >
               <div className="flex items-center gap-2">
                 <span
                   className="flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold text-white"
@@ -877,7 +970,10 @@ function Block({
               <ul className="mt-2 space-y-1.5 pl-8">
                 {group.points.map((p) => (
                   <li key={p} className="flex gap-2 text-sm text-black/70">
-                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: accent }} />
+                    <span
+                      className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full"
+                      style={{ backgroundColor: accent }}
+                    />
                     <span>{p}</span>
                   </li>
                 ))}
@@ -889,23 +985,65 @@ function Block({
   }
 }
 
+/** „Етикет: текст“ — етикетът се показва с удебелен шрифт. */
+function ListItemText({ text }: { text: string }) {
+  const m = /^([^:\d][^:]{1,58}):\s+(.+)$/s.exec(text);
+  if (!m) return <span>{text}</span>;
+  return (
+    <span>
+      <span className="font-semibold text-slate-900">{m[1]}:</span> {m[2]}
+    </span>
+  );
+}
+
+const CHIP_STYLE = {
+  good: "bg-emerald-50 text-emerald-900 ring-emerald-200",
+  fair: "bg-amber-50 text-amber-900 ring-amber-200",
+  poor: "bg-rose-50 text-rose-900 ring-rose-200",
+  none: "bg-slate-50 text-slate-700 ring-slate-200",
+} as const;
+
+function SummaryChips({ chips }: { chips: SummaryChip[] }) {
+  if (chips.length === 0) return null;
+  return (
+    <span className="mt-2 flex flex-wrap gap-1.5 print:hidden">
+      {chips.map((c, i) => (
+        <span
+          key={i}
+          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${CHIP_STYLE[c.level ?? "none"]}`}
+        >
+          {c.text}
+        </span>
+      ))}
+    </span>
+  );
+}
+
 function Section({
   section,
   extra,
   purposeNote,
+  open,
+  onToggle,
 }: {
   section: ReportSection;
   extra?: ReactNode;
   purposeNote?: string | undefined;
+  open: boolean;
+  onToggle: () => void;
 }) {
   const theme = THEMES[section.theme];
   const Icon = ICONS[section.id] ?? MapPin;
+  const source =
+    section.id === "onsite-checklist" ? section.blocks : checklistsToLists(section.blocks);
   let blocks =
     section.id === "basic"
-      ? layoutBasicBlocks(section.blocks)
+      ? layoutBasicBlocks(source)
       : section.id === "ethnos"
-        ? layoutEthnosBlocks(section.blocks)
-        : section.blocks;
+        ? layoutEthnosBlocks(source)
+        : section.id === "history"
+          ? layoutHistoryBlocks(source)
+          : source;
   if (!HAS_BESPOKE_LAYOUT.has(section.id)) blocks = sortBlocksBySize(blocks);
 
   // Финалната обобщена оценка получава тъмния „village“ стил от еталона.
@@ -917,7 +1055,9 @@ function Section({
             <Award className="h-5 w-5" />
           </span>
           <div>
-            <h3 className="font-accent text-2xl font-bold text-white">Обобщена оценка от Къде Да</h3>
+            <h3 className="font-accent text-2xl font-bold text-white">
+              Обобщена оценка от Къде Да
+            </h3>
             <p className="text-xs text-village-200">Качествено заключение спрямо избраната цел</p>
           </div>
         </div>
@@ -941,23 +1081,58 @@ function Section({
     );
   }
 
+  const bodyId = `section-body-${section.id}`;
+  const chips = summaryChips(section);
+
   return (
-    <section className="wrap-anywhere print-card scroll-mt-6 space-y-6 rounded-3xl border border-slate-100 bg-white p-6 shadow-lg md:p-8">
+    <section
+      id={`section-${section.id}`}
+      className="wrap-anywhere print-card scroll-mt-6 rounded-3xl border border-slate-100 bg-white p-6 shadow-lg md:p-8"
+    >
       <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div className="flex items-center gap-3">
-          <span
-            className={`animated-icon-box flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white shadow-md ${theme.box}`}
+        <h3 className="min-w-0 flex-1">
+          <button
+            type="button"
+            onClick={onToggle}
+            aria-expanded={open}
+            aria-controls={bodyId}
+            className="group flex w-full items-start gap-3 rounded-xl text-left outline-none focus-visible:ring-2 focus-visible:ring-ring print:cursor-default"
           >
-            <Icon className="h-5 w-5" />
-          </span>
-          <div className="min-w-0">
-            <h3 className="text-2xl font-bold leading-tight text-slate-900">{section.title}</h3>
-            {section.subtitle && <p className="text-xs text-slate-500">{section.subtitle}</p>}
-          </div>
-        </div>
-        {purposeNote && (
+            <span
+              className={`animated-icon-box flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white shadow-md ${theme.box}`}
+            >
+              <Icon className="h-5 w-5" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-2xl font-bold leading-tight text-slate-900">
+                {section.title}
+              </span>
+              {section.summary ? (
+                <span className="mt-1 block text-sm font-normal leading-snug text-slate-600">
+                  {section.summary}
+                </span>
+              ) : (
+                section.subtitle && (
+                  <span className="block text-xs font-normal text-slate-500">
+                    {section.subtitle}
+                  </span>
+                )
+              )}
+              {!open && <SummaryChips chips={chips} />}
+            </span>
+            <span
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition-colors group-hover:bg-slate-200 group-hover:text-slate-900 print:hidden"
+              aria-hidden="true"
+            >
+              <ChevronDown
+                className={`h-7 w-7 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+              />
+            </span>
+          </button>
+        </h3>
+        {open && purposeNote && (
           <div
-            className="flex items-start gap-2 rounded-xl border border-dashed bg-muted/50 p-3 text-xs leading-relaxed text-slate-600 md:max-w-xs md:shrink-0"
+            className="flex items-start gap-2 rounded-xl border border-dashed bg-muted/50 p-3 text-xs leading-relaxed text-slate-600 md:max-w-xs md:shrink-0 print:hidden"
             style={{ borderColor: theme.accent }}
           >
             <Target className="mt-0.5 h-3.5 w-3.5 shrink-0" style={{ color: theme.accent }} />
@@ -966,16 +1141,94 @@ function Section({
         )}
       </header>
 
-      <div className="space-y-6">
-        {extra}
-        {blocks.map((b, i) => (
-          <Block key={i} block={b} accent={theme.accent} ink={theme.ink} hover={theme.hover} />
-        ))}
+      {/* Картата на първата категория се вижда и когато категорията е свита. */}
+      {extra && <div className="mt-6">{extra}</div>}
+
+      {/* Съдържанието остава подредено в страницата и когато е свито (височина 0, невидимо), за да
+          се оразмеряват графиките и картата; при печат винаги се показва. */}
+      <div
+        id={bodyId}
+        inert={!open}
+        className={`grid transition-[grid-template-rows] duration-300 ease-out print:grid-rows-[1fr] ${
+          open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+        }`}
+      >
+        <div
+          className={`min-h-0 overflow-hidden print:visible print:overflow-visible ${
+            open ? "" : "invisible"
+          }`}
+        >
+          <div className="space-y-6 pt-6">
+            <div className="space-y-6">
+              {blocks.map((b, i) => (
+                // Личната информация (разстояние от настоящата локация) не се печата и не излиза в PDF.
+                <div key={i} className={isCurrentLocationBlock(b) ? "print:hidden" : undefined}>
+                  <Block block={b} accent={theme.accent} ink={theme.ink} hover={theme.hover} />
+                </div>
+              ))}
+            </div>
+
+            <SectionFooter cachedAt={section.cachedAt} sources={section.sources} />
+          </div>
+        </div>
       </div>
     </section>
   );
 }
 
+/** Блок „От <настояща локация>“ — съдържа лична информация и не се печата. */
+function isCurrentLocationBlock(b: ReportBlock): boolean {
+  return (
+    b.kind === "facts" &&
+    (b.title ?? "").startsWith("От ") &&
+    b.items.some((it) => it.label === "Разстояние по път")
+  );
+}
+
+function formatDate(iso: string | undefined): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? null : d.toLocaleDateString("bg-BG");
+}
+
+/** Дата на данните и списък с източниците, на които се е опряло проучването. */
+function SectionFooter({
+  cachedAt,
+  sources,
+}: {
+  cachedAt?: string | undefined;
+  sources?: SourceLink[] | undefined;
+}) {
+  const date = formatDate(cachedAt);
+  if (!date && (!sources || sources.length === 0)) return null;
+
+  return (
+    <footer className="space-y-2 border-t border-slate-100 pt-3 text-xs text-slate-500">
+      {date && <p>Данни към {date}</p>}
+      {sources && sources.length > 0 && (
+        <details className="group">
+          <summary className="cursor-pointer select-none font-medium text-slate-600 hover:text-slate-900 print:hidden">
+            Източници ({sources.length})
+          </summary>
+          <ul className="mt-2 space-y-1 print:block">
+            {sources.map((src) => (
+              <li key={src.url} className="truncate">
+                <a
+                  href={src.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sky-700 underline-offset-2 hover:underline"
+                >
+                  {src.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </footer>
+  );
+}
 
 type InfographicProps = {
   place?: Settlement | null;
@@ -983,6 +1236,8 @@ type InfographicProps = {
   sections?: ReportSection[];
   demo?: boolean;
   purpose?: PurposeId | null;
+  /** Кога е генериран докладът (ISO) — показва се в заглавието. */
+  generatedAt?: string | undefined;
 };
 
 /** Координати на с. Медово (ekatte 47665) — fallback за демо режима. */
@@ -995,7 +1250,10 @@ export function ReportInfographic({
   sections = MOCK_REPORT,
   demo = true,
   purpose = null,
+  generatedAt,
 }: InfographicProps) {
+  const { profile } = useAuth();
+  const generatedDate = formatDate(generatedAt);
   // Стабилни референции — иначе LocationMap ре-тригва ефекта си на всеки render.
   const mapPoint = useMemo(
     () =>
@@ -1012,44 +1270,85 @@ export function ReportInfographic({
     [place, current],
   );
 
+  // Категориите са затворени при отваряне на доклада; отворените се помнят само докато страницата е отворена.
+  const [openIds, setOpenIds] = useState<Set<string>>(new Set());
+  const collapsibleIds = sections.filter((x) => x.id !== "perspective-summary").map((x) => x.id);
+  const allOpen = collapsibleIds.length > 0 && collapsibleIds.every((id) => openIds.has(id));
+  const toggleSection = (id: string) =>
+    setOpenIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
   const placeLabel = place ? displaySettlement(place) : MOCK_REPORT_PLACE;
   const postalCode = place?.postalCode || DEMO_POSTAL_CODE;
 
   return (
-    <div className="report-canvas relative left-1/2 w-screen -translate-x-1/2 font-sans print:w-full print:translate-x-0">
+    <div className="report-canvas relative left-1/2 w-screen -translate-x-1/2 font-sans print:static print:left-auto print:w-full print:translate-x-0">
       <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 md:py-8">
-      <div className="print-card overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md">
-        <div className="flex flex-wrap items-center justify-between gap-3 bg-white px-5 py-3.5 md:px-7 md:py-4">
-          <div className="flex min-w-0 items-center gap-3">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-flag-green text-base font-bold text-white shadow-sm">
-              <MapPin className="h-5 w-5" />
-            </span>
-            <h2 className="wrap-anywhere font-accent text-2xl font-black tracking-wide text-slate-900 md:text-3xl">
-              {placeLabel}
-              {postalCode ? ` · п.к. ${postalCode}` : ""}
-            </h2>
+        <div className="print-card overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md">
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-white px-5 py-3.5 md:px-7 md:py-4">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-flag-green text-base font-bold text-white shadow-sm">
+                <MapPin className="h-5 w-5" />
+              </span>
+              <h2 className="wrap-anywhere font-accent text-2xl font-black tracking-wide text-slate-900 md:text-3xl">
+                {placeLabel}
+                {postalCode ? ` · п.к. ${postalCode}` : ""}
+              </h2>
+            </div>
+            <div className="flex items-center gap-3">
+              {generatedDate && (
+                <span className="text-xs text-slate-500">Генериран на {generatedDate}</span>
+              )}
+              {isPremium(profile) && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="print:hidden"
+                  onClick={() => window.print()}
+                >
+                  <Printer className="h-4 w-4" />
+                  Печат / PDF
+                </Button>
+              )}
+            </div>
           </div>
+          <div className="h-3 w-full bg-flag-green" />
+          <div className="h-3 w-full bg-flag-red" />
         </div>
-        <div className="h-3 w-full bg-flag-green" />
-        <div className="h-3 w-full bg-flag-red" />
-      </div>
 
+        {collapsibleIds.length > 1 && (
+          <div className="flex justify-end print:hidden">
+            <button
+              type="button"
+              onClick={() => setOpenIds(allOpen ? new Set() : new Set(collapsibleIds))}
+              className="rounded-full border border-slate-200 bg-white px-4 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+            >
+              {allOpen ? "Свий всички категории" : "Разгъни всички категории"}
+            </button>
+          </div>
+        )}
 
-      {sections.map((s) => (
-        <Section
-          key={s.id}
-          section={s}
-          extra={
-            s.id === "basic" && mapPoint ? (
-              <LocationMap place={mapPoint} current={currentPoint} />
-            ) : undefined
-          }
-          purposeNote={purpose ? PURPOSE_INSIGHTS[purpose]?.[s.id] : undefined}
-        />
-      ))}
+        {sections.map((s) => (
+          <Section
+            key={s.id}
+            open={openIds.has(s.id)}
+            onToggle={() => toggleSection(s.id)}
+            section={s}
+            extra={
+              s.id === "basic" && mapPoint ? (
+                <div className={currentPoint ? "print:hidden" : undefined}>
+                  <LocationMap place={mapPoint} current={currentPoint} />
+                </div>
+              ) : undefined
+            }
+            purposeNote={purpose ? PURPOSE_INSIGHTS[purpose]?.[s.id] : undefined}
+          />
+        ))}
       </div>
     </div>
   );
 }
-
-

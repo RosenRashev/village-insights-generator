@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { Loader2, RefreshCw, RotateCcw, Sparkles } from "lucide-react";
+import { RefreshCw, RotateCcw, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -11,10 +12,11 @@ import { PURPOSE_OPTIONS, type PurposeId } from "@/lib/prompt-modules";
 import { SettlementCombobox } from "@/components/SettlementCombobox";
 import { ModuleCard } from "@/components/ModuleCard";
 import { TopoBackground } from "@/components/TopoBackground";
-import { FeedbackBox } from "@/components/FeedbackBox";
 import { PendingApproval } from "@/components/PendingApproval";
+import { GenerationProgress } from "@/components/GenerationProgress";
 import { ReportInfographic } from "@/components/ReportInfographic";
 import { useAuth } from "@/hooks/useAuth";
+import { useReportSession } from "@/hooks/useReportSession";
 import {
   generateReportSections,
   serializeReport,
@@ -22,14 +24,16 @@ import {
   totalSteps,
   IS_MOCK,
 } from "@/lib/generate-report";
-import { saveReport } from "@/lib/reports.functions";
-import { getPublicReport, listPublicPlaces, type PublicPlace } from "@/lib/public-reports.functions";
+import {
+  findMyReportByEkatte,
+  getMyQuota,
+  saveReport,
+  type MyReportSummary,
+} from "@/lib/reports.functions";
+import { isPremium } from "@/lib/plans";
 import type { ReportSection } from "@/data/mock-report";
 
-
-import { formatSettlement, type Settlement } from "@/lib/settlements";
-
-
+import { displaySettlement, formatSettlement, type Settlement } from "@/lib/settlements";
 
 const TITLE = "Къде Да — проучване на населени места";
 const DESCRIPTION =
@@ -67,9 +71,6 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-
-
-
 const HERO_PHRASES = [
   "живея",
   "се установя",
@@ -91,42 +92,32 @@ function Index() {
   const { user, profile, loading: authLoading } = useAuth();
   const isSignedIn = user !== null;
   const isApproved = profile?.is_approved === true;
+  const premium = isPremium(profile);
+  const queryClient = useQueryClient();
 
-  const [place, setPlace] = useState<Settlement | null>(null);
-  const [currentLocation, setCurrentLocation] = useState<Settlement | null>(null);
-  const [purpose, setPurpose] = useState<PurposeId | null>(null);
+  const {
+    place,
+    setPlace,
+    currentLocation,
+    setCurrentLocation,
+    purpose,
+    setPurpose,
+    isPrivate,
+    setIsPrivate,
+    generating,
+    setGenerating,
+    progress,
+    setProgress,
+    realSections,
+    setRealSections,
+    generatedAt,
+    setGeneratedAt,
+    reset: resetSession,
+  } = useReportSession();
   const [placeNotice, setPlaceNotice] = useState<string | null>(null);
-  const [generating, setGenerating] = useState(false);
-  const [progress, setProgress] = useState<{ done: number; total: number }>({ done: 0, total: 0 });
-  const [realSections, setRealSections] = useState<ReportSection[] | null>(null);
-  const [isPrivate, setIsPrivate] = useState(false);
-  const [publicPlaces, setPublicPlaces] = useState<PublicPlace[] | null>(null);
-  const [guestLoading, setGuestLoading] = useState(false);
-  const [guestReport, setGuestReport] = useState<
-    { place: Settlement; current: Settlement | null; purpose: PurposeId | null; sections: ReportSection[] } | null
-  >(null);
   const [activePhrase, setActivePhrase] = useState(0);
   const [maxPhraseWidth, setMaxPhraseWidth] = useState<number | null>(null);
   const [isDesktop, setIsDesktop] = useState(false);
-
-  useEffect(() => {
-    if (isSignedIn) {
-      setPublicPlaces(null);
-      return;
-    }
-    let active = true;
-    listPublicPlaces()
-      .then((rows) => {
-        if (active) setPublicPlaces(rows);
-      })
-      .catch(() => {
-        if (active) setPublicPlaces([]);
-      });
-    return () => {
-      active = false;
-    };
-  }, [isSignedIn]);
-
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -154,48 +145,32 @@ function Index() {
     setMaxPhraseWidth(max);
   }, []);
 
-
   const [currentNotice, setCurrentNotice] = useState<string | null>(null);
+
+  // Има ли потребителят вече доклад за избраното място — тогава вместо „Генерирай“ се предлага „Актуализирай“.
+  // Резултатът се кешира, за да няма повторна заявка при всяко връщане на страницата.
+  const placeEkatte = place?.ekatte;
+  const existingQuery = useQuery({
+    queryKey: ["my-report-summary", user?.id, placeEkatte],
+    queryFn: () => findMyReportByEkatte({ data: { ekatte: placeEkatte! } }),
+    enabled: !!placeEkatte && isSignedIn && isApproved,
+    staleTime: 5 * 60_000,
+  });
+  const existingReport: MyReportSummary | null =
+    placeEkatte && isSignedIn && isApproved ? (existingQuery.data ?? null) : null;
 
   const CONFLICT_MSG =
     "Настоящата локация не може да съвпада с търсеното населено място — полето беше изчистено.";
 
-  const loadGuestReport = async (s: Settlement) => {
-    const match = publicPlaces?.find((p) => p.ekatte === s.ekatte);
-    if (!match) return;
-    setGuestLoading(true);
-    setGuestReport(null);
-    try {
-      const row = await getPublicReport({ data: { id: match.reportId } });
-      const payload = row ? parseReport(row.report_content) : null;
-      if (!payload) {
-        toast.error("Докладът не може да бъде показан.");
-        return;
-      }
-      setGuestReport({
-        place: payload.place ?? s,
-        current: payload.current ?? null,
-        purpose: payload.purpose ?? null,
-        sections: payload.sections,
-      });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Неуспешно зареждане на доклада.");
-    } finally {
-      setGuestLoading(false);
-    }
-  };
-
   const handlePlaceChange = (s: Settlement | null) => {
     setPlace(s);
     setPlaceNotice(null);
-    setGuestReport(null);
     if (s && currentLocation && currentLocation.ekatte === s.ekatte) {
       setCurrentLocation(null);
       setCurrentNotice(CONFLICT_MSG);
     } else {
       setCurrentNotice(null);
     }
-    if (s && !isSignedIn) void loadGuestReport(s);
   };
 
   const handleCurrentLocationChange = (s: Settlement | null) => {
@@ -210,17 +185,46 @@ function Index() {
 
   const hasPlace = place !== null;
 
+  // Публичните доклади са еднакви за всички: без лична локация и цел на търсенето.
+  const handlePrivateChange = (value: boolean) => {
+    setIsPrivate(value);
+    if (!value) {
+      setCurrentLocation(null);
+      setCurrentNotice(null);
+      setPurpose(null);
+    }
+  };
+
   const generateReport = async () => {
     if (!place) return;
+
+    // Лимитът важи за нови доклади, не за актуализация на вече съществуващ.
+    if (!existingReport) {
+      try {
+        const quota = await getMyQuota({ data: undefined });
+        if (!quota.allowed) {
+          toast.error("Достигнахте дневния лимит от доклади. Опитайте отново утре.");
+          return;
+        }
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Неуспешна проверка на лимита.");
+        return;
+      }
+    }
+
+    const usedCurrent = isPrivate ? currentLocation : null;
+    const usedPurpose = isPrivate && premium ? purpose : null;
+
     setGenerating(true);
     setRealSections(null);
-    setProgress({ done: 0, total: totalSteps(purpose) });
+    setGeneratedAt(new Date().toISOString());
+    setProgress({ done: 0, total: totalSteps(usedPurpose) });
 
     try {
       const { sections, failed } = await generateReportSections({
         place,
-        current: currentLocation,
-        purpose,
+        current: usedCurrent,
+        purpose: usedPurpose,
         onSections: (s) => setRealSections(s),
         onStep: () => setProgress((p) => ({ ...p, done: p.done + 1 })),
       });
@@ -230,27 +234,53 @@ function Index() {
         return;
       }
 
+      if (failed > 0) {
+        // Непълен доклад не се запазва (иначе би се показвал на гостите като „официален“).
+        // Успешните категории вече са в кеша, така че повторният опит е евтин.
+        toast.warning(
+          `Докладът е непълен — ${failed} категории не успяха и той не беше запазен. Опитайте отново след малко.`,
+        );
+        return;
+      }
+
       try {
-        await saveReport({
+        const saved = await saveReport({
           data: {
             locationQuery: formatSettlement(place),
             ekatte: place.ekatte,
             placeName: formatSettlement(place),
-            selectedTopics: purpose ? [purpose] : [],
-            reportContent: serializeReport({ place, current: currentLocation, purpose, sections }),
+            selectedTopics: usedPurpose ? [usedPurpose] : [],
+            reportContent: serializeReport({
+              place,
+              current: usedCurrent,
+              purpose: usedPurpose,
+              sections,
+            }),
             isPublic: !isPrivate,
           },
         });
+        // „Сравнение“ да види новия/обновения доклад.
+        void queryClient.invalidateQueries({ queryKey: ["my-report-places"] });
+        void queryClient.invalidateQueries({ queryKey: ["my-report"] });
+        void queryClient.invalidateQueries({ queryKey: ["my-reports"] });
+        queryClient.setQueryData(["my-report-summary", user?.id, place.ekatte], {
+          id: saved.id,
+          is_public: !isPrivate,
+          updated_at: new Date().toISOString(),
+        } satisfies MyReportSummary);
+        toast.success(
+          IS_MOCK
+            ? "Докладът е готов (примерни данни)."
+            : saved.updated
+              ? "Докладът е актуализиран."
+              : "Докладът е готов.",
+        );
       } catch (err) {
         toast.error(
-          err instanceof Error ? `Докладът не беше запазен: ${err.message}` : "Докладът не беше запазен.",
+          err instanceof Error
+            ? `Докладът не беше запазен: ${err.message}`
+            : "Докладът не беше запазен.",
         );
-      }
-
-      if (failed > 0) {
-        toast.warning(`Готово с ${failed} пропуснати категории.`);
-      } else {
-        toast.success(IS_MOCK ? "Докладът е готов (примерни данни)." : "Докладът е готов.");
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Грешка при генерирането.");
@@ -259,22 +289,12 @@ function Index() {
     }
   };
 
-  const reset = () => {
-    setPlace(null);
-    setCurrentLocation(null);
-    setPurpose(null);
-    setRealSections(null);
-    setGuestReport(null);
-    setProgress({ done: 0, total: 0 });
-  };
-
-
+  const reset = () => resetSession();
 
   return (
     <main className="relative min-h-screen bg-background/80">
       <TopoBackground />
       <div className="mx-auto max-w-3xl px-4 py-12 sm:py-16">
-
         <header className="mount-rise border-b border-border pb-8 text-center">
           <div
             ref={measureRef}
@@ -282,10 +302,7 @@ function Index() {
             className="pointer-events-none absolute opacity-0"
           >
             {HERO_PHRASES.map((phrase) => (
-              <span
-                key={phrase}
-                className="block whitespace-nowrap text-6xl font-bold"
-              >
+              <span key={phrase} className="block whitespace-nowrap text-6xl font-bold">
                 {phrase}
               </span>
             ))}
@@ -333,15 +350,15 @@ function Index() {
 
           <p className="mt-4 text-base text-muted-foreground">
             Приложението е създадено с една основна цел: да ви спести десетки часове в проучвания,
-            събирайки на едно място детайлна и труднодостъпна информация за всяко село или град. Вместо
-            да ровите из десетки регистри, форуми и разпокъсани източници, Къде Да синтезира всичко
-            необходимо в кратък, структуриран и удобен за четене доклад.
+            събирайки на едно място детайлна и труднодостъпна информация за всяко село или град.
+            Вместо да ровите из десетки регистри, форуми и разпокъсани източници, Къде Да синтезира
+            всичко необходимо в кратък, структуриран и удобен за четене доклад.
           </p>
           <p className="mt-2 text-base text-muted-foreground">
             Независимо дали търсите потенциална инвестиция, планирате спокоен живот на село със
             семейството и децата си, или търсите подходящо и уредено място за възрастни хора,
-            приложението ви предоставя ключовите детайли на едно място. С няколко клика получавате ясна
-            картина, готова за бързо и обективно съпоставяне на различните възможности.
+            приложението ви предоставя ключовите детайли на едно място. С няколко клика получавате
+            ясна картина, готова за бързо и обективно съпоставяне на различните възможности.
           </p>
         </header>
 
@@ -357,57 +374,66 @@ function Index() {
               value={place}
               onChange={handlePlaceChange}
               excludeLargeCities
-              allowedEkatte={isSignedIn ? null : (publicPlaces?.map((p) => p.ekatte) ?? [])}
               notice={placeNotice}
             />
 
             {!isSignedIn && !authLoading && (
               <p className="rounded-lg border border-border bg-card/70 p-3 text-sm text-muted-foreground">
-                Без акаунт можете да разглеждате само вече генерирани публични доклади.{" "}
+                Докладите са достъпни само за регистрирани потребители.{" "}
                 <Link to="/vhod" className="font-medium text-primary underline">
-                  Регистрирайте се
+                  Влезте или се регистрирайте
                 </Link>
-                , за да получите нов, персонализиран доклад за избрано от вас място.
+                , за да разглеждате доклади и да получите нов за избрано от вас място.
               </p>
             )}
 
+            {hasPlace && isSignedIn && isApproved && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="rounded-lg border border-border bg-card/70 p-3">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="private-report"
+                      checked={isPrivate}
+                      onCheckedChange={(v) => handlePrivateChange(v === true)}
+                    />
+                    <Label htmlFor="private-report" className="text-sm font-medium">
+                      Направи този доклад личен
+                    </Label>
+                  </div>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Публичните доклади се виждат от всички и са еднакви за всички — без лична
+                    информация. Личният доклад се вижда само от вас и може да включва вашата
+                    настояща локация{premium ? " и цел на търсенето" : ""}.
+                  </p>
+                </div>
 
+                {isPrivate && (
+                  <div className="space-y-2">
+                    <SettlementCombobox
+                      id="current-location"
+                      label="Настояща локация"
+                      placeholder="напр. Стара Загора"
+                      value={currentLocation}
+                      onChange={handleCurrentLocationChange}
+                      size="sm"
+                      notice={currentNotice}
+                    />
 
-
-
-            {hasPlace && isSignedIn && (
-
-              <div className="space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <SettlementCombobox
-                  id="current-location"
-                  label="Настояща локация"
-                  placeholder="напр. Стара Загора"
-                  value={currentLocation}
-                  onChange={handleCurrentLocationChange}
-                  size="sm"
-                  notice={currentNotice}
-                />
-
-                <p className="text-sm text-muted-foreground">
-                  Въведете населеното място, в което живеете в момента, за да
-                  изчислим разстоянието, времето за пътуване и транспортната
-                  достъпност за имоти купувани с цел уикенд туризъм за отдих и
-                  почивка.
-                </p>
+                    <p className="text-sm text-muted-foreground">
+                      Въведете населеното място, в което живеете в момента, за да изчислим
+                      разстоянието, времето за пътуване и транспортната достъпност за имоти купувани
+                      с цел уикенд туризъм за отдих и почивка.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </div>
-
         </section>
 
-
-
-        {hasPlace && isSignedIn && (
-
+        {hasPlace && isSignedIn && isApproved && isPrivate && premium && (
           <section className="mt-12 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <h2 className="text-lg font-bold text-destructive">
-              Кажете ни за какво търсите имота
-            </h2>
+            <h2 className="text-lg font-bold text-destructive">Кажете ни за какво търсите имота</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               По желание — изберете една цел, за да добавим обобщена оценка накрая.
             </p>
@@ -422,35 +448,17 @@ function Index() {
                 />
               ))}
             </div>
-
-            <div className="mt-6 flex justify-center">
-              <Button onClick={reset} variant="outline" size="sm">
-                <RotateCcw className="h-4 w-4" />
-                Изчисти
-              </Button>
-            </div>
           </section>
         )}
 
-        {hasPlace && !isSignedIn && (
-          <section className="mt-12">
-            {guestLoading && (
-              <p className="text-center text-sm text-muted-foreground">Зареждане на доклада…</p>
-            )}
-            {guestReport && (
-              <>
-                <p className="mb-4 text-center text-sm text-muted-foreground">
-                  Разглеждате вече генериран публичен доклад (само за четене).
-                </p>
-                <ReportInfographic
-                  place={guestReport.place}
-                  current={guestReport.current}
-                  sections={guestReport.sections}
-                  demo={false}
-                  purpose={guestReport.purpose}
-                />
-              </>
-            )}
+        {hasPlace && !isSignedIn && !authLoading && (
+          <section className="mt-12 text-center">
+            <p className="text-sm text-muted-foreground">
+              За да видите доклада за {displaySettlement(place)}, влезте в профила си.
+            </p>
+            <Button asChild className="mt-4">
+              <Link to="/vhod">Вход / Регистрация</Link>
+            </Button>
           </section>
         )}
 
@@ -464,35 +472,33 @@ function Index() {
           <section className="mt-16">
             <div className="flex flex-col items-center gap-3 text-center">
               <h2 className="text-lg font-bold text-destructive">
-                Генерирай доклад
+                {existingReport ? "Вече имате доклад за това място" : "Генерирай доклад"}
               </h2>
               <p className="max-w-md text-sm text-muted-foreground">
                 {IS_MOCK
                   ? "Демо режим: докладът се попълва с примерни данни, без реални заявки."
-                  : "Приложението ще проучи категориите с Gemini и търсене в Google в реално време и ще покаже резултата тук като инфографика."}
+                  : existingReport
+                    ? `Последно обновен на ${new Date(existingReport.updated_at).toLocaleDateString("bg-BG")}. Отворете го от „Моите доклади“ или го актуализирайте с най-новите налични данни.`
+                    : "Приложението ще проучи категориите с Gemini и търсене в Google в реално време и ще покаже резултата тук като инфографика."}
               </p>
 
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="private-report"
-                  checked={isPrivate}
-                  onCheckedChange={(v) => setIsPrivate(v === true)}
+              {generating ? (
+                <GenerationProgress
+                  done={progress.done}
+                  total={progress.total}
+                  updating={existingReport !== null}
                 />
-                <Label htmlFor="private-report" className="text-sm font-normal">
-                  Направи този доклад личен
-                </Label>
-              </div>
-
-              <Button size="lg" onClick={() => void generateReport()} disabled={generating}>
-                {generating ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
+              ) : existingReport ? (
+                <Button size="lg" variant="outline" onClick={() => void generateReport()}>
+                  <RefreshCw className="h-4 w-4" />
+                  Актуализирай
+                </Button>
+              ) : (
+                <Button size="lg" onClick={() => void generateReport()}>
                   <Sparkles className="h-4 w-4" />
-                )}
-                {generating
-                  ? `Генериране… ${progress.done}/${progress.total}`
-                  : "Генерирай доклад"}
-              </Button>
+                  Генерирай доклад
+                </Button>
+              )}
               {IS_MOCK && (
                 <Button
                   type="button"
@@ -505,6 +511,10 @@ function Index() {
                   Регенерирай примерни данни
                 </Button>
               )}
+              <Button onClick={reset} variant="outline" size="sm" disabled={generating}>
+                <RotateCcw className="h-4 w-4" />
+                Изчисти
+              </Button>
             </div>
 
             {(generating || realSections) && (
@@ -512,10 +522,11 @@ function Index() {
                 {realSections && realSections.length > 0 && (
                   <ReportInfographic
                     place={place}
-                    current={currentLocation}
+                    current={isPrivate ? currentLocation : null}
                     sections={realSections}
                     demo={false}
-                    purpose={purpose}
+                    purpose={isPrivate && premium ? purpose : null}
+                    generatedAt={generatedAt}
                   />
                 )}
                 {generating &&
@@ -540,13 +551,10 @@ function Index() {
           </section>
         )}
 
-
         <footer className="mt-16 border-t border-border pt-6 text-xs text-muted-foreground">
-          Проектът е с нестопанска цел, в подкрепа на купувачите на имоти, в процес на активна разработка.
-          <FeedbackBox />
+          Проектът е с нестопанска цел, в подкрепа на купувачите на имоти, в процес на активна
+          разработка.
         </footer>
-
-
       </div>
     </main>
   );

@@ -1,12 +1,8 @@
 import type { ReportSection } from "@/data/mock-report";
 import type { Json } from "@/integrations/supabase/types";
 import type { SourceLink } from "@/lib/report-cache";
-import {
-  PROMPT_MODULES,
-  COMMON_RULES,
-  DISTRICT_RULE,
-  LEVEL_RULE,
-} from "@/lib/prompt-modules";
+import { parseBlocks, parseSummary } from "@/lib/report-schema";
+import { PROMPT_MODULES, COMMON_RULES, DISTRICT_RULE, LEVEL_RULE } from "@/lib/prompt-modules";
 
 export type GeneratedCategory = {
   data: Json;
@@ -19,10 +15,8 @@ export type GenerateInput = {
   categoryId: string;
   placeName: string;
   placeType: "village" | "town" | "district";
-  currentLocationName?: string | undefined;
 };
 
-/** Модел с добър баланс цена/качество; ползва се и за двете стъпки. */
 /** Модел за грундираното (Google Search) проучване — тук качеството на search резултатите има значение. */
 const MODEL = "gemini-3.5-flash-lite";
 /**
@@ -68,31 +62,59 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/** Максимално време за една заявка към Gemini (търсенето в Google може да е бавно). */
+const REQUEST_TIMEOUT_MS = 90_000;
+
 async function callGemini(body: unknown, model: string = MODEL): Promise<GeminiResponse> {
   const MAX_ATTEMPTS = 4;
+  const MAX_TIMEOUTS = 2;
+  let timeouts = 0;
   let lastError: Error | null = null;
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    const res = await fetch(`${API}/${model}:generateContent`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey() },
-      body: JSON.stringify(body),
-    });
-    const json = (await res.json()) as GeminiResponse;
+    let retryable = false;
+    try {
+      const res = await fetch(`${API}/${model}:generateContent`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey() },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      });
 
-    if (res.ok && !json.error) return json;
+      // Отговорът при грешка не винаги е JSON (напр. HTML страница от прокси).
+      const rawText = await res.text();
+      let json: GeminiResponse;
+      try {
+        json = JSON.parse(rawText) as GeminiResponse;
+      } catch {
+        json = { error: { message: rawText.slice(0, 200) || "празен отговор" } };
+      }
 
-    const status = res.status;
-    const isRateLimited = status === 429 || status === 503;
-    lastError = new Error(
-      `Gemini API грешка (${status}): ${json.error?.message ?? "неизвестна грешка"}`,
-    );
+      if (res.ok && !json.error) return json;
 
-    if (!isRateLimited || attempt === MAX_ATTEMPTS) throw lastError;
+      retryable = res.status === 429 || res.status === 503;
+      lastError = new Error(
+        `Gemini API грешка (${res.status}): ${json.error?.message ?? "неизвестна грешка"}`,
+      );
+    } catch (err) {
+      const name = err instanceof Error ? err.name : "";
+      if (name === "TimeoutError" || name === "AbortError") {
+        timeouts += 1;
+        retryable = timeouts < MAX_TIMEOUTS;
+        lastError = new Error("Gemini API не отговори навреме. Опитайте отново.");
+      } else if (err instanceof TypeError) {
+        // Мрежова грешка (fetch failed) — рядко, но си струва един повторен опит.
+        retryable = true;
+        lastError = new Error("Мрежова грешка при връзката с Gemini API.");
+      } else {
+        throw err;
+      }
+    }
 
-    // Експоненциално изчакване при 429/503, преди следващия опит (1.5s, 3s, 6s...).
-    const backoffMs = 1500 * 2 ** (attempt - 1);
-    await sleep(backoffMs);
+    if (!retryable || attempt === MAX_ATTEMPTS) throw lastError;
+
+    // Експоненциално изчакване преди следващия опит (1.5s, 3s, 6s...).
+    await sleep(1500 * 2 ** (attempt - 1));
   }
 
   throw lastError ?? new Error("Gemini API грешка: неуспешен опит.");
@@ -121,7 +143,10 @@ function sourcesOf(res: GeminiResponse): SourceLink[] {
 /** Изчиства markdown огради и излишен текст около JSON обекта. */
 function extractJson(raw: string): string {
   let s = raw.trim();
-  s = s.replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
+  s = s
+    .replace(/^```(?:json)?/i, "")
+    .replace(/```$/, "")
+    .trim();
   const start = s.indexOf("{");
   const end = s.lastIndexOf("}");
   if (start >= 0 && end > start) s = s.slice(start, end + 1);
@@ -205,7 +230,6 @@ async function researchCategory(
 ОБЕКТ НА ПРОУЧВАНЕТО:
 Тип: ${PLACE_TYPE_LABEL[input.placeType]}
 ${identityBlock(id)}
-${input.currentLocationName ? `Настояща локация на потребителя: ${input.currentLocationName}` : ""}
 
 ${anchorRule(id)}
 
@@ -223,7 +247,6 @@ ${COMMON_RULES}
 - Числата давай конкретно (проценти, километри, минути, брой).
 - В края добави списък „ИЗТОЧНИЦИ:“ с пълни URL адреси на използваните страници.
 - Пиши на български, кратко и фактологично.`;
-
 
   const res = await callGemini({
     contents: [{ role: "user", parts: [{ text: prompt }] }],
@@ -256,27 +279,49 @@ const VIK_LAYOUT = `СПЕЦИАЛНИ ПРАВИЛА ЗА ТАЗИ КАТЕГО
 Числа като диапазон замести с ЕДНА приблизителна стойност (напр. "~20 м", не "12–30 м").`;
 
 /** Специфично оформление за категория „transport“ (Пътна мрежа и обществен транспорт). */
-const TRANSPORT_LAYOUT = `СПЕЦИАЛНИ ПРАВИЛА ЗА ТАЗИ КАТЕГОРИЯ — блоковете са точно в този ред:
-1. ЕДИН блок "facts" с кратки показатели, ТОЧНО в този ред: (1) "Асфалтирани улици" — процент (напр. "~80%"); (2) "Изходи от селото" — брой (число); (3) "Главна улица" — само името, до 2–3 думи; (4) "Автогара" — "Да" / "Няма"; (5) "ЖП спирка в селото" — "Да" / "Няма". Без "description", без дълги стойности.
+/** Как се нарича населеното място в етикетите на кутийките: „от селото“ / „от града“ / „от квартала“. */
+const PLACE_NOUN: Record<GenerateInput["placeType"], string> = {
+  village: "селото",
+  town: "града",
+  district: "квартала",
+};
+
+export function transportLayout(placeType: GenerateInput["placeType"]): string {
+  const noun = PLACE_NOUN[placeType];
+  return `СПЕЦИАЛНИ ПРАВИЛА ЗА ТАЗИ КАТЕГОРИЯ — блоковете са точно в този ред:
+1. ЕДИН блок "facts" с кратки показатели, ТОЧНО в този ред: (1) "Асфалтирани улици" — процент (напр. "~80%"); (2) "Изходи от ${noun}" — брой (число); (3) "Главна улица" — само името, до 2–3 думи; (4) "Автогара" — "Да" / "Няма"; (5) "ЖП спирка в ${noun}" — "Да" / "Няма". Без "description", без дълги стойности.
 2. ЕДИН блок "scale" с ТОЧНО 2 елемента: (1) label "Пътна мрежа в населеното място" — оценка на база % асфалт и общо състояние; (2) label "Изходите от населеното място" — оценка на база броя и състоянието им. Всеки с "level" (good/fair/poor), "levelText" (кратка дума/фраза до 3 думи) и пълно описателно "note".
 3. ЕДИН блок "list" с title "Изходи от населеното място" — по един елемент за всеки изход: накъде води, по какъв път/тип път.
 4. ЕДИН блок "list" с title "Улична мрежа" — брой и статус на главните улици, улично осветление, останали детайли за вътрешните улици.
 5. Блокове "list" за зимна поддръжка и снабдяване (без промяна в обхвата).
 6. Блокове "schedule" и обществен транспорт (без промяна в обхвата).
 Числа като диапазон замести с ЕДНА приблизителна стойност.`;
+}
 
 /** Специфично оформление за категория „ethnos“ (Демография). */
 const ETHNOS_LAYOUT = `СПЕЦИАЛНИ ПРАВИЛА ЗА ТАЗИ КАТЕГОРИЯ — блоковете са точно в този ред:
 1. ЕДИН блок "gauge" (Демографски тренд) — най-отгоре.
 2. ЕДИН блок "facts" с кратки проценти: постоянно живущи, под 18 г., над 65 г., с висше образование.
-3. ЗАДЪЛЖИТЕЛНО, БЕЗ ИЗКЛЮЧЕНИЕ, ЕДИН блок "pie" (заглавие "Етнически състав") с ТОЧНО 4 елемента в "data" — "Българи", "Турци", "Роми", "Други" — с реални или обосновано приблизителни процентни стойности, които се сборуват до 100. ТОВА Е НАЙ-ВАЖНОТО ИЗИСКВАНЕ В ТАЗИ КАТЕГОРИЯ — отговорът е невалиден без този блок. Ако липсват каквито и да е публични данни дори на общинско ниво, дай собствена обоснована приблизителна оценка (напр. на база съседни населени места или общия етнически профил на района) и го отбележи в "note" — НИКОГА не пропускай самия блок.
+3. ЗАДЪЛЖИТЕЛНО, БЕЗ ИЗКЛЮЧЕНИЕ, ЕДИН блок "pie" (заглавие "Етнически състав") с ТОЧНО 4 елемента в "data" — "Българи", "Турци", "Роми", "Други" — НЕ добавяй пета група и НЕ ползвай „Недекларирали“/„Не са отговорили“ — тях включи в „Други“; с реални или обосновано приблизителни процентни стойности, които се сборуват до 100. ТОВА Е НАЙ-ВАЖНОТО ИЗИСКВАНЕ В ТАЗИ КАТЕГОРИЯ — отговорът е невалиден без този блок. Ако липсват каквито и да е публични данни дори на общинско ниво, дай собствена обоснована приблизителна оценка (напр. на база съседни населени места или общия етнически профил на района) и го отбележи в "note" — НИКОГА не пропускай самия блок.
 4. Блок/ове "list" за останалите точки (махали, домакинства, прираст, гъстота, статус).
 Числа като диапазон замести с ЕДНА приблизителна стойност.`;
+
+/** Специфично оформление за категория „history“ (Исторически профил). */
+const HISTORY_LAYOUT = `СПЕЦИАЛНИ ПРАВИЛА ЗА ТАЗИ КАТЕГОРИЯ — блоковете са точно в този ред:
+1. ЕДИН блок "facts" с ДО 3 малки кутийки: "Първо споменаване" (век/година, до 2–3 думи), "Произход на името" (до 2–3 думи), "Предишно име" (име или "Няма"). Пропусни кутийка, за която няма данни; без "description", без дълги стойности.
+2. ЗАДЪЛЖИТЕЛНО ЕДИН блок "bars" (заглавие "Население по преброявания (НСИ)", "unit": "души") с по един елемент на всяка година от текста, за която има конкретен брой — във възходящ ред по година. "label" е годината като низ, "value" е число. Ако в текста има поне 2 такива години, блокът е задължителен. Не измисляй години, липсващи в текста.
+3. Блок "list" "Стопанско развитие и поминък" с "tone": amber при упадък/закрити предприятия, emerald при стабилно/растящо стопанство, sky при смесена картина.
+4. Блок "list" "Ключови исторически събития" (ако има такива).
+5. Блок "list" "Документирано наследство, личности и находки" — обявени паметници, археологически обекти, известни личности, статус на обезлюдяване (ако има данни); без повторение на читалища, събори и обичаи.
+6. Блок "text" "Дългосрочна тенденция" с "tone": rose при траен спад, amber при стагнация, emerald при ръст — НЕ с variant "highlight".
+7. По избор ЕДИН блок "text" с variant "highlight" за един интересен исторически факт (title = заглавието на факта).
+Числа като диапазон замести с ЕДНА приблизителна стойност; годините не се променят.`;
 
 const SCHEMA_DOC = `Върни САМО JSON обект със следната структура (без markdown огради):
 {
   "title": string,                       // кратко заглавие на секцията на български
   "subtitle": string,                    // едно изречение пояснение
+  "summary": string,                     // ЕДНО изречение (до 140 знака) с главния извод за категорията — какво е състоянието; без диапазони, без URL
   "blocks": Block[],                     // 2 до 8 блока — толкова, колкото реално има теми/факти в текста; НЕ съкращавай съдържание само за да се вместиш в по-малко блокове
   "incidentCount": number | null         // само за категория "risks": брой регистрирани рискови събития, иначе null
 }
@@ -287,19 +332,20 @@ Block е един от:
 // "variant" е по избор и по подразбиране е "default".
 // "dark" ползвай САМО за обобщаващия медиен преглед в категория "security".
 // "highlight" ползвай САМО за един интересен исторически/фолклорен факт в категория "history"
-// (в този случай "title" е заглавието на факта).
+// (в този случай "title" е заглавието на факта; НЕ го ползвай за дългосрочната тенденция).
 {"kind":"list","title":string,"items":string[],"tone":"emerald"|"sky"|"blue"|"amber"|"violet"|"purple"|"rose"|"teal"}  // "tone" е по избор, само когато специалните правила по-горе за категорията го изискват
 {"kind":"distances","title":string,"rows":[{"to":string,"distance":string,"driveTime":string,"hasTrain":boolean,"road":string,"info":string}]}   // "info" е по избор — 1–2 изречения защо обектът е известен/релевантен, САМО за интересни обекти (курорти, бани, язовири, забележителности, градове с особеност), НЕ за летища, гари и магистрали. САМО за категория "basic": таблица с отстояния; "hasTrain" е true само ако има влакова връзка/гара (без времена с влак), "road" — номерата на пътищата
 {"kind":"scale","title":string,"items":[{"label":string,"level":"good"|"fair"|"poor","levelText":string,"percent":number,"note":string}]}   // САМО за категория "vik": двускален индикатор — "levelText" е дума/до 3 думи (напр. "Добро", "Твърда вода", "Сезонни спирания"), "percent" 0-100, "note" е пълно описателно изречение(я)
 {"kind":"pie","title":string,"note":string,"data":[{"name":string,"value":number}]}   // value = процент, сборът ~100
+{"kind":"bars","title":string,"unit":string,"note":string,"data":[{"label":string,"value":number}]}   // САМО за категория "history": колонна диаграма на населението по преброявания; "label" е годината (напр. "1946"), "value" е броят души (число), "unit" е "души"
 {"kind":"schedule","title":string,"note":string,"rows":[{"route":string,"days":string,"runs":string,"last":string}]}
 {"kind":"risks","title":string,"items":[{"label":string,"level":"low"|"medium"|"high","percent":number,"note":string,"incidentCount":number}]}
 // "percent" е по избор, 0-100 — относителната тежест на риска за визуалната лента (низък ~10-25, среден ~40-60, висок ~70-90).
 {"kind":"checklist","title":string,"items":[{"title":string,"points":string[]}]}
-{"kind":"gauge","title":string,"value":number,"direction":"up"|"down"|"neutral","periodLabel":string,"note":string}   // value = процент 0-100 (абсолютна стойност на промяната)
+{"kind":"gauge","title":string,"value":number,"direction":"up"|"down"|"neutral","periodLabel":string,"note":string}   // value = процент 0-100 (абсолютна стойност на промяната); "periodLabel" е КРАТЪК — най-много 3 думи или период (напр. "2011–2021", "10 години"), показва се в кръга
 {"kind":"cards","title":string,"items":[{"icon":string,"label":string,"body":string,"tone":"emerald"|"sky"|"blue"|"amber"|"violet"|"purple"|"rose"|"teal"}]}
 Използвай "pie" само при реални процентни разпределения, "schedule" само за транспортни разписания,
-"risks" само за рискови оценки, "checklist" само за списъци със стъпки за оглед.
+"risks" само за рискови оценки. НЕ използвай "checklist" — за списъци с подтеми ползвай "list" (един елемент на подтема във формат "Подтема: изречение").
 Използвай "gauge" САМО за демографски тренд (категория "ethnos") и за ценови тренд на имотите
 (категория "industry"). Никъде другаде. "direction" е посоката на промяната, "value" е величината ѝ в проценти.
 Използвай "cards" САМО за категоризирана обратна връзка с ясно разграничени тонове
@@ -320,7 +366,7 @@ async function structureCategory(
 
 ${SCHEMA_DOC}
 
-${input.categoryId === "basic" ? BASIC_LAYOUT : input.categoryId === "vik" ? VIK_LAYOUT : input.categoryId === "transport" ? TRANSPORT_LAYOUT : input.categoryId === "ethnos" ? ETHNOS_LAYOUT : ""}
+${input.categoryId === "basic" ? BASIC_LAYOUT : input.categoryId === "vik" ? VIK_LAYOUT : input.categoryId === "transport" ? transportLayout(input.placeType) : input.categoryId === "ethnos" ? ETHNOS_LAYOUT : input.categoryId === "history" ? HISTORY_LAYOUT : ""}
 
 Не добавяй факти, които ги няма в текста. Не включвай URL адреси в стойностите.
 Не пропускай съществени факти, числа или раздели от текста — представи ги ВСИЧКИ в подходящи блокове, дори ако това означава да използваш повече блокове.
@@ -371,19 +417,27 @@ ${research}
   const obj = parsed as {
     title?: string;
     subtitle?: string;
+    summary?: unknown;
     blocks?: unknown;
     incidentCount?: unknown;
   };
-  const blocks = Array.isArray(obj.blocks) ? obj.blocks : [];
+  // Невалидните блокове се изхвърлят поотделно, вместо да счупят цялата категория.
+  const { blocks, dropped } = parseBlocks(obj.blocks);
+  if (dropped > 0) {
+    console.warn(
+      `[report] категория „${input.categoryId}“: изхвърлени ${dropped} невалидни блока.`,
+    );
+  }
   if (blocks.length === 0) {
     throw new Error(`Моделът не върна съдържание за категория „${input.categoryId}“.`);
   }
 
   return {
     section: {
-      title: obj.title ?? moduleLabel(input.categoryId),
-      subtitle: obj.subtitle ?? "",
-      blocks: blocks as ReportSection["blocks"],
+      title: typeof obj.title === "string" && obj.title ? obj.title : moduleLabel(input.categoryId),
+      subtitle: typeof obj.subtitle === "string" ? obj.subtitle : "",
+      ...(parseSummary(obj.summary) ? { summary: parseSummary(obj.summary)! } : {}),
+      blocks,
     },
     incidentCount: typeof obj.incidentCount === "number" ? obj.incidentCount : null,
   };
@@ -407,6 +461,7 @@ export async function generateCategory(input: GenerateInput): Promise<GeneratedC
     id: input.categoryId,
     title: section.title,
     ...(section.subtitle ? { subtitle: section.subtitle } : {}),
+    ...(section.summary ? { summary: section.summary } : {}),
     theme: themeFor(input.categoryId),
     blocks: section.blocks,
   };
@@ -414,8 +469,7 @@ export async function generateCategory(input: GenerateInput): Promise<GeneratedC
   const risks =
     input.categoryId === "risks"
       ? (full.blocks.find((b) => b.kind === "risks") as
-          | Extract<ReportSection["blocks"][number], { kind: "risks" }>
-          | undefined)
+          Extract<ReportSection["blocks"][number], { kind: "risks" }> | undefined)
       : undefined;
 
   const derivedIncidents =

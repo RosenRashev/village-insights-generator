@@ -1,33 +1,26 @@
 import { createServerFn } from "@tanstack/react-start";
-import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
-import type { Database } from "@/integrations/supabase/types";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { sanitizeForPublic } from "@/lib/report-privacy";
 
-function publicClient() {
-  const key = process.env["SUPABASE_PUBLISHABLE_KEY"]!;
-  const url = process.env["SUPABASE_URL"]!;
-  return createClient<Database>(url, key, {
-    auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
-    global: {
-      fetch: (input, init) => {
-        const h = new Headers(init?.headers);
-        if (key.startsWith("sb_") && h.get("Authorization") === `Bearer ${key}`) {
-          h.delete("Authorization");
-        }
-        h.set("apikey", key);
-        return fetch(input, { ...init, headers: h });
-      },
-    },
-  });
-}
+/**
+ * Публичните доклади се виждат само от влезли потребители (с акаунт) — затова всички тези
+ * функции изискват вход и четат с токена на потребителя, а не с анонимния ключ.
+ */
 
-export type PublicPlace = { ekatte: number; placeName: string; reportId: string; updatedAt: string };
+export type PublicPlace = {
+  ekatte: number;
+  placeName: string;
+  reportId: string;
+  updatedAt: string;
+};
 
-/** Населени места, за които вече има публичен доклад (за гост-режима). */
-export const listPublicPlaces = createServerFn({ method: "GET" }).handler(
-  async (): Promise<PublicPlace[]> => {
-    const { data, error } = await publicClient()
+/** Населени места, за които вече има публичен доклад. */
+export const listPublicPlaces = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<PublicPlace[]> => {
+    const { data, error } = await context.supabase
       .from("reports")
       .select("id, ekatte, place_name, updated_at")
       .eq("is_public", true)
@@ -50,20 +43,37 @@ export const listPublicPlaces = createServerFn({ method: "GET" }).handler(
       });
     }
     return out;
-  },
-);
+  });
 
-/** Съдържанието на конкретен публичен доклад. */
-export const getPublicReport = createServerFn({ method: "POST" })
-  .inputValidator((data) => z.object({ id: z.string().uuid() }).parse(data))
-  .handler(async ({ data }) => {
-    const { data: row, error } = await publicClient()
+export type PublicReport = {
+  id: string;
+  place_name: string | null;
+  ekatte: number | null;
+  report_content: string;
+  updated_at: string;
+};
+
+const PUBLIC_REPORT_COLUMNS = "id, place_name, ekatte, report_content, updated_at";
+
+/** Старите публични доклади може да съдържат лична локация — изчистваме я при всяко четене. */
+function cleaned(row: PublicReport | null): PublicReport | null {
+  return row ? { ...row, report_content: sanitizeForPublic(row.report_content) } : null;
+}
+
+/** Най-новият публичен доклад за населено място (за страницата /report/<ЕКАТТЕ>). */
+export const getPublicReportByEkatte = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ ekatte: z.number().int().positive() }).parse(data))
+  .handler(async ({ data, context }) => {
+    const { data: row, error } = await context.supabase
       .from("reports")
-      .select("id, place_name, ekatte, report_content, updated_at")
-      .eq("id", data.id)
+      .select(PUBLIC_REPORT_COLUMNS)
+      .eq("ekatte", data.ekatte)
       .eq("is_public", true)
+      .order("updated_at", { ascending: false })
+      .limit(1)
       .maybeSingle();
 
     if (error) throw new Error(error.message);
-    return row ?? null;
+    return cleaned(row as PublicReport | null);
   });

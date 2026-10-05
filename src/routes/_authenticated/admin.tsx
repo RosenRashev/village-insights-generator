@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Check, Loader2, X } from "lucide-react";
@@ -70,7 +70,12 @@ function AdminPage() {
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-12">
-      <h1 className="text-2xl font-bold text-primary">Регистрации</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold text-primary">Регистрации</h1>
+        <Link to="/admin/feedback" className="text-sm text-muted-foreground hover:text-primary">
+          Обратна връзка →
+        </Link>
+      </div>
 
       <section className="mt-8">
         <h2 className="text-lg font-semibold">Чакащи одобрение ({pending.length})</h2>
@@ -88,7 +93,11 @@ function AdminPage() {
                 </p>
               </div>
               <div className="flex gap-2">
-                <Button size="sm" disabled={busyId === r.id} onClick={() => void decide(r.id, true)}>
+                <Button
+                  size="sm"
+                  disabled={busyId === r.id}
+                  onClick={() => void decide(r.id, true)}
+                >
                   <Check className="h-4 w-4" />
                   Одобри
                 </Button>

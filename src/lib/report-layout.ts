@@ -2,7 +2,20 @@ import type { CardTone, ReportBlock } from "@/data/mock-report";
 
 /** Мерни единици, които не се броят за „думи“ при решението кутийка / текст. */
 const UNITS = new Set([
-  "км", "м", "мин", "ч", "час", "часа", "часове", "%", "мм", "дка", "лв", "евро", "€", "души",
+  "км",
+  "м",
+  "мин",
+  "ч",
+  "час",
+  "часа",
+  "часове",
+  "%",
+  "мм",
+  "дка",
+  "лв",
+  "евро",
+  "€",
+  "души",
 ]);
 
 /**
@@ -52,6 +65,7 @@ function blockSizeTier(block: ReportBlock): 0 | 1 | 2 {
     case "risks":
     case "cards":
     case "pie":
+    case "bars":
       return 1;
     case "distances":
     case "schedule":
@@ -87,6 +101,43 @@ export function sortBlocksBySize(blocks: ReportBlock[]): ReportBlock[] {
     .map((x) => x.block);
 }
 
+/**
+ * Моделът понякога връща „checklist“ (номерирани групи) за обикновени теми. Номерацията 1–3
+ * на няколко отделни блока подред обърква, затова извън чек-листа за оглед те се показват
+ * като един списък: „Заглавие: точки“.
+ */
+export function checklistsToLists(blocks: ReportBlock[]): ReportBlock[] {
+  return blocks.map((b): ReportBlock => {
+    if (b.kind !== "checklist") return b;
+    return {
+      kind: "list",
+      ...(b.title ? { title: b.title } : {}),
+      items: b.items.map((it) =>
+        it.points.length > 0 ? `${it.title}: ${it.points.join(" ")}` : it.title,
+      ),
+    };
+  });
+}
+
+/**
+ * Оформление на категория „История“: колонна диаграма с по-малко от 2 точки не е
+ * смислена крива — заменя се със списък, за да не се загуби единствената стойност.
+ */
+export function layoutHistoryBlocks(blocks: ReportBlock[]): ReportBlock[] {
+  return blocks.flatMap((b): ReportBlock[] => {
+    if (b.kind !== "bars" || b.data.length >= 2) return [b];
+    if (b.data.length === 0) return [];
+    const unit = b.unit ? ` ${b.unit}` : "";
+    return [
+      {
+        kind: "list",
+        title: b.title,
+        items: b.data.map((d) => `${d.label} г. — ${d.value}${unit}.`),
+      },
+    ];
+  });
+}
+
 const TRANSPORT_RE =
   /разстоян|отстоян|летищ|гар[аи]|жп|железопът|път|артери|магистрал|време|автомоб|км|мин|курорт|бани|язовир|възел|възли|транспорт|обходен|посока|маршрут/i;
 
@@ -110,6 +161,26 @@ function toneFor(title?: string): CardTone {
  *    преместват се като изречение в текстов/списъчен блок;
  *  - етническата кръгова диаграма следва веднага след кутийките.
  */
+const UNDECLARED_RE =
+  /недеклар|неотговор|не са отговор|без отговор|непосочен|неопределен|неизвестн/i;
+
+/** „Недекларирали“ и подобни не са отделна група — добавят се към „Други“. */
+export function mergeUndeclaredIntoOthers<T extends { name: string; value: number }>(
+  data: T[],
+): { name: string; value: number }[] {
+  let undeclared = 0;
+  const kept: { name: string; value: number }[] = [];
+  for (const d of data) {
+    if (UNDECLARED_RE.test(d.name)) undeclared += d.value;
+    else kept.push({ name: d.name, value: d.value });
+  }
+  if (undeclared <= 0) return kept;
+  const others = kept.find((d) => /^други/i.test(d.name));
+  if (others) others.value = Math.round((others.value + undeclared) * 10) / 10;
+  else kept.push({ name: "Други", value: undeclared });
+  return kept;
+}
+
 export function layoutEthnosBlocks(blocks: ReportBlock[]): ReportBlock[] {
   const gauges: ReportBlock[] = [];
   const factBoxes: FactItem[] = [];
@@ -123,11 +194,13 @@ export function layoutEthnosBlocks(blocks: ReportBlock[]): ReportBlock[] {
     if (b.kind === "gauge") {
       gauges.push(b);
     } else if (b.kind === "pie") {
-      pies.push(b);
+      pies.push({ ...b, data: mergeUndeclaredIntoOthers(b.data) });
     } else if (b.kind === "facts") {
       for (const it of b.items) {
         if (/гъстота|статус/i.test(it.label)) {
-          extraLines.push(`${it.label}: ${approximateRanges(it.value)}${it.description ? ` — ${it.description}` : ""}`);
+          extraLines.push(
+            `${it.label}: ${approximateRanges(it.value)}${it.description ? ` — ${it.description}` : ""}`,
+          );
         } else {
           factBoxes.push(it);
         }
@@ -272,10 +345,20 @@ export function layoutBasicBlocks(blocks: ReportBlock[]): ReportBlock[] {
   );
   const place = extraLines.filter((l) => !transport.includes(l));
   if (place.length > 0) {
-    result.push({ kind: "text", title: "Релеф и местоположение", body: place.join("\n"), tone: "emerald" });
+    result.push({
+      kind: "text",
+      title: "Релеф и местоположение",
+      body: place.join("\n"),
+      tone: "emerald",
+    });
   }
   if (transport.length > 0) {
-    result.push({ kind: "text", title: "Транспорт и разстояния", body: transport.join("\n"), tone: "sky" });
+    result.push({
+      kind: "text",
+      title: "Транспорт и разстояния",
+      body: transport.join("\n"),
+      tone: "sky",
+    });
   }
   return result;
 }
