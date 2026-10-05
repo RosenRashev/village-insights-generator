@@ -15,7 +15,6 @@ import appCss from "../styles.css?url";
 import { Toaster } from "../components/ui/sonner";
 import { AuthProvider, useAuth } from "../hooks/useAuth";
 
-
 function NotFoundComponent() {
   return (
     <div className="flex min-h-[70vh] items-center justify-center bg-background px-4 py-16">
@@ -30,8 +29,8 @@ function NotFoundComponent() {
         <h1 className="logo-text mt-4 text-7xl font-bold text-destructive">404</h1>
         <h2 className="mt-4 text-xl font-semibold text-foreground">Страницата не е намерена</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Адресът може да е грешен или страницата да е преместена. Върнете се в началото и
-          потърсете населеното място, което ви интересува.
+          Адресът може да е грешен или страницата да е преместена. Върнете се в началото и потърсете
+          населеното място, което ви интересува.
         </p>
         <div className="mt-6">
           <Link
@@ -333,4 +332,3 @@ function RootComponent() {
     </QueryClientProvider>
   );
 }
-

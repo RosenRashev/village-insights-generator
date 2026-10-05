@@ -39,7 +39,6 @@ export function SettlementCombobox({
   allowedEkatte = null,
   notice = null,
 }: Props) {
-
   const [query, setQuery] = useState("");
   const [all, setAll] = useState<Settlement[] | null>(null);
   const [open, setOpen] = useState(false);
@@ -47,7 +46,6 @@ export function SettlementCombobox({
   const [activeIndex, setActiveIndex] = useState(-1);
   const wrapRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
-
 
   useEffect(() => {
     if (!open || all) return;
@@ -80,9 +78,7 @@ export function SettlementCombobox({
     return list;
   }, [all, excludeLargeCities, allowedEkatte]);
 
-
   const results = useMemo(() => (pool ? searchSettlements(pool, query) : []), [pool, query]);
-
 
   useEffect(() => {
     setActiveIndex(-1);
@@ -126,7 +122,9 @@ export function SettlementCombobox({
         <Label className="text-sm font-medium">{label}</Label>
         <div className="flex items-center gap-2 rounded-md border border-primary bg-primary/5 px-3 py-2">
           <MapPin className="h-4 w-4 shrink-0 text-primary" />
-          <span className="min-w-0 flex-1 truncate text-sm font-medium">{displaySettlement(value)}</span>
+          <span className="min-w-0 flex-1 truncate text-sm font-medium">
+            {displaySettlement(value)}
+          </span>
           <Button
             type="button"
             variant="ghost"
@@ -143,7 +141,6 @@ export function SettlementCombobox({
         </div>
         {notice && <p className="text-sm font-medium text-destructive">{notice}</p>}
       </div>
-
     );
   }
 
@@ -176,7 +173,9 @@ export function SettlementCombobox({
           aria-controls={`${id}-listbox`}
           aria-autocomplete="list"
           aria-activedescendant={
-            activeIndex >= 0 && results[activeIndex] ? `${id}-option-${results[activeIndex].ekatte}` : undefined
+            activeIndex >= 0 && results[activeIndex]
+              ? `${id}-option-${results[activeIndex].ekatte}`
+              : undefined
           }
         />
         {open && query.trim().length >= 2 && (
@@ -186,14 +185,21 @@ export function SettlementCombobox({
             role="listbox"
             className="absolute z-50 mt-1 max-h-72 w-full overflow-auto rounded-md border border-border bg-background shadow-lg"
           >
-            {!all && <li className="px-3 py-2 text-sm text-muted-foreground">Зареждане на списъка…</li>}
+            {!all && (
+              <li className="px-3 py-2 text-sm text-muted-foreground">Зареждане на списъка…</li>
+            )}
             {all && results.length === 0 && (
               <li className="px-3 py-2 text-sm text-muted-foreground">
                 Няма намерено населено място. Проверете изписването.
               </li>
             )}
             {results.map((s, index) => (
-              <li key={s.ekatte} role="option" aria-selected={index === activeIndex} id={`${id}-option-${s.ekatte}`}>
+              <li
+                key={s.ekatte}
+                role="option"
+                aria-selected={index === activeIndex}
+                id={`${id}-option-${s.ekatte}`}
+              >
                 <button
                   type="button"
                   tabIndex={-1}
@@ -222,7 +228,6 @@ export function SettlementCombobox({
       ) : showHint ? (
         <p className="text-sm text-muted-foreground">Изберете населено място от списъка.</p>
       ) : null}
-
     </div>
   );
 }

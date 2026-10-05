@@ -13,9 +13,7 @@ type Props = {
   current?: MapPoint | null;
 };
 
-type RouteInfo =
-  | { kind: "road"; km: number; minutes: number }
-  | { kind: "straight"; km: number };
+type RouteInfo = { kind: "road"; km: number; minutes: number } | { kind: "straight"; km: number };
 
 /** Лека вградена карта (Leaflet + OSM плочки), зарежда се само в браузъра. */
 export function LocationMap({ place, current = null }: Props) {
@@ -98,7 +96,11 @@ export function LocationMap({ place, current = null }: Props) {
         );
         if (!res.ok) throw new Error(`OSRM ${res.status}`);
         const json = (await res.json()) as {
-          routes?: { geometry?: { coordinates?: [number, number][] }; distance?: number; duration?: number }[];
+          routes?: {
+            geometry?: { coordinates?: [number, number][] };
+            distance?: number;
+            duration?: number;
+          }[];
         };
         const route = json.routes?.[0];
         const coords = route?.geometry?.coordinates;
@@ -145,9 +147,7 @@ export function LocationMap({ place, current = null }: Props) {
         role="img"
         aria-label={`Карта с местоположението на ${place.label}`}
       />
-      {loading && (
-        <p className="mt-2 text-sm text-black/60">Изчисляване на маршрут…</p>
-      )}
+      {loading && <p className="mt-2 text-sm text-black/60">Изчисляване на маршрут…</p>}
       {!loading && routeInfo?.kind === "road" && (
         <p className="mt-2 text-sm text-black/60">
           Разстояние по път: <b>{routeInfo.km} км</b> (~{routeInfo.minutes} мин)
@@ -155,7 +155,8 @@ export function LocationMap({ place, current = null }: Props) {
       )}
       {!loading && routeInfo?.kind === "straight" && (
         <p className="mt-2 text-sm text-black/60">
-          Права линия до настоящата локация: <b>{routeInfo.km} км</b> (маршрутът по път не бе достъпен)
+          Права линия до настоящата локация: <b>{routeInfo.km} км</b> (маршрутът по път не бе
+          достъпен)
         </p>
       )}
     </div>

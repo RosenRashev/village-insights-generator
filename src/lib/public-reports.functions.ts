@@ -23,7 +23,12 @@ function publicClient() {
   });
 }
 
-export type PublicPlace = { ekatte: number; placeName: string; reportId: string; updatedAt: string };
+export type PublicPlace = {
+  ekatte: number;
+  placeName: string;
+  reportId: string;
+  updatedAt: string;
+};
 
 /** Населени места, за които вече има публичен доклад (за гост-режима). */
 export const listPublicPlaces = createServerFn({ method: "GET" }).handler(

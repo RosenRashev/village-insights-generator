@@ -24,13 +24,14 @@ import {
 } from "@/lib/generate-report";
 import { getMyQuota, saveReport } from "@/lib/reports.functions";
 import { isPremium } from "@/lib/plans";
-import { getPublicReport, listPublicPlaces, type PublicPlace } from "@/lib/public-reports.functions";
+import {
+  getPublicReport,
+  listPublicPlaces,
+  type PublicPlace,
+} from "@/lib/public-reports.functions";
 import type { ReportSection } from "@/data/mock-report";
 
-
 import { formatSettlement, type Settlement } from "@/lib/settlements";
-
-
 
 const TITLE = "Къде Да — проучване на населени места";
 const DESCRIPTION =
@@ -67,9 +68,6 @@ export const Route = createFileRoute("/")({
   }),
   component: Index,
 });
-
-
-
 
 const HERO_PHRASES = [
   "живея",
@@ -132,7 +130,6 @@ function Index() {
     };
   }, [isSignedIn]);
 
-
   useEffect(() => {
     const id = setInterval(() => {
       setActivePhrase((i) => (i + 1) % HERO_PHRASES.length);
@@ -158,7 +155,6 @@ function Index() {
     });
     setMaxPhraseWidth(max);
   }, []);
-
 
   const [currentNotice, setCurrentNotice] = useState<string | null>(null);
 
@@ -288,7 +284,9 @@ function Index() {
         toast.success(IS_MOCK ? "Докладът е готов (примерни данни)." : "Докладът е готов.");
       } catch (err) {
         toast.error(
-          err instanceof Error ? `Докладът не беше запазен: ${err.message}` : "Докладът не беше запазен.",
+          err instanceof Error
+            ? `Докладът не беше запазен: ${err.message}`
+            : "Докладът не беше запазен.",
         );
       }
     } catch (err) {
@@ -308,13 +306,10 @@ function Index() {
     setProgress({ done: 0, total: 0 });
   };
 
-
-
   return (
     <main className="relative min-h-screen bg-background/80">
       <TopoBackground />
       <div className="mx-auto max-w-3xl px-4 py-12 sm:py-16">
-
         <header className="mount-rise border-b border-border pb-8 text-center">
           <div
             ref={measureRef}
@@ -322,10 +317,7 @@ function Index() {
             className="pointer-events-none absolute opacity-0"
           >
             {HERO_PHRASES.map((phrase) => (
-              <span
-                key={phrase}
-                className="block whitespace-nowrap text-6xl font-bold"
-              >
+              <span key={phrase} className="block whitespace-nowrap text-6xl font-bold">
                 {phrase}
               </span>
             ))}
@@ -373,15 +365,15 @@ function Index() {
 
           <p className="mt-4 text-base text-muted-foreground">
             Приложението е създадено с една основна цел: да ви спести десетки часове в проучвания,
-            събирайки на едно място детайлна и труднодостъпна информация за всяко село или град. Вместо
-            да ровите из десетки регистри, форуми и разпокъсани източници, Къде Да синтезира всичко
-            необходимо в кратък, структуриран и удобен за четене доклад.
+            събирайки на едно място детайлна и труднодостъпна информация за всяко село или град.
+            Вместо да ровите из десетки регистри, форуми и разпокъсани източници, Къде Да синтезира
+            всичко необходимо в кратък, структуриран и удобен за четене доклад.
           </p>
           <p className="mt-2 text-base text-muted-foreground">
             Независимо дали търсите потенциална инвестиция, планирате спокоен живот на село със
             семейството и децата си, или търсите подходящо и уредено място за възрастни хора,
-            приложението ви предоставя ключовите детайли на едно място. С няколко клика получавате ясна
-            картина, готова за бързо и обективно съпоставяне на различните възможности.
+            приложението ви предоставя ключовите детайли на едно място. С няколко клика получавате
+            ясна картина, готова за бързо и обективно съпоставяне на различните възможности.
           </p>
         </header>
 
@@ -410,10 +402,6 @@ function Index() {
                 , за да получите нов, персонализиран доклад за избрано от вас място.
               </p>
             )}
-
-
-
-
 
             {hasPlace && isSignedIn && isApproved && (
               <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -449,24 +437,19 @@ function Index() {
 
                     <p className="text-sm text-muted-foreground">
                       Въведете населеното място, в което живеете в момента, за да изчислим
-                      разстоянието, времето за пътуване и транспортната достъпност за имоти
-                      купувани с цел уикенд туризъм за отдих и почивка.
+                      разстоянието, времето за пътуване и транспортната достъпност за имоти купувани
+                      с цел уикенд туризъм за отдих и почивка.
                     </p>
                   </div>
                 )}
               </div>
             )}
           </div>
-
         </section>
-
-
 
         {hasPlace && isSignedIn && isApproved && isPrivate && premium && (
           <section className="mt-12 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <h2 className="text-lg font-bold text-destructive">
-              Кажете ни за какво търсите имота
-            </h2>
+            <h2 className="text-lg font-bold text-destructive">Кажете ни за какво търсите имота</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               По желание — изберете една цел, за да добавим обобщена оценка накрая.
             </p>
@@ -521,9 +504,7 @@ function Index() {
         {hasPlace && isSignedIn && isApproved && (
           <section className="mt-16">
             <div className="flex flex-col items-center gap-3 text-center">
-              <h2 className="text-lg font-bold text-destructive">
-                Генерирай доклад
-              </h2>
+              <h2 className="text-lg font-bold text-destructive">Генерирай доклад</h2>
               <p className="max-w-md text-sm text-muted-foreground">
                 {IS_MOCK
                   ? "Демо режим: докладът се попълва с примерни данни, без реални заявки."
@@ -536,9 +517,7 @@ function Index() {
                 ) : (
                   <Sparkles className="h-4 w-4" />
                 )}
-                {generating
-                  ? `Генериране… ${progress.done}/${progress.total}`
-                  : "Генерирай доклад"}
+                {generating ? `Генериране… ${progress.done}/${progress.total}` : "Генерирай доклад"}
               </Button>
               {IS_MOCK && (
                 <Button
@@ -592,13 +571,11 @@ function Index() {
           </section>
         )}
 
-
         <footer className="mt-16 border-t border-border pt-6 text-xs text-muted-foreground">
-          Проектът е с нестопанска цел, в подкрепа на купувачите на имоти, в процес на активна разработка.
+          Проектът е с нестопанска цел, в подкрепа на купувачите на имоти, в процес на активна
+          разработка.
           <FeedbackBox />
         </footer>
-
-
       </div>
     </main>
   );

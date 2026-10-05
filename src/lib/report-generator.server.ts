@@ -1,12 +1,7 @@
 import type { ReportSection } from "@/data/mock-report";
 import type { Json } from "@/integrations/supabase/types";
 import type { SourceLink } from "@/lib/report-cache";
-import {
-  PROMPT_MODULES,
-  COMMON_RULES,
-  DISTRICT_RULE,
-  LEVEL_RULE,
-} from "@/lib/prompt-modules";
+import { PROMPT_MODULES, COMMON_RULES, DISTRICT_RULE, LEVEL_RULE } from "@/lib/prompt-modules";
 
 export type GeneratedCategory = {
   data: Json;
@@ -147,7 +142,10 @@ function sourcesOf(res: GeminiResponse): SourceLink[] {
 /** Изчиства markdown огради и излишен текст около JSON обекта. */
 function extractJson(raw: string): string {
   let s = raw.trim();
-  s = s.replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
+  s = s
+    .replace(/^```(?:json)?/i, "")
+    .replace(/```$/, "")
+    .trim();
   const start = s.indexOf("{");
   const end = s.lastIndexOf("}");
   if (start >= 0 && end > start) s = s.slice(start, end + 1);
@@ -248,7 +246,6 @@ ${COMMON_RULES}
 - Числата давай конкретно (проценти, километри, минути, брой).
 - В края добави списък „ИЗТОЧНИЦИ:“ с пълни URL адреси на използваните страници.
 - Пиши на български, кратко и фактологично.`;
-
 
   const res = await callGemini({
     contents: [{ role: "user", parts: [{ text: prompt }] }],
@@ -451,8 +448,7 @@ export async function generateCategory(input: GenerateInput): Promise<GeneratedC
   const risks =
     input.categoryId === "risks"
       ? (full.blocks.find((b) => b.kind === "risks") as
-          | Extract<ReportSection["blocks"][number], { kind: "risks" }>
-          | undefined)
+          Extract<ReportSection["blocks"][number], { kind: "risks" }> | undefined)
       : undefined;
 
   const derivedIncidents =

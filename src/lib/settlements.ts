@@ -56,7 +56,6 @@ export async function loadSettlements(): Promise<Settlement[]> {
   return pending;
 }
 
-
 /** Позволени са само кирилица, интервал, тире, апостроф и цифри (за пощенски код). */
 export function sanitizeCyrillic(value: string): string {
   return value.replace(/[^\u0400-\u04FF0-9\s\-'’.]/g, "");
@@ -98,11 +97,7 @@ export function distanceKm(
   return Math.round(2 * R * Math.asin(Math.sqrt(h)) * 10) / 10;
 }
 
-export function searchSettlements(
-  all: Settlement[],
-  query: string,
-  limit = 50,
-): Settlement[] {
+export function searchSettlements(all: Settlement[], query: string, limit = 50): Settlement[] {
   const q = normalize(query);
   if (q.length < 2) return [];
 

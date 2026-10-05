@@ -37,10 +37,8 @@ export const getCategory = createServerFn({ method: "POST" })
     }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { generateCategory, generateDistanceToCurrent } = await import(
-      "@/lib/report-generator.server"
-    );
-
+    const { generateCategory, generateDistanceToCurrent } =
+      await import("@/lib/report-generator.server");
 
     const { data: row } = await supabaseAdmin
       .from("report_cache")

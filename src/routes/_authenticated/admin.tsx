@@ -88,7 +88,11 @@ function AdminPage() {
                 </p>
               </div>
               <div className="flex gap-2">
-                <Button size="sm" disabled={busyId === r.id} onClick={() => void decide(r.id, true)}>
+                <Button
+                  size="sm"
+                  disabled={busyId === r.id}
+                  onClick={() => void decide(r.id, true)}
+                >
                   <Check className="h-4 w-4" />
                   Одобри
                 </Button>

@@ -2,7 +2,20 @@ import type { CardTone, ReportBlock } from "@/data/mock-report";
 
 /** Мерни единици, които не се броят за „думи“ при решението кутийка / текст. */
 const UNITS = new Set([
-  "км", "м", "мин", "ч", "час", "часа", "часове", "%", "мм", "дка", "лв", "евро", "€", "души",
+  "км",
+  "м",
+  "мин",
+  "ч",
+  "час",
+  "часа",
+  "часове",
+  "%",
+  "мм",
+  "дка",
+  "лв",
+  "евро",
+  "€",
+  "души",
 ]);
 
 /**
@@ -147,7 +160,9 @@ export function layoutEthnosBlocks(blocks: ReportBlock[]): ReportBlock[] {
     } else if (b.kind === "facts") {
       for (const it of b.items) {
         if (/гъстота|статус/i.test(it.label)) {
-          extraLines.push(`${it.label}: ${approximateRanges(it.value)}${it.description ? ` — ${it.description}` : ""}`);
+          extraLines.push(
+            `${it.label}: ${approximateRanges(it.value)}${it.description ? ` — ${it.description}` : ""}`,
+          );
         } else {
           factBoxes.push(it);
         }
@@ -292,10 +307,20 @@ export function layoutBasicBlocks(blocks: ReportBlock[]): ReportBlock[] {
   );
   const place = extraLines.filter((l) => !transport.includes(l));
   if (place.length > 0) {
-    result.push({ kind: "text", title: "Релеф и местоположение", body: place.join("\n"), tone: "emerald" });
+    result.push({
+      kind: "text",
+      title: "Релеф и местоположение",
+      body: place.join("\n"),
+      tone: "emerald",
+    });
   }
   if (transport.length > 0) {
-    result.push({ kind: "text", title: "Транспорт и разстояния", body: transport.join("\n"), tone: "sky" });
+    result.push({
+      kind: "text",
+      title: "Транспорт и разстояния",
+      body: transport.join("\n"),
+      tone: "sky",
+    });
   }
   return result;
 }

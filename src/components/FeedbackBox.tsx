@@ -39,7 +39,6 @@ export function FeedbackBox() {
     );
   }
 
-
   return (
     <div className="mt-6 max-w-md">
       <textarea

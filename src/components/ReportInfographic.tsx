@@ -86,7 +86,6 @@ import { displaySettlement } from "@/lib/settlements";
 import { PURPOSE_INSIGHTS } from "@/lib/purpose-insights";
 import type { PurposeId } from "@/lib/prompt-modules";
 
-
 const ICONS: Record<string, LucideIcon> = {
   basic: Route,
   vik: Droplet,
@@ -224,10 +223,7 @@ const RISK: Record<
   },
 };
 
-const SCALE_LEVELS: Record<
-  "good" | "fair" | "poor",
-  { tone: CardTone; bar: string }
-> = {
+const SCALE_LEVELS: Record<"good" | "fair" | "poor", { tone: CardTone; bar: string }> = {
   good: { tone: "emerald", bar: "bg-emerald-500" },
   fair: { tone: "amber", bar: "bg-amber-500" },
   poor: { tone: "rose", bar: "bg-rose-500" },
@@ -286,7 +282,10 @@ function InfoTip({ text, label }: { text: string; label: string }) {
   const show = () => {
     const r = btn.current?.getBoundingClientRect();
     if (!r) return;
-    const left = Math.min(Math.max(8, r.left + r.width / 2 - WIDTH / 2), window.innerWidth - WIDTH - 8);
+    const left = Math.min(
+      Math.max(8, r.left + r.width / 2 - WIDTH / 2),
+      window.innerWidth - WIDTH - 8,
+    );
     setPos({ top: r.bottom + 8, left });
   };
   const hide = () => setPos(null);
@@ -476,7 +475,10 @@ function Block({
       return (
         <div>
           {block.title && (
-            <h4 className="mb-2 text-sm font-bold uppercase tracking-wide" style={{ color: accent }}>
+            <h4
+              className="mb-2 text-sm font-bold uppercase tracking-wide"
+              style={{ color: accent }}
+            >
               {block.title}
             </h4>
           )}
@@ -505,7 +507,6 @@ function Block({
         </div>
       );
 
-
     case "text": {
       if (block.variant === "dark") {
         return (
@@ -532,12 +533,21 @@ function Block({
                 className="flex items-center justify-center gap-2 text-center text-2xl font-bold leading-tight md:text-3xl"
                 style={{ color: CARD_TONES.rose.ink }}
               >
-                <AlertTriangle className="h-6 w-6 shrink-0" style={{ color: CARD_TONES.rose.icon }} />
+                <AlertTriangle
+                  className="h-6 w-6 shrink-0"
+                  style={{ color: CARD_TONES.rose.icon }}
+                />
                 {block.title}
-                <AlertTriangle className="h-6 w-6 shrink-0" style={{ color: CARD_TONES.rose.icon }} />
+                <AlertTriangle
+                  className="h-6 w-6 shrink-0"
+                  style={{ color: CARD_TONES.rose.icon }}
+                />
               </h4>
             )}
-            <div className="space-y-3 text-base leading-relaxed" style={{ color: CARD_TONES.rose.ink }}>
+            <div
+              className="space-y-3 text-base leading-relaxed"
+              style={{ color: CARD_TONES.rose.ink }}
+            >
               {block.body
                 .split(/\n+/)
                 .filter(Boolean)
@@ -595,7 +605,10 @@ function Block({
       return (
         <div>
           {block.title && (
-            <h4 className="mb-3 text-sm font-bold uppercase tracking-wide" style={{ color: accent }}>
+            <h4
+              className="mb-3 text-sm font-bold uppercase tracking-wide"
+              style={{ color: accent }}
+            >
               {block.title}
             </h4>
           )}
@@ -610,7 +623,10 @@ function Block({
                   className="print-card space-y-3 rounded-2xl border p-5"
                   style={{ backgroundColor: tone.bg, borderColor: tone.border }}
                 >
-                  <span className="block text-xs font-bold uppercase tracking-wider" style={{ color: tone.ink, opacity: 0.75 }}>
+                  <span
+                    className="block text-xs font-bold uppercase tracking-wider"
+                    style={{ color: tone.ink, opacity: 0.75 }}
+                  >
                     {s.label}
                     <SourceArrow sources={s.sources} />
                   </span>
@@ -618,7 +634,10 @@ function Block({
                     {s.levelText}
                   </span>
                   <div className="h-2.5 w-full rounded-full bg-white/60">
-                    <div className={`h-2.5 rounded-full ${meta.bar}`} style={{ width: `${percent}%` }} />
+                    <div
+                      className={`h-2.5 rounded-full ${meta.bar}`}
+                      style={{ width: `${percent}%` }}
+                    />
                   </div>
                   {s.note && <p className="text-base leading-relaxed text-slate-700">{s.note}</p>}
                 </div>
@@ -656,7 +675,10 @@ function Block({
                     </td>
                     <td className="py-2 pr-3 text-slate-700">{r.distance}</td>
                     <td className="py-2 pr-3 text-slate-700">{r.driveTime}</td>
-                    <td className="py-2 pr-3 font-bold" style={r.hasTrain ? { color: accent } : undefined}>
+                    <td
+                      className="py-2 pr-3 font-bold"
+                      style={r.hasTrain ? { color: accent } : undefined}
+                    >
                       {r.hasTrain ? "Да" : "—"}
                     </td>
                     <td className="py-2 text-slate-700">{r.road || "—"}</td>
@@ -673,7 +695,10 @@ function Block({
         <SubCard title={block.title} tone={block.tone}>
           <ul className="space-y-2">
             {block.items.map((item) => (
-              <li key={item} className="flex items-start gap-2 text-base leading-relaxed text-slate-700">
+              <li
+                key={item}
+                className="flex items-start gap-2 text-base leading-relaxed text-slate-700"
+              >
                 <CheckCircle2 className="mt-1 h-4 w-4 shrink-0" style={{ color: accent }} />
                 <span>{item}</span>
               </li>
@@ -739,8 +764,10 @@ function Block({
             </ul>
           </div>
           {block.note && (
-            <p className="mt-3 rounded-xl border border-dashed p-3 text-sm font-medium"
-               style={{ borderColor: accent, color: ink }}>
+            <p
+              className="mt-3 rounded-xl border border-dashed p-3 text-sm font-medium"
+              style={{ borderColor: accent, color: ink }}
+            >
               {block.note}
             </p>
           )}
@@ -780,9 +807,7 @@ function Block({
                 </BarChart>
               </ResponsiveContainer>
             </div>
-            {block.note && (
-              <p className="mt-2 text-xs font-medium text-slate-500">{block.note}</p>
-            )}
+            {block.note && <p className="mt-2 text-xs font-medium text-slate-500">{block.note}</p>}
           </div>
         </div>
       );
@@ -827,14 +852,11 @@ function Block({
                     </tbody>
                   </table>
                 </div>
-                {block.note && (
-                  <p className="text-sm italic text-muted-foreground">{block.note}</p>
-                )}
+                {block.note && <p className="text-sm italic text-muted-foreground">{block.note}</p>}
               </DialogContent>
             </Dialog>
           </div>
           <div className="space-y-3">
-
             {block.rows.map((r, i) => (
               <div
                 key={`${r.route}-${i}`}
@@ -842,7 +864,9 @@ function Block({
               >
                 <div className="flex flex-wrap items-start gap-2">
                   <Bus className="mt-0.5 h-4 w-4 shrink-0" style={{ color: accent }} />
-                  <span className="min-w-0 flex-1 font-semibold text-black/80 wrap-anywhere">{r.route}</span>
+                  <span className="min-w-0 flex-1 font-semibold text-black/80 wrap-anywhere">
+                    {r.route}
+                  </span>
                   <span
                     className="ml-auto max-w-full shrink rounded-2xl px-2 py-0.5 text-xs font-bold leading-snug text-white wrap-anywhere"
                     style={{ backgroundColor: accent }}
@@ -852,8 +876,12 @@ function Block({
                 </div>
 
                 <div className="mt-2 flex flex-wrap gap-4 text-sm text-black/70">
-                  <span>Курсове: <b>{r.runs}</b></span>
-                  <span>Часови обхват: <b>{r.last}</b></span>
+                  <span>
+                    Курсове: <b>{r.runs}</b>
+                  </span>
+                  <span>
+                    Часови обхват: <b>{r.last}</b>
+                  </span>
                 </div>
               </div>
             ))}
@@ -922,7 +950,10 @@ function Block({
       return (
         <div className="space-y-3">
           {block.items.map((group, gi) => (
-            <div key={group.title} className="rounded-2xl bg-white/70 p-4 shadow-sm ring-1 ring-black/5">
+            <div
+              key={group.title}
+              className="rounded-2xl bg-white/70 p-4 shadow-sm ring-1 ring-black/5"
+            >
               <div className="flex items-center gap-2">
                 <span
                   className="flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold text-white"
@@ -935,7 +966,10 @@ function Block({
               <ul className="mt-2 space-y-1.5 pl-8">
                 {group.points.map((p) => (
                   <li key={p} className="flex gap-2 text-sm text-black/70">
-                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: accent }} />
+                    <span
+                      className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full"
+                      style={{ backgroundColor: accent }}
+                    />
                     <span>{p}</span>
                   </li>
                 ))}
@@ -977,7 +1011,9 @@ function Section({
             <Award className="h-5 w-5" />
           </span>
           <div>
-            <h3 className="font-accent text-2xl font-bold text-white">Обобщена оценка от Къде Да</h3>
+            <h3 className="font-accent text-2xl font-bold text-white">
+              Обобщена оценка от Къде Да
+            </h3>
             <p className="text-xs text-village-200">Качествено заключение спрямо избраната цел</p>
           </div>
         </div>
@@ -1083,7 +1119,6 @@ function SectionFooter({
   );
 }
 
-
 type InfographicProps = {
   place?: Settlement | null;
   current?: Settlement | null;
@@ -1130,49 +1165,46 @@ export function ReportInfographic({
   return (
     <div className="report-canvas relative left-1/2 w-screen -translate-x-1/2 font-sans print:w-full print:translate-x-0">
       <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 md:py-8">
-      <div className="print-card overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md">
-        <div className="flex flex-wrap items-center justify-between gap-3 bg-white px-5 py-3.5 md:px-7 md:py-4">
-          <div className="flex min-w-0 items-center gap-3">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-flag-green text-base font-bold text-white shadow-sm">
-              <MapPin className="h-5 w-5" />
-            </span>
-            <h2 className="wrap-anywhere font-accent text-2xl font-black tracking-wide text-slate-900 md:text-3xl">
-              {placeLabel}
-              {postalCode ? ` · п.к. ${postalCode}` : ""}
-            </h2>
+        <div className="print-card overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md">
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-white px-5 py-3.5 md:px-7 md:py-4">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-flag-green text-base font-bold text-white shadow-sm">
+                <MapPin className="h-5 w-5" />
+              </span>
+              <h2 className="wrap-anywhere font-accent text-2xl font-black tracking-wide text-slate-900 md:text-3xl">
+                {placeLabel}
+                {postalCode ? ` · п.к. ${postalCode}` : ""}
+              </h2>
+            </div>
+            <div className="flex items-center gap-3 print:hidden">
+              {generatedDate && (
+                <span className="text-xs text-slate-500">Генериран на {generatedDate}</span>
+              )}
+              {isPremium(profile) && (
+                <Button size="sm" variant="outline" onClick={() => window.print()}>
+                  <Printer className="h-4 w-4" />
+                  Печат / PDF
+                </Button>
+              )}
+            </div>
           </div>
-          <div className="flex items-center gap-3 print:hidden">
-            {generatedDate && (
-              <span className="text-xs text-slate-500">Генериран на {generatedDate}</span>
-            )}
-            {isPremium(profile) && (
-              <Button size="sm" variant="outline" onClick={() => window.print()}>
-                <Printer className="h-4 w-4" />
-                Печат / PDF
-              </Button>
-            )}
-          </div>
+          <div className="h-3 w-full bg-flag-green" />
+          <div className="h-3 w-full bg-flag-red" />
         </div>
-        <div className="h-3 w-full bg-flag-green" />
-        <div className="h-3 w-full bg-flag-red" />
-      </div>
 
-
-      {sections.map((s) => (
-        <Section
-          key={s.id}
-          section={s}
-          extra={
-            s.id === "basic" && mapPoint ? (
-              <LocationMap place={mapPoint} current={currentPoint} />
-            ) : undefined
-          }
-          purposeNote={purpose ? PURPOSE_INSIGHTS[purpose]?.[s.id] : undefined}
-        />
-      ))}
+        {sections.map((s) => (
+          <Section
+            key={s.id}
+            section={s}
+            extra={
+              s.id === "basic" && mapPoint ? (
+                <LocationMap place={mapPoint} current={currentPoint} />
+              ) : undefined
+            }
+            purposeNote={purpose ? PURPOSE_INSIGHTS[purpose]?.[s.id] : undefined}
+          />
+        ))}
       </div>
     </div>
   );
 }
-
-
