@@ -3,7 +3,13 @@ import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { PROMPT_MODULES } from "@/lib/prompt-modules";
-import { missingSectionIds, sanitizeForPublic, stampGeneratedAt } from "@/lib/report-privacy";
+import {
+  mergePersonal,
+  missingSectionIds,
+  splitPersonal,
+  stampGeneratedAt,
+  type Personal,
+} from "@/lib/report-privacy";
 
 const REQUIRED_SECTION_IDS = PROMPT_MODULES.map((m) => m.id);
 
@@ -75,8 +81,10 @@ export const saveReport = createServerFn({ method: "POST" })
     }
 
     const stamped = stampGeneratedAt(data.reportContent, new Date().toISOString());
-    // Публичните доклади никога не съдържат личната локация и целта на автора им.
-    const content = data.isPublic ? sanitizeForPublic(stamped) : stamped;
+    // Докладът в базата е винаги „чист“ (без настояща локация и цел) — така другите потребители
+    // никога не го виждат, дори и през API. Личното се пази отделно и се връща само на автора.
+    const { publicContent: content, personal } = splitPersonal(stamped);
+    const { savePersonal } = await import("@/lib/report-personal.server");
 
     const fields = {
       location_query: data.locationQuery,
@@ -94,6 +102,7 @@ export const saveReport = createServerFn({ method: "POST" })
         .eq("id", existingId)
         .eq("user_id", context.userId);
       if (error) throw new Error(error.message);
+      await savePersonal(context.supabase as never, existingId, context.userId, personal);
       return { id: existingId, updated: true };
     }
 
@@ -104,6 +113,7 @@ export const saveReport = createServerFn({ method: "POST" })
       .single();
 
     if (error) throw new Error(error.message);
+    await savePersonal(context.supabase as never, row.id as string, context.userId, personal);
     return { id: row.id as string, updated: false };
   });
 
@@ -174,7 +184,13 @@ export const getMyReportByEkatte = createServerFn({ method: "POST" })
       .maybeSingle();
 
     if (error) throw new Error(error.message);
-    return row ? (row as SavedReport) : null;
+    if (!row) return null;
+
+    // Авторът вижда доклада си заедно с личната си информация.
+    const { loadPersonal } = await import("@/lib/report-personal.server");
+    const personal = await loadPersonal(context.supabase as never, row.id as string);
+    const report = row as SavedReport;
+    return { ...report, report_content: mergePersonal(report.report_content, personal) };
   });
 
 export type MyReportListItem = Pick<
@@ -202,9 +218,9 @@ export const setReportVisibility = createServerFn({ method: "POST" })
   .inputValidator((data) => z.object({ id: z.string().uuid(), isPublic: z.boolean() }).parse(data))
   .handler(async ({ data, context }) => {
     const update: { is_public: boolean; report_content?: string } = { is_public: data.isPublic };
+    let migrated: Personal | null = null;
 
     if (data.isPublic) {
-      // При публикуване личната информация се изчиства от доклада завинаги.
       const { data: row, error: readError } = await context.supabase
         .from("reports")
         .select("report_content")
@@ -216,7 +232,13 @@ export const setReportVisibility = createServerFn({ method: "POST" })
       if (missingSectionIds(row.report_content, REQUIRED_SECTION_IDS).length > 0) {
         throw new Error("Непълен доклад не може да бъде публикуван.");
       }
-      update.report_content = sanitizeForPublic(row.report_content);
+      // Докладите, записани по-рано, може още да съдържат лична информация в самия текст —
+      // при публикуване тя се премества в отделната лична част (само за автора).
+      const { publicContent, personal } = splitPersonal(row.report_content);
+      if (personal) {
+        update.report_content = publicContent;
+        migrated = personal;
+      }
     }
 
     const { error } = await context.supabase
@@ -226,6 +248,10 @@ export const setReportVisibility = createServerFn({ method: "POST" })
       .eq("user_id", context.userId);
 
     if (error) throw new Error(error.message);
+    if (migrated) {
+      const { savePersonal } = await import("@/lib/report-personal.server");
+      await savePersonal(context.supabase as never, data.id, context.userId, migrated);
+    }
     return { ok: true };
   });
 

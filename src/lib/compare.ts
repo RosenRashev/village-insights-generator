@@ -1,4 +1,6 @@
 import type { ReportBlock, ReportSection } from "@/data/mock-report";
+import type { PurposeId } from "@/lib/prompt-modules";
+import { collectSignals, computeFit, TOPICS, VERDICT_TEXT, type TopicId } from "@/lib/purpose-fit";
 import { normalize, type Settlement } from "@/lib/settlements";
 
 /**
@@ -260,4 +262,48 @@ export function buildComparison(places: ComparePlace[]): CompareGroup[] {
     if (rows.length > 0) out.push({ id, title, rows });
   }
   return out;
+}
+
+const capital = (s: string) => `${s[0]!.toUpperCase()}${s.slice(1)}`;
+
+/** Горна група „Оценка за <цел>“: оценка, надеждност, плюсове, минуси и липсващи данни за всяко място. */
+export function buildPurposeComparison(
+  places: ComparePlace[],
+  purpose: PurposeId,
+  purposeLabel: string,
+): CompareGroup {
+  const fits = places.map((p) => computeFit(collectSignals(p.sections), purpose));
+  const names = (signals: { topic: TopicId }[]) => signals.map((s) => capital(TOPICS[s.topic]));
+  const linesCell = (lines: string[]): CompareCell | null =>
+    lines.length ? cell({ lines }) : null;
+  const rows: CompareRow[] = [
+    {
+      label: "Оценка (1–10)",
+      cells: fits.map((f) =>
+        f.score === null || f.verdict === null
+          ? cell({ text: "Недостатъчно данни", note: "Липсата на данни не е лош знак." })
+          : cell({
+              text: `${f.score.toFixed(1)} / 10`,
+              note: VERDICT_TEXT[f.verdict],
+              level: f.score >= 6.3 ? "good" : f.score >= 5 ? "fair" : "poor",
+            }),
+      ),
+    },
+    {
+      label: "Надеждност",
+      cells: fits.map((f) =>
+        cell({
+          text: { high: "Висока", medium: "Средна", low: "Ниска" }[f.confidence],
+          note: `Данни за ${Math.round(f.coverage * 100)}% от важните теми`,
+        }),
+      ),
+    },
+    { label: "Плюсове", cells: fits.map((f) => linesCell(names(f.pros))) },
+    { label: "Минуси", cells: fits.map((f) => linesCell(names(f.cons))) },
+    {
+      label: "Липсват данни",
+      cells: fits.map((f) => linesCell(names(f.unknown.map((topic) => ({ topic }))))),
+    },
+  ];
+  return { id: "purpose-fit", title: `Оценка за „${purposeLabel}“`, rows };
 }
