@@ -15,6 +15,7 @@ import appCss from "../styles.css?url";
 import { FeedbackBox } from "../components/FeedbackBox";
 import { Toaster } from "../components/ui/sonner";
 import { AuthProvider, useAuth } from "../hooks/useAuth";
+import { ReportSessionProvider } from "../hooks/useReportSession";
 
 function NotFoundComponent() {
   return (
@@ -323,17 +324,19 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <div className="flex min-h-screen flex-col">
-          <SiteHeader />
-          <div className="flex-1">
-            {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-            <Outlet />
+        <ReportSessionProvider>
+          <div className="flex min-h-screen flex-col">
+            <SiteHeader />
+            <div className="flex-1">
+              {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+              <Outlet />
+            </div>
+            <SiteFooter />
           </div>
-          <SiteFooter />
-        </div>
-        <ScrollToTop />
-        <FeedbackBox />
-        <Toaster />
+          <ScrollToTop />
+          <FeedbackBox />
+          <Toaster />
+        </ReportSessionProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

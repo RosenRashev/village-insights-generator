@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { RefreshCw, RotateCcw, Sparkles } from "lucide-react";
 import { toast } from "sonner";
@@ -16,6 +16,7 @@ import { PendingApproval } from "@/components/PendingApproval";
 import { GenerationProgress } from "@/components/GenerationProgress";
 import { ReportInfographic } from "@/components/ReportInfographic";
 import { useAuth } from "@/hooks/useAuth";
+import { useReportSession } from "@/hooks/useReportSession";
 import {
   generateReportSections,
   serializeReport,
@@ -94,16 +95,26 @@ function Index() {
   const premium = isPremium(profile);
   const queryClient = useQueryClient();
 
-  const [place, setPlace] = useState<Settlement | null>(null);
-  const [currentLocation, setCurrentLocation] = useState<Settlement | null>(null);
-  const [purpose, setPurpose] = useState<PurposeId | null>(null);
+  const {
+    place,
+    setPlace,
+    currentLocation,
+    setCurrentLocation,
+    purpose,
+    setPurpose,
+    isPrivate,
+    setIsPrivate,
+    generating,
+    setGenerating,
+    progress,
+    setProgress,
+    realSections,
+    setRealSections,
+    generatedAt,
+    setGeneratedAt,
+    reset: resetSession,
+  } = useReportSession();
   const [placeNotice, setPlaceNotice] = useState<string | null>(null);
-  const [generating, setGenerating] = useState(false);
-  const [progress, setProgress] = useState<{ done: number; total: number }>({ done: 0, total: 0 });
-  const [realSections, setRealSections] = useState<ReportSection[] | null>(null);
-  const [isPrivate, setIsPrivate] = useState(false);
-  const [generatedAt, setGeneratedAt] = useState<string | undefined>(undefined);
-  const [existingReport, setExistingReport] = useState<MyReportSummary | null>(null);
   const [activePhrase, setActivePhrase] = useState(0);
   const [maxPhraseWidth, setMaxPhraseWidth] = useState<number | null>(null);
   const [isDesktop, setIsDesktop] = useState(false);
@@ -137,18 +148,16 @@ function Index() {
   const [currentNotice, setCurrentNotice] = useState<string | null>(null);
 
   // Има ли потребителят вече доклад за избраното място — тогава вместо „Генерирай“ се предлага „Актуализирай“.
+  // Резултатът се кешира, за да няма повторна заявка при всяко връщане на страницата.
   const placeEkatte = place?.ekatte;
-  useEffect(() => {
-    setExistingReport(null);
-    if (!placeEkatte || !isSignedIn || !isApproved) return;
-    let active = true;
-    findMyReportByEkatte({ data: { ekatte: placeEkatte } })
-      .then((row) => active && setExistingReport(row))
-      .catch(() => undefined);
-    return () => {
-      active = false;
-    };
-  }, [placeEkatte, isSignedIn, isApproved]);
+  const existingQuery = useQuery({
+    queryKey: ["my-report-summary", user?.id, placeEkatte],
+    queryFn: () => findMyReportByEkatte({ data: { ekatte: placeEkatte! } }),
+    enabled: !!placeEkatte && isSignedIn && isApproved,
+    staleTime: 5 * 60_000,
+  });
+  const existingReport: MyReportSummary | null =
+    placeEkatte && isSignedIn && isApproved ? (existingQuery.data ?? null) : null;
 
   const CONFLICT_MSG =
     "Настоящата локация не може да съвпада с търсеното населено място — полето беше изчистено.";
@@ -253,11 +262,12 @@ function Index() {
         // „Сравнение“ да види новия/обновения доклад.
         void queryClient.invalidateQueries({ queryKey: ["my-report-places"] });
         void queryClient.invalidateQueries({ queryKey: ["my-report"] });
-        setExistingReport({
+        void queryClient.invalidateQueries({ queryKey: ["my-reports"] });
+        queryClient.setQueryData(["my-report-summary", user?.id, place.ekatte], {
           id: saved.id,
           is_public: !isPrivate,
           updated_at: new Date().toISOString(),
-        });
+        } satisfies MyReportSummary);
         toast.success(
           IS_MOCK
             ? "Докладът е готов (примерни данни)."
@@ -279,14 +289,7 @@ function Index() {
     }
   };
 
-  const reset = () => {
-    setPlace(null);
-    setCurrentLocation(null);
-    setPurpose(null);
-    setIsPrivate(false);
-    setRealSections(null);
-    setProgress({ done: 0, total: 0 });
-  };
+  const reset = () => resetSession();
 
   return (
     <main className="relative min-h-screen bg-background/80">

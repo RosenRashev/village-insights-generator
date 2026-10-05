@@ -1120,10 +1120,14 @@ function Section({
               )}
               {!open && <SummaryChips chips={chips} />}
             </span>
-            <ChevronDown
-              className={`mt-1.5 h-6 w-6 shrink-0 text-slate-400 transition-transform duration-200 group-hover:text-slate-700 print:hidden ${open ? "rotate-180" : ""}`}
+            <span
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition-colors group-hover:bg-slate-200 group-hover:text-slate-900 print:hidden"
               aria-hidden="true"
-            />
+            >
+              <ChevronDown
+                className={`h-7 w-7 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+              />
+            </span>
           </button>
         </h3>
         {open && purposeNote && (
@@ -1136,6 +1140,9 @@ function Section({
           </div>
         )}
       </header>
+
+      {/* Картата на първата категория се вижда и когато категорията е свита. */}
+      {extra && <div className="mt-6">{extra}</div>}
 
       {/* Съдържанието остава подредено в страницата и когато е свито (височина 0, невидимо), за да
           се оразмеряват графиките и картата; при печат винаги се показва. */}
@@ -1153,7 +1160,6 @@ function Section({
         >
           <div className="space-y-6 pt-6">
             <div className="space-y-6">
-              {extra}
               {blocks.map((b, i) => (
                 // Личната информация (разстояние от настоящата локация) не се печата и не излиза в PDF.
                 <div key={i} className={isCurrentLocationBlock(b) ? "print:hidden" : undefined}>

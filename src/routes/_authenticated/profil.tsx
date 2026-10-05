@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ExternalLink, Eye, EyeOff, Loader2, Trash2 } from "lucide-react";
@@ -10,8 +10,8 @@ import { PendingApproval } from "@/components/PendingApproval";
 import {
   deleteReport,
   listMyReports,
+  type MyReportListItem,
   setReportVisibility,
-  type SavedReport,
 } from "@/lib/reports.functions";
 
 export const Route = createFileRoute("/_authenticated/profil")({
@@ -31,25 +31,33 @@ export const Route = createFileRoute("/_authenticated/profil")({
 
 function ProfilePage() {
   const { profile, loading, user, signOut } = useAuth();
-  const [reports, setReports] = useState<SavedReport[] | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const refreshCompare = () => {
     void queryClient.invalidateQueries({ queryKey: ["my-report-places"] });
     void queryClient.invalidateQueries({ queryKey: ["my-report"] });
+    void queryClient.invalidateQueries({ queryKey: ["my-report-summary"] });
   };
 
+  // Списъкът се пази в кеша: при връщане на страницата се показва веднага, без „Зареждане…“.
+  const reportsQuery = useQuery({
+    queryKey: ["my-reports", user?.id],
+    queryFn: () => listMyReports({ data: undefined }),
+    enabled: !!user && profile?.is_approved === true,
+    staleTime: 5 * 60_000,
+  });
+  const reports = reportsQuery.data ?? null;
   const load = async () => {
-    try {
-      setReports(await listMyReports({ data: undefined }));
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Неуспешно зареждане.");
-    }
+    await queryClient.invalidateQueries({ queryKey: ["my-reports"] });
   };
 
   useEffect(() => {
-    if (profile?.is_approved) void load();
-  }, [profile?.is_approved]);
+    if (reportsQuery.error) {
+      toast.error(
+        reportsQuery.error instanceof Error ? reportsQuery.error.message : "Неуспешно зареждане.",
+      );
+    }
+  }, [reportsQuery.error]);
 
   if (loading) {
     return (
@@ -67,7 +75,7 @@ function ProfilePage() {
     );
   }
 
-  const toggle = async (r: SavedReport) => {
+  const toggle = async (r: MyReportListItem) => {
     setBusyId(r.id);
     try {
       await setReportVisibility({ data: { id: r.id, isPublic: !r.is_public } });
@@ -80,7 +88,7 @@ function ProfilePage() {
     }
   };
 
-  const remove = async (r: SavedReport) => {
+  const remove = async (r: MyReportListItem) => {
     setBusyId(r.id);
     try {
       await deleteReport({ data: { id: r.id } });

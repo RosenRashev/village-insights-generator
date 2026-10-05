@@ -9,6 +9,8 @@ export const getRouter = () => {
     routeTree,
     context: { queryClient },
     scrollRestoration: true,
+    // Заредените данни на страниците се считат за свежи 5 минути — без презареждане при връщане.
+    defaultStaleTime: 5 * 60_000,
     defaultPreloadStaleTime: 0,
   });
 

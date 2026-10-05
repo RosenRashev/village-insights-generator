@@ -1,4 +1,5 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 
@@ -41,24 +42,23 @@ function ReportPage() {
   const { ekatte, placeLabel } = Route.useLoaderData();
   const { user, loading: authLoading } = useAuth();
 
-  // Доклади: собственият на потребителя и най-новият публичен. undefined = още се зарежда.
-  const [own, setOwn] = useState<SavedReport | null | undefined>(undefined);
-  const [publicRow, setPublicRow] = useState<PublicReport | null | undefined>(undefined);
-  useEffect(() => {
-    if (authLoading || !user) return;
-    let active = true;
-    setOwn(undefined);
-    setPublicRow(undefined);
-    getMyReportByEkatte({ data: { ekatte } })
-      .then((r) => active && setOwn(r))
-      .catch(() => active && setOwn(null));
-    getPublicReportByEkatte({ data: { ekatte } })
-      .then((r) => active && setPublicRow(r))
-      .catch(() => active && setPublicRow(null));
-    return () => {
-      active = false;
-    };
-  }, [authLoading, user, ekatte]);
+  // Доклади: собственият на потребителя и най-новият публичен. Пазят се в кеша на приложението,
+  // за да не се зареждат наново при всяко връщане на страницата.
+  const STALE = 5 * 60_000;
+  const ownQuery = useQuery({
+    queryKey: ["my-report", "row", user?.id, ekatte],
+    queryFn: () => getMyReportByEkatte({ data: { ekatte } }),
+    enabled: !authLoading && !!user,
+    staleTime: STALE,
+  });
+  const publicQuery = useQuery({
+    queryKey: ["public-report", user?.id, ekatte],
+    queryFn: () => getPublicReportByEkatte({ data: { ekatte } }),
+    enabled: !authLoading && !!user,
+    staleTime: STALE,
+  });
+  const own: SavedReport | null | undefined = ownQuery.isError ? null : ownQuery.data;
+  const publicRow: PublicReport | null | undefined = publicQuery.isError ? null : publicQuery.data;
 
   // Тежката инфографика (графики, карта) се рисува само в браузъра.
   const [mounted, setMounted] = useState(false);

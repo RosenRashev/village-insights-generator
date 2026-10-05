@@ -177,20 +177,23 @@ export const getMyReportByEkatte = createServerFn({ method: "POST" })
     return row ? (row as SavedReport) : null;
   });
 
-/** Всички доклади на текущия потребител (публични и лични). */
+export type MyReportListItem = Pick<
+  SavedReport,
+  "id" | "location_query" | "ekatte" | "place_name" | "is_public" | "created_at" | "updated_at"
+>;
+
+/** Докладите на текущия потребител за списъка „Моите доклади“ — без самото съдържание (по-леко и бързо). */
 export const listMyReports = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .handler(async ({ context }): Promise<MyReportListItem[]> => {
     const { data, error } = await context.supabase
       .from("reports")
-      .select(
-        "id, location_query, ekatte, place_name, selected_topics, report_content, is_public, created_at, updated_at",
-      )
+      .select("id, location_query, ekatte, place_name, is_public, created_at, updated_at")
       .eq("user_id", context.userId)
       .order("updated_at", { ascending: false });
 
     if (error) throw new Error(error.message);
-    return (data ?? []) as SavedReport[];
+    return (data ?? []) as MyReportListItem[];
   });
 
 /** Превключва публичен/личен статус на собствен доклад. */
