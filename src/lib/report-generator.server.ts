@@ -412,7 +412,9 @@ ${research}
   // Невалидните блокове се изхвърлят поотделно, вместо да счупят цялата категория.
   const { blocks, dropped } = parseBlocks(obj.blocks);
   if (dropped > 0) {
-    console.warn(`[report] категория „${input.categoryId}“: изхвърлени ${dropped} невалидни блока.`);
+    console.warn(
+      `[report] категория „${input.categoryId}“: изхвърлени ${dropped} невалидни блока.`,
+    );
   }
   if (blocks.length === 0) {
     throw new Error(`Моделът не върна съдържание за категория „${input.categoryId}“.`);

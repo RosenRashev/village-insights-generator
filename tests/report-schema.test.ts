@@ -34,7 +34,10 @@ describe("parseBlocks", () => {
 
   test("непознато ниво в scale/risks получава разумна стойност", () => {
     const { blocks } = parseBlocks([
-      { kind: "scale", items: [{ label: "Вода", level: "great", levelText: "Добро", percent: 150, note: "" }] },
+      {
+        kind: "scale",
+        items: [{ label: "Вода", level: "great", levelText: "Добро", percent: 150, note: "" }],
+      },
       { kind: "risks", items: [{ label: "Пожар", level: "extreme" }] },
     ]);
     expect(blocks[0]).toMatchObject({ items: [{ level: "fair", percent: 100 }] });
@@ -54,9 +57,7 @@ describe("parseBlocks", () => {
   });
 
   test("невалидни елементи се изхвърлят, валидните остават", () => {
-    const { blocks } = parseBlocks([
-      { kind: "list", items: ["a", { x: 1 }, "b"] },
-    ]);
+    const { blocks } = parseBlocks([{ kind: "list", items: ["a", { x: 1 }, "b"] }]);
     expect(blocks[0]).toEqual({ kind: "list", items: ["a", "b"] });
   });
 
@@ -78,7 +79,15 @@ describe("parseBlocks", () => {
 
   test("колонна диаграма с редове в низове", () => {
     const { blocks } = parseBlocks([
-      { kind: "bars", title: "Население", unit: "души", data: [{ label: 1946, value: "620" }, { label: "2021", value: 138 }] },
+      {
+        kind: "bars",
+        title: "Население",
+        unit: "души",
+        data: [
+          { label: 1946, value: "620" },
+          { label: "2021", value: 138 },
+        ],
+      },
     ]);
     expect(blocks[0]).toMatchObject({
       kind: "bars",

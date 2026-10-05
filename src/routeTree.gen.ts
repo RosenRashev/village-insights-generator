@@ -17,6 +17,7 @@ import { Route as ObshtiUsloviyaRouteImport } from './routes/obshti-usloviya'
 import { Route as PolitikaZaBiskvitkiRouteImport } from './routes/politika-za-biskvitki'
 import { Route as PolitikaZaPoveritelnostRouteImport } from './routes/politika-za-poveritelnost'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as SravnenieRouteImport } from './routes/sravnenie'
 import { Route as VhodRouteImport } from './routes/vhod'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedProfilRouteImport } from './routes/_authenticated/profil'
@@ -62,6 +63,11 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SravnenieRoute = SravnenieRouteImport.update({
+  id: '/sravnenie',
+  path: '/sravnenie',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const VhodRoute = VhodRouteImport.update({
   id: '/vhod',
   path: '/vhod',
@@ -97,6 +103,7 @@ export interface FileRoutesByFullPath {
   '/politika-za-biskvitki': typeof PolitikaZaBiskvitkiRoute
   '/politika-za-poveritelnost': typeof PolitikaZaPoveritelnostRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/sravnenie': typeof SravnenieRoute
   '/vhod': typeof VhodRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/profil': typeof AuthenticatedProfilRoute
@@ -111,6 +118,7 @@ export interface FileRoutesByTo {
   '/politika-za-biskvitki': typeof PolitikaZaBiskvitkiRoute
   '/politika-za-poveritelnost': typeof PolitikaZaPoveritelnostRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/sravnenie': typeof SravnenieRoute
   '/vhod': typeof VhodRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/profil': typeof AuthenticatedProfilRoute
@@ -127,6 +135,7 @@ export interface FileRoutesById {
   '/politika-za-biskvitki': typeof PolitikaZaBiskvitkiRoute
   '/politika-za-poveritelnost': typeof PolitikaZaPoveritelnostRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/sravnenie': typeof SravnenieRoute
   '/vhod': typeof VhodRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/profil': typeof AuthenticatedProfilRoute
@@ -143,6 +152,7 @@ export interface FileRouteTypes {
     | '/politika-za-biskvitki'
     | '/politika-za-poveritelnost'
     | '/sitemap.xml'
+    | '/sravnenie'
     | '/vhod'
     | '/admin'
     | '/profil'
@@ -157,6 +167,7 @@ export interface FileRouteTypes {
     | '/politika-za-biskvitki'
     | '/politika-za-poveritelnost'
     | '/sitemap.xml'
+    | '/sravnenie'
     | '/vhod'
     | '/admin'
     | '/profil'
@@ -172,6 +183,7 @@ export interface FileRouteTypes {
     | '/politika-za-biskvitki'
     | '/politika-za-poveritelnost'
     | '/sitemap.xml'
+    | '/sravnenie'
     | '/vhod'
     | '/_authenticated/admin'
     | '/_authenticated/profil'
@@ -188,6 +200,7 @@ export interface RootRouteChildren {
   PolitikaZaBiskvitkiRoute: typeof PolitikaZaBiskvitkiRoute
   PolitikaZaPoveritelnostRoute: typeof PolitikaZaPoveritelnostRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  SravnenieRoute: typeof SravnenieRoute
   VhodRoute: typeof VhodRoute
   SeloEkatteRoute: typeof SeloEkatteRoute
 }
@@ -248,6 +261,13 @@ declare module '@tanstack/react-router' {
       path: '/sitemap.xml'
       fullPath: '/sitemap.xml'
       preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sravnenie': {
+      id: '/sravnenie'
+      path: '/sravnenie'
+      fullPath: '/sravnenie'
+      preLoaderRoute: typeof SravnenieRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/vhod': {
@@ -312,6 +332,7 @@ const rootRouteChildren: RootRouteChildren = {
   PolitikaZaBiskvitkiRoute: PolitikaZaBiskvitkiRoute,
   PolitikaZaPoveritelnostRoute: PolitikaZaPoveritelnostRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  SravnenieRoute: SravnenieRoute,
   VhodRoute: VhodRoute,
   SeloEkatteRoute: SeloEkatteRoute,
 }

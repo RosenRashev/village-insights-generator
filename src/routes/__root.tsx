@@ -282,6 +282,9 @@ function SiteHeader() {
         </Link>
         {pathname === "/" && <div aria-hidden="true" />}
         <nav className="flex items-center gap-3">
+          <Link to="/sravnenie" className="text-muted-foreground hover:text-primary">
+            Сравнение
+          </Link>
           {user ? (
             <>
               <UserAvatar user={user} />

@@ -1,11 +1,12 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Link2 } from "lucide-react";
+import { Link2, Scale, Star } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { ReportInfographic } from "@/components/ReportInfographic";
 import { useAuth } from "@/hooks/useAuth";
+import { useFavorites } from "@/lib/favorites";
 import { parseReport } from "@/lib/generate-report";
 import { getPublicReportByEkatte } from "@/lib/public-reports.functions";
 import { displaySettlement } from "@/lib/settlements";
@@ -49,8 +50,10 @@ export const Route = createFileRoute("/selo/$ekatte")({
 });
 
 function PlaceReportPage() {
-  const { row, placeLabel } = Route.useLoaderData();
+  const { ekatte, row, placeLabel } = Route.useLoaderData();
   const { user } = useAuth();
+  const { isFavorite, toggle } = useFavorites();
+  const favorite = isFavorite(ekatte);
   const payload = parseReport(row.report_content);
   // Тежката инфографика (графики, карта) се рисува само в браузъра; сървърът изпраща
   // заглавието и списъка с темите, които са достатъчни за индексиране.
@@ -80,6 +83,22 @@ function PlaceReportPage() {
           <Button type="button" variant="outline" size="sm" onClick={() => void copyLink()}>
             <Link2 className="h-4 w-4" />
             Копирай връзката
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => toggle({ ekatte, label: placeLabel })}
+            aria-pressed={favorite}
+          >
+            <Star className={`h-4 w-4 ${favorite ? "fill-amber-400 text-amber-500" : ""}`} />
+            {favorite ? "В любими" : "Добави в любими"}
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/sravnenie" search={{ m: String(ekatte) }}>
+              <Scale className="h-4 w-4" />
+              Сравни
+            </Link>
           </Button>
           <Button asChild variant="outline" size="sm">
             <Link to="/">Търси друго населено място</Link>

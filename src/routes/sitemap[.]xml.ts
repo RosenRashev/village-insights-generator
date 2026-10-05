@@ -6,6 +6,7 @@ const SITE = "https://kadeda.eu";
 
 const STATIC_PAGES: { path: string; changefreq: string; priority: string }[] = [
   { path: "/", changefreq: "weekly", priority: "1.0" },
+  { path: "/sravnenie", changefreq: "monthly", priority: "0.5" },
   { path: "/politika-za-poveritelnost", changefreq: "yearly", priority: "0.3" },
   { path: "/obshti-usloviya", changefreq: "yearly", priority: "0.3" },
   { path: "/politika-za-biskvitki", changefreq: "yearly", priority: "0.3" },
