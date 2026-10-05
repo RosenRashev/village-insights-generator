@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Loader2, RefreshCw, RotateCcw, Sparkles } from "lucide-react";
+import { ExternalLink, Loader2, RefreshCw, RotateCcw, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,12 @@ import {
   totalSteps,
   IS_MOCK,
 } from "@/lib/generate-report";
-import { getMyQuota, saveReport } from "@/lib/reports.functions";
+import {
+  findMyReportByEkatte,
+  getMyQuota,
+  saveReport,
+  type MyReportSummary,
+} from "@/lib/reports.functions";
 import { isPremium } from "@/lib/plans";
 import {
   getPublicReport,
@@ -101,6 +106,7 @@ function Index() {
   const [realSections, setRealSections] = useState<ReportSection[] | null>(null);
   const [isPrivate, setIsPrivate] = useState(false);
   const [generatedAt, setGeneratedAt] = useState<string | undefined>(undefined);
+  const [existingReport, setExistingReport] = useState<MyReportSummary | null>(null);
   const [publicPlaces, setPublicPlaces] = useState<PublicPlace[] | null>(null);
   const [guestLoading, setGuestLoading] = useState(false);
   const [guestReport, setGuestReport] = useState<{
@@ -157,6 +163,20 @@ function Index() {
   }, []);
 
   const [currentNotice, setCurrentNotice] = useState<string | null>(null);
+
+  // Има ли потребителят вече доклад за избраното място — тогава вместо „Генерирай“ се предлага „Актуализирай“.
+  const placeEkatte = place?.ekatte;
+  useEffect(() => {
+    setExistingReport(null);
+    if (!placeEkatte || !isSignedIn || !isApproved) return;
+    let active = true;
+    findMyReportByEkatte({ data: { ekatte: placeEkatte } })
+      .then((row) => active && setExistingReport(row))
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [placeEkatte, isSignedIn, isApproved]);
 
   const CONFLICT_MSG =
     "Настоящата локация не може да съвпада с търсеното населено място — полето беше изчистено.";
@@ -223,15 +243,18 @@ function Index() {
   const generateReport = async () => {
     if (!place) return;
 
-    try {
-      const quota = await getMyQuota({ data: undefined });
-      if (!quota.allowed) {
-        toast.error("Достигнахте дневния лимит от доклади. Опитайте отново утре.");
+    // Лимитът важи за нови доклади, не за актуализация на вече съществуващ.
+    if (!existingReport) {
+      try {
+        const quota = await getMyQuota({ data: undefined });
+        if (!quota.allowed) {
+          toast.error("Достигнахте дневния лимит от доклади. Опитайте отново утре.");
+          return;
+        }
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Неуспешна проверка на лимита.");
         return;
       }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Неуспешна проверка на лимита.");
-      return;
     }
 
     const usedCurrent = isPrivate ? currentLocation : null;
@@ -266,7 +289,7 @@ function Index() {
       }
 
       try {
-        await saveReport({
+        const saved = await saveReport({
           data: {
             locationQuery: formatSettlement(place),
             ekatte: place.ekatte,
@@ -281,7 +304,18 @@ function Index() {
             isPublic: !isPrivate,
           },
         });
-        toast.success(IS_MOCK ? "Докладът е готов (примерни данни)." : "Докладът е готов.");
+        setExistingReport({
+          id: saved.id,
+          is_public: !isPrivate,
+          updated_at: new Date().toISOString(),
+        });
+        toast.success(
+          IS_MOCK
+            ? "Докладът е готов (примерни данни)."
+            : saved.updated
+              ? "Докладът е актуализиран."
+              : "Докладът е готов.",
+        );
       } catch (err) {
         toast.error(
           err instanceof Error
@@ -504,21 +538,56 @@ function Index() {
         {hasPlace && isSignedIn && isApproved && (
           <section className="mt-16">
             <div className="flex flex-col items-center gap-3 text-center">
-              <h2 className="text-lg font-bold text-destructive">Генерирай доклад</h2>
+              <h2 className="text-lg font-bold text-destructive">
+                {existingReport ? "Вече имате доклад за това място" : "Генерирай доклад"}
+              </h2>
               <p className="max-w-md text-sm text-muted-foreground">
                 {IS_MOCK
                   ? "Демо режим: докладът се попълва с примерни данни, без реални заявки."
-                  : "Приложението ще проучи категориите с Gemini и търсене в Google в реално време и ще покаже резултата тук като инфографика."}
+                  : existingReport
+                    ? `Последно обновен на ${new Date(existingReport.updated_at).toLocaleDateString("bg-BG")}. Можете да го отворите или да го актуализирате с най-новите налични данни.`
+                    : "Приложението ще проучи категориите с Gemini и търсене в Google в реално време и ще покаже резултата тук като инфографика."}
               </p>
 
-              <Button size="lg" onClick={() => void generateReport()} disabled={generating}>
-                {generating ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Sparkles className="h-4 w-4" />
-                )}
-                {generating ? `Генериране… ${progress.done}/${progress.total}` : "Генерирай доклад"}
-              </Button>
+              {existingReport ? (
+                <div className="flex flex-wrap items-center justify-center gap-3">
+                  <Button asChild size="lg" disabled={generating}>
+                    <Link
+                      to="/report/$ekatte"
+                      params={{ ekatte: String(place.ekatte) }}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      Отвори доклада
+                    </Link>
+                  </Button>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    onClick={() => void generateReport()}
+                    disabled={generating}
+                  >
+                    {generating ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-4 w-4" />
+                    )}
+                    {generating ? `Обновяване… ${progress.done}/${progress.total}` : "Актуализирай"}
+                  </Button>
+                </div>
+              ) : (
+                <Button size="lg" onClick={() => void generateReport()} disabled={generating}>
+                  {generating ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-4 w-4" />
+                  )}
+                  {generating
+                    ? `Генериране… ${progress.done}/${progress.total}`
+                    : "Генерирай доклад"}
+                </Button>
+              )}
               {IS_MOCK && (
                 <Button
                   type="button"

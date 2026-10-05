@@ -34,6 +34,7 @@ import {
   Info,
 } from "lucide-react";
 import {
+  checklistsToLists,
   layoutBasicBlocks,
   layoutEthnosBlocks,
   layoutHistoryBlocks,
@@ -455,7 +456,7 @@ function Block({
                   {value}%
                 </span>
                 {block.periodLabel && (
-                  <span className="text-[9px] font-bold uppercase tracking-wider text-black/40">
+                  <span className="line-clamp-2 max-w-[5.5rem] text-balance break-words px-1 text-center text-[9px] font-bold uppercase leading-tight tracking-wide text-black/40">
                     {block.periodLabel}
                   </span>
                 )}
@@ -700,7 +701,7 @@ function Block({
                 className="flex items-start gap-2 text-base leading-relaxed text-slate-700"
               >
                 <CheckCircle2 className="mt-1 h-4 w-4 shrink-0" style={{ color: accent }} />
-                <span>{item}</span>
+                <ListItemText text={item} />
               </li>
             ))}
           </ul>
@@ -981,6 +982,17 @@ function Block({
   }
 }
 
+/** „Етикет: текст“ — етикетът се показва с удебелен шрифт. */
+function ListItemText({ text }: { text: string }) {
+  const m = /^([^:\d][^:]{1,58}):\s+(.+)$/s.exec(text);
+  if (!m) return <span>{text}</span>;
+  return (
+    <span>
+      <span className="font-semibold text-slate-900">{m[1]}:</span> {m[2]}
+    </span>
+  );
+}
+
 function Section({
   section,
   extra,
@@ -992,14 +1004,16 @@ function Section({
 }) {
   const theme = THEMES[section.theme];
   const Icon = ICONS[section.id] ?? MapPin;
+  const source =
+    section.id === "onsite-checklist" ? section.blocks : checklistsToLists(section.blocks);
   let blocks =
     section.id === "basic"
-      ? layoutBasicBlocks(section.blocks)
+      ? layoutBasicBlocks(source)
       : section.id === "ethnos"
-        ? layoutEthnosBlocks(section.blocks)
+        ? layoutEthnosBlocks(source)
         : section.id === "history"
-          ? layoutHistoryBlocks(section.blocks)
-          : section.blocks;
+          ? layoutHistoryBlocks(source)
+          : source;
   if (!HAS_BESPOKE_LAYOUT.has(section.id)) blocks = sortBlocksBySize(blocks);
 
   // Финалната обобщена оценка получава тъмния „village“ стил от еталона.

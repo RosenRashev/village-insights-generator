@@ -3,8 +3,10 @@ import { describe, expect, test } from "bun:test";
 import type { ReportBlock } from "../src/data/mock-report";
 import {
   approximateRanges,
+  checklistsToLists,
   isBoxValue,
   layoutHistoryBlocks,
+  mergeUndeclaredIntoOthers,
   sortBlocksBySize,
 } from "../src/lib/report-layout";
 
@@ -62,5 +64,63 @@ describe("layoutHistoryBlocks", () => {
 
   test("диаграма без точки се скрива", () => {
     expect(layoutHistoryBlocks([bars(0)])).toEqual([]);
+  });
+});
+
+describe("checklistsToLists", () => {
+  test("номерираните групи стават един списък „Заглавие: точки“", () => {
+    const [block] = checklistsToLists([
+      {
+        kind: "checklist",
+        items: [
+          { title: "Пазар", points: ["Има.", "Работи в петък."] },
+          { title: "Празно", points: [] },
+        ],
+      },
+    ]);
+    expect(block).toEqual({ kind: "list", items: ["Пазар: Има. Работи в петък.", "Празно"] });
+  });
+
+  test("другите блокове не се пипат", () => {
+    const text: ReportBlock = { kind: "text", body: "x" };
+    expect(checklistsToLists([text])).toEqual([text]);
+  });
+});
+
+describe("mergeUndeclaredIntoOthers", () => {
+  test("„Недекларирали“ се добавя към „Други“", () => {
+    expect(
+      mergeUndeclaredIntoOthers([
+        { name: "Българи", value: 65 },
+        { name: "Роми", value: 28 },
+        { name: "Други", value: 5 },
+        { name: "Недекларирали", value: 2 },
+      ]),
+    ).toEqual([
+      { name: "Българи", value: 65 },
+      { name: "Роми", value: 28 },
+      { name: "Други", value: 7 },
+    ]);
+  });
+
+  test("без „Други“ се създава такава група", () => {
+    expect(
+      mergeUndeclaredIntoOthers([
+        { name: "Българи", value: 90 },
+        { name: "Не са отговорили", value: 10 },
+      ]),
+    ).toEqual([
+      { name: "Българи", value: 90 },
+      { name: "Други", value: 10 },
+    ]);
+  });
+
+  test("нулева стойност не създава група", () => {
+    expect(
+      mergeUndeclaredIntoOthers([
+        { name: "Българи", value: 100 },
+        { name: "Недекларирали", value: 0 },
+      ]),
+    ).toEqual([{ name: "Българи", value: 100 }]);
   });
 });

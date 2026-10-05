@@ -102,6 +102,24 @@ export function sortBlocksBySize(blocks: ReportBlock[]): ReportBlock[] {
 }
 
 /**
+ * Моделът понякога връща „checklist“ (номерирани групи) за обикновени теми. Номерацията 1–3
+ * на няколко отделни блока подред обърква, затова извън чек-листа за оглед те се показват
+ * като един списък: „Заглавие: точки“.
+ */
+export function checklistsToLists(blocks: ReportBlock[]): ReportBlock[] {
+  return blocks.map((b): ReportBlock => {
+    if (b.kind !== "checklist") return b;
+    return {
+      kind: "list",
+      ...(b.title ? { title: b.title } : {}),
+      items: b.items.map((it) =>
+        it.points.length > 0 ? `${it.title}: ${it.points.join(" ")}` : it.title,
+      ),
+    };
+  });
+}
+
+/**
  * Оформление на категория „История“: колонна диаграма с по-малко от 2 точки не е
  * смислена крива — заменя се със списък, за да не се загуби единствената стойност.
  */
@@ -143,6 +161,26 @@ function toneFor(title?: string): CardTone {
  *    преместват се като изречение в текстов/списъчен блок;
  *  - етническата кръгова диаграма следва веднага след кутийките.
  */
+const UNDECLARED_RE =
+  /недеклар|неотговор|не са отговор|без отговор|непосочен|неопределен|неизвестн/i;
+
+/** „Недекларирали“ и подобни не са отделна група — добавят се към „Други“. */
+export function mergeUndeclaredIntoOthers<T extends { name: string; value: number }>(
+  data: T[],
+): { name: string; value: number }[] {
+  let undeclared = 0;
+  const kept: { name: string; value: number }[] = [];
+  for (const d of data) {
+    if (UNDECLARED_RE.test(d.name)) undeclared += d.value;
+    else kept.push({ name: d.name, value: d.value });
+  }
+  if (undeclared <= 0) return kept;
+  const others = kept.find((d) => /^други/i.test(d.name));
+  if (others) others.value = Math.round((others.value + undeclared) * 10) / 10;
+  else kept.push({ name: "Други", value: undeclared });
+  return kept;
+}
+
 export function layoutEthnosBlocks(blocks: ReportBlock[]): ReportBlock[] {
   const gauges: ReportBlock[] = [];
   const factBoxes: FactItem[] = [];
@@ -156,7 +194,7 @@ export function layoutEthnosBlocks(blocks: ReportBlock[]): ReportBlock[] {
     if (b.kind === "gauge") {
       gauges.push(b);
     } else if (b.kind === "pie") {
-      pies.push(b);
+      pies.push({ ...b, data: mergeUndeclaredIntoOthers(b.data) });
     } else if (b.kind === "facts") {
       for (const it of b.items) {
         if (/гъстота|статус/i.test(it.label)) {

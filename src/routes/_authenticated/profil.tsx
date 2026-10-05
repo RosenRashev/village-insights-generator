@@ -1,19 +1,17 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Eye, EyeOff, Loader2, Trash2 } from "lucide-react";
+import { ExternalLink, Eye, EyeOff, Loader2, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { PendingApproval } from "@/components/PendingApproval";
-import { ReportInfographic } from "@/components/ReportInfographic";
 import {
   deleteReport,
   listMyReports,
   setReportVisibility,
   type SavedReport,
 } from "@/lib/reports.functions";
-import { parseReport } from "@/lib/generate-report";
 
 export const Route = createFileRoute("/_authenticated/profil")({
   head: () => ({
@@ -34,7 +32,6 @@ function ProfilePage() {
   const { profile, loading, user, signOut } = useAuth();
   const [reports, setReports] = useState<SavedReport[] | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [openId, setOpenId] = useState<string | null>(null);
 
   const load = async () => {
     try {
@@ -108,7 +105,6 @@ function ProfilePage() {
 
       <div className="mt-8 space-y-4">
         {reports?.map((r) => {
-          const payload = parseReport(r.report_content);
           return (
             <div key={r.id} className="rounded-xl border border-border p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
@@ -129,13 +125,19 @@ function ProfilePage() {
                     {r.is_public ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     {r.is_public ? "Направи личен" : "Направи публичен"}
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setOpenId((id) => (id === r.id ? null : r.id))}
-                  >
-                    {openId === r.id ? "Скрий" : "Виж"}
-                  </Button>
+                  {r.ekatte != null && (
+                    <Button asChild size="sm" variant="outline">
+                      <Link
+                        to="/report/$ekatte"
+                        params={{ ekatte: String(r.ekatte) }}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                        Отвори
+                      </Link>
+                    </Button>
+                  )}
                   <Button
                     size="sm"
                     variant="ghost"
@@ -146,18 +148,6 @@ function ProfilePage() {
                   </Button>
                 </div>
               </div>
-              {openId === r.id && payload && (
-                <div className="mt-6">
-                  <ReportInfographic
-                    place={payload.place}
-                    current={payload.current ?? null}
-                    sections={payload.sections}
-                    demo={false}
-                    purpose={payload.purpose ?? null}
-                    generatedAt={payload.generatedAt ?? r.updated_at}
-                  />
-                </div>
-              )}
             </div>
           );
         })}
