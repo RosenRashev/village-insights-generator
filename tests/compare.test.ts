@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import type { ReportSection } from "../src/data/mock-report";
 import { buildComparison } from "../src/lib/compare";
+import { parseSelection } from "../src/lib/compare-selection";
 import { parseFavorites, toggleFavorite } from "../src/lib/favorites";
 
 const section = (id: string, blocks: ReportSection["blocks"]): ReportSection => ({
@@ -209,5 +210,17 @@ describe("любими", () => {
     const added = toggleFavorite([], { ekatte: 1, label: "А" });
     expect(added).toHaveLength(1);
     expect(toggleFavorite(added, { ekatte: 1, label: "А" })).toEqual([]);
+  });
+});
+
+describe("запомнен избор за сравнение", () => {
+  test("невалидно съдържание дава празен избор", () => {
+    expect(parseSelection(null)).toEqual([]);
+    expect(parseSelection("x")).toEqual([]);
+    expect(parseSelection('{"a":1}')).toEqual([]);
+  });
+
+  test("само уникални цели числа, най-много 3", () => {
+    expect(parseSelection('[1,1,2,"3",4,5,-1]')).toEqual([1, 2, 4]);
   });
 });

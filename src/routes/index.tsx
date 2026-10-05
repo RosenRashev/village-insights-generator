@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { RefreshCw, RotateCcw, Sparkles } from "lucide-react";
 import { toast } from "sonner";
@@ -91,6 +92,7 @@ function Index() {
   const isSignedIn = user !== null;
   const isApproved = profile?.is_approved === true;
   const premium = isPremium(profile);
+  const queryClient = useQueryClient();
 
   const [place, setPlace] = useState<Settlement | null>(null);
   const [currentLocation, setCurrentLocation] = useState<Settlement | null>(null);
@@ -248,6 +250,9 @@ function Index() {
             isPublic: !isPrivate,
           },
         });
+        // „Сравнение“ да види новия/обновения доклад.
+        void queryClient.invalidateQueries({ queryKey: ["my-report-places"] });
+        void queryClient.invalidateQueries({ queryKey: ["my-report"] });
         setExistingReport({
           id: saved.id,
           is_public: !isPrivate,

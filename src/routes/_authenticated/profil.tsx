@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ExternalLink, Eye, EyeOff, Loader2, Trash2 } from "lucide-react";
@@ -32,6 +33,11 @@ function ProfilePage() {
   const { profile, loading, user, signOut } = useAuth();
   const [reports, setReports] = useState<SavedReport[] | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const refreshCompare = () => {
+    void queryClient.invalidateQueries({ queryKey: ["my-report-places"] });
+    void queryClient.invalidateQueries({ queryKey: ["my-report"] });
+  };
 
   const load = async () => {
     try {
@@ -65,6 +71,7 @@ function ProfilePage() {
     setBusyId(r.id);
     try {
       await setReportVisibility({ data: { id: r.id, isPublic: !r.is_public } });
+      refreshCompare();
       await load();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Неуспешна промяна.");
@@ -77,6 +84,7 @@ function ProfilePage() {
     setBusyId(r.id);
     try {
       await deleteReport({ data: { id: r.id } });
+      refreshCompare();
       await load();
       toast.success("Докладът е изтрит.");
     } catch (err) {

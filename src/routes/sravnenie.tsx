@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { Loader2, Star, X } from "lucide-react";
 
@@ -7,13 +8,10 @@ import { Button } from "@/components/ui/button";
 import { CompareTable } from "@/components/CompareTable";
 import { buildComparison, type ComparePlace } from "@/lib/compare";
 import { useAuth } from "@/hooks/useAuth";
+import { loadSelection, saveSelection } from "@/lib/compare-selection";
 import { useFavorites } from "@/lib/favorites";
 import { parseReport } from "@/lib/generate-report";
-import {
-  getMyReportByEkatte,
-  listMyReportPlaces,
-  type MyReportPlace,
-} from "@/lib/reports.functions";
+import { getMyReportByEkatte, listMyReportPlaces } from "@/lib/reports.functions";
 import { displaySettlement, type Settlement } from "@/lib/settlements";
 
 const MAX_PLACES = 3;
@@ -56,61 +54,65 @@ function ComparePage() {
   const { favorites, remove, isFavorite, toggle } = useFavorites();
   const { user, loading: authLoading } = useAuth();
 
-  const [myPlaces, setMyPlaces] = useState<MyReportPlace[] | null>(null);
-  const [loaded, setLoaded] = useState<Loaded[]>([]);
-  const [loading, setLoading] = useState(false);
   const [pickerKey, setPickerKey] = useState(0);
 
+  // Заредените данни се пазят в кеша на приложението: при връщане на страницата няма
+  // повторно зареждане и въртящ се индикатор (опреснява се на 5 мин. или при нов/променен доклад).
+  const STALE = 5 * 60_000;
+  const placesQuery = useQuery({
+    queryKey: ["my-report-places", user?.id],
+    queryFn: () => listMyReportPlaces(),
+    enabled: !!user,
+    staleTime: STALE,
+  });
+  const myPlaces = placesQuery.isError ? [] : (placesQuery.data ?? null);
+
+  const reportQueries = useQueries({
+    queries: ids.map((ekatte) => ({
+      queryKey: ["my-report", user?.id, ekatte],
+      enabled: !!user,
+      staleTime: STALE,
+      queryFn: async (): Promise<ComparePlace | null> => {
+        const row = await getMyReportByEkatte({ data: { ekatte } });
+        const payload = row ? parseReport(row.report_content) : null;
+        if (!row || !payload) return null;
+        return {
+          label: payload.place ? displaySettlement(payload.place) : (row.place_name ?? ""),
+          place: payload.place,
+          sections: payload.sections,
+        };
+      },
+    })),
+  });
+  const loaded: Loaded[] = ids.map((ekatte, i) => ({
+    ekatte,
+    place: reportQueries[i]?.data ?? null,
+  }));
+  const loading = reportQueries.some((q) => q.isPending && q.fetchStatus !== "idle");
+
+  // Избраните места се възстановяват, ако страницата е отворена без избор (напр. от менюто).
   useEffect(() => {
-    if (!user) return;
-    let active = true;
-    listMyReportPlaces()
-      .then((rows) => active && setMyPlaces(rows))
-      .catch(() => active && setMyPlaces([]));
-    return () => {
-      active = false;
-    };
+    if (!user || m) return;
+    const saved = loadSelection();
+    if (saved.length > 0) {
+      void navigate({ to: "/sravnenie", search: { m: saved.join(",") }, replace: true });
+    }
+    // само при първо отваряне
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   useEffect(() => {
-    let active = true;
-    if (!user || ids.length === 0) {
-      setLoaded([]);
-      return;
-    }
-    setLoading(true);
-    Promise.all(
-      ids.map(async (ekatte): Promise<Loaded> => {
-        try {
-          const row = await getMyReportByEkatte({ data: { ekatte } });
-          const payload = row ? parseReport(row.report_content) : null;
-          if (!row || !payload) return { ekatte, place: null };
-          return {
-            ekatte,
-            place: {
-              label: payload.place ? displaySettlement(payload.place) : (row.place_name ?? ""),
-              place: payload.place,
-              sections: payload.sections,
-            },
-          };
-        } catch {
-          return { ekatte, place: null };
-        }
-      }),
-    )
-      .then((rows) => active && setLoaded(rows))
-      .finally(() => active && setLoading(false));
-    return () => {
-      active = false;
-    };
-  }, [ids, user]);
+    if (ids.length > 0) saveSelection(ids);
+  }, [ids]);
 
-  const setIds = (next: number[]) =>
+  const setIds = (next: number[]) => {
+    saveSelection(next);
     void navigate({
       to: "/sravnenie",
       search: next.length > 0 ? { m: next.join(",") } : {},
       replace: true,
     });
+  };
 
   const add = (s: Settlement) => {
     if (ids.length < MAX_PLACES && !ids.includes(s.ekatte)) setIds([...ids, s.ekatte]);
