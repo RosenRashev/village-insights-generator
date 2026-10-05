@@ -21,9 +21,8 @@ import { Route as SravnenieRouteImport } from './routes/sravnenie'
 import { Route as VhodRouteImport } from './routes/vhod'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedProfilRouteImport } from './routes/_authenticated/profil'
-import { Route as SeloEkatteRouteImport } from './routes/selo/$ekatte'
+import { Route as ReportEkatteRouteImport } from './routes/report.$ekatte'
 import { Route as AuthenticatedAdminFeedbackRouteImport } from './routes/_authenticated/admin_.feedback'
-import { Route as AuthenticatedReportEkatteRouteImport } from './routes/_authenticated/report.$ekatte'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -84,21 +83,15 @@ const AuthenticatedProfilRoute = AuthenticatedProfilRouteImport.update({
   path: '/profil',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const SeloEkatteRoute = SeloEkatteRouteImport.update({
-  id: '/selo/$ekatte',
-  path: '/selo/$ekatte',
+const ReportEkatteRoute = ReportEkatteRouteImport.update({
+  id: '/report/$ekatte',
+  path: '/report/$ekatte',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAdminFeedbackRoute =
   AuthenticatedAdminFeedbackRouteImport.update({
     id: '/admin_/feedback',
     path: '/admin/feedback',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedReportEkatteRoute =
-  AuthenticatedReportEkatteRouteImport.update({
-    id: '/report/$ekatte',
-    path: '/report/$ekatte',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 
@@ -114,9 +107,8 @@ export interface FileRoutesByFullPath {
   '/vhod': typeof VhodRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/profil': typeof AuthenticatedProfilRoute
-  '/selo/$ekatte': typeof SeloEkatteRoute
+  '/report/$ekatte': typeof ReportEkatteRoute
   '/admin/feedback': typeof AuthenticatedAdminFeedbackRoute
-  '/report/$ekatte': typeof AuthenticatedReportEkatteRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -130,9 +122,8 @@ export interface FileRoutesByTo {
   '/vhod': typeof VhodRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/profil': typeof AuthenticatedProfilRoute
-  '/selo/$ekatte': typeof SeloEkatteRoute
+  '/report/$ekatte': typeof ReportEkatteRoute
   '/admin/feedback': typeof AuthenticatedAdminFeedbackRoute
-  '/report/$ekatte': typeof AuthenticatedReportEkatteRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -148,9 +139,8 @@ export interface FileRoutesById {
   '/vhod': typeof VhodRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/profil': typeof AuthenticatedProfilRoute
-  '/selo/$ekatte': typeof SeloEkatteRoute
+  '/report/$ekatte': typeof ReportEkatteRoute
   '/_authenticated/admin_/feedback': typeof AuthenticatedAdminFeedbackRoute
-  '/_authenticated/report/$ekatte': typeof AuthenticatedReportEkatteRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -166,9 +156,8 @@ export interface FileRouteTypes {
     | '/vhod'
     | '/admin'
     | '/profil'
-    | '/selo/$ekatte'
-    | '/admin/feedback'
     | '/report/$ekatte'
+    | '/admin/feedback'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -182,9 +171,8 @@ export interface FileRouteTypes {
     | '/vhod'
     | '/admin'
     | '/profil'
-    | '/selo/$ekatte'
-    | '/admin/feedback'
     | '/report/$ekatte'
+    | '/admin/feedback'
   id:
     | '__root__'
     | '/'
@@ -199,9 +187,8 @@ export interface FileRouteTypes {
     | '/vhod'
     | '/_authenticated/admin'
     | '/_authenticated/profil'
-    | '/selo/$ekatte'
+    | '/report/$ekatte'
     | '/_authenticated/admin_/feedback'
-    | '/_authenticated/report/$ekatte'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -215,7 +202,7 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   SravnenieRoute: typeof SravnenieRoute
   VhodRoute: typeof VhodRoute
-  SeloEkatteRoute: typeof SeloEkatteRoute
+  ReportEkatteRoute: typeof ReportEkatteRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -304,11 +291,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProfilRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/selo/$ekatte': {
-      id: '/selo/$ekatte'
-      path: '/selo/$ekatte'
-      fullPath: '/selo/$ekatte'
-      preLoaderRoute: typeof SeloEkatteRouteImport
+    '/report/$ekatte': {
+      id: '/report/$ekatte'
+      path: '/report/$ekatte'
+      fullPath: '/report/$ekatte'
+      preLoaderRoute: typeof ReportEkatteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin_/feedback': {
@@ -318,13 +305,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminFeedbackRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/report/$ekatte': {
-      id: '/_authenticated/report/$ekatte'
-      path: '/report/$ekatte'
-      fullPath: '/report/$ekatte'
-      preLoaderRoute: typeof AuthenticatedReportEkatteRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
   }
 }
 
@@ -332,14 +312,12 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedProfilRoute: typeof AuthenticatedProfilRoute
   AuthenticatedAdminFeedbackRoute: typeof AuthenticatedAdminFeedbackRoute
-  AuthenticatedReportEkatteRoute: typeof AuthenticatedReportEkatteRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedProfilRoute: AuthenticatedProfilRoute,
   AuthenticatedAdminFeedbackRoute: AuthenticatedAdminFeedbackRoute,
-  AuthenticatedReportEkatteRoute: AuthenticatedReportEkatteRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -356,7 +334,7 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   SravnenieRoute: SravnenieRoute,
   VhodRoute: VhodRoute,
-  SeloEkatteRoute: SeloEkatteRoute,
+  ReportEkatteRoute: ReportEkatteRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

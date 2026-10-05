@@ -217,7 +217,7 @@ function ComparePage() {
                   <th key={l.ekatte} className="px-4 py-3 text-left align-top">
                     <div className="flex items-start justify-between gap-2">
                       <Link
-                        to="/selo/$ekatte"
+                        to="/report/$ekatte"
                         params={{ ekatte: String(l.ekatte) }}
                         className="font-semibold text-primary hover:underline"
                       >

@@ -511,7 +511,7 @@ function Index() {
                 <p className="mb-4 text-center text-sm text-muted-foreground">
                   Разглеждате вече генериран публичен доклад (само за четене).{" "}
                   <Link
-                    to="/selo/$ekatte"
+                    to="/report/$ekatte"
                     params={{ ekatte: String(guestReport.place.ekatte) }}
                     className="font-medium text-primary underline"
                   >

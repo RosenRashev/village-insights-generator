@@ -31,7 +31,7 @@ export const Route = createFileRoute("/sitemap.xml")({
         );
         const placeUrls = places.map(
           (p) =>
-            `  <url>\n    <loc>${SITE}/selo/${p.ekatte}</loc>\n    <lastmod>${p.updatedAt.slice(0, 10)}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>0.7</priority>\n  </url>`,
+            `  <url>\n    <loc>${SITE}/report/${p.ekatte}</loc>\n    <lastmod>${p.updatedAt.slice(0, 10)}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>0.7</priority>\n  </url>`,
         );
 
         const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${[...staticUrls, ...placeUrls].join("\n")}\n</urlset>\n`;

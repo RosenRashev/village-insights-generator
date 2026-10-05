@@ -89,7 +89,7 @@ export const getPublicReport = createServerFn({ method: "POST" })
     return cleaned(row as PublicReport | null);
   });
 
-/** Най-новият публичен доклад за населено място (за страницата /selo/$ekatte). */
+/** Най-новият публичен доклад за населено място (за страницата /report/<ЕКАТТЕ>). */
 export const getPublicReportByEkatte = createServerFn({ method: "GET" })
   .inputValidator((data) => z.object({ ekatte: z.number().int().positive() }).parse(data))
   .handler(async ({ data }) => {
