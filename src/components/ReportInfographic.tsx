@@ -32,7 +32,12 @@ import {
   type LucideIcon,
   Info,
 } from "lucide-react";
-import { layoutBasicBlocks, layoutEthnosBlocks, sortBlocksBySize } from "@/lib/report-layout";
+import {
+  layoutBasicBlocks,
+  layoutEthnosBlocks,
+  layoutHistoryBlocks,
+  sortBlocksBySize,
+} from "@/lib/report-layout";
 
 /**
  * Категории с изрично зададена, ръчна подредба на блоковете в промпта
@@ -955,7 +960,9 @@ function Section({
       ? layoutBasicBlocks(section.blocks)
       : section.id === "ethnos"
         ? layoutEthnosBlocks(section.blocks)
-        : section.blocks;
+        : section.id === "history"
+          ? layoutHistoryBlocks(section.blocks)
+          : section.blocks;
   if (!HAS_BESPOKE_LAYOUT.has(section.id)) blocks = sortBlocksBySize(blocks);
 
   // Финалната обобщена оценка получава тъмния „village“ стил от еталона.

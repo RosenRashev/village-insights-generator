@@ -88,6 +88,25 @@ export function sortBlocksBySize(blocks: ReportBlock[]): ReportBlock[] {
     .map((x) => x.block);
 }
 
+/**
+ * Оформление на категория „История“: колонна диаграма с по-малко от 2 точки не е
+ * смислена крива — заменя се със списък, за да не се загуби единствената стойност.
+ */
+export function layoutHistoryBlocks(blocks: ReportBlock[]): ReportBlock[] {
+  return blocks.flatMap((b): ReportBlock[] => {
+    if (b.kind !== "bars" || b.data.length >= 2) return [b];
+    if (b.data.length === 0) return [];
+    const unit = b.unit ? ` ${b.unit}` : "";
+    return [
+      {
+        kind: "list",
+        title: b.title,
+        items: b.data.map((d) => `${d.label} г. — ${d.value}${unit}.`),
+      },
+    ];
+  });
+}
+
 const TRANSPORT_RE =
   /разстоян|отстоян|летищ|гар[аи]|жп|железопът|път|артери|магистрал|време|автомоб|км|мин|курорт|бани|язовир|възел|възли|транспорт|обходен|посока|маршрут/i;
 
