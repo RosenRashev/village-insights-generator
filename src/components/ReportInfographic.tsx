@@ -32,7 +32,15 @@ import {
   type LucideIcon,
   Info,
 } from "lucide-react";
-import { layoutBasicBlocks, layoutEthnosBlocks } from "@/lib/report-layout";
+import { layoutBasicBlocks, layoutEthnosBlocks, sortBlocksBySize } from "@/lib/report-layout";
+
+/**
+ * Категории с изрично зададена, ръчна подредба на блоковете в промпта
+ * (и/или в кода) — за тях НЕ се прилага автоматичната подредба по размер,
+ * защото конкретният им ред е нарочно различен (напр. ВиК умишлено показва
+ * скалите над кутийките).
+ */
+const HAS_BESPOKE_LAYOUT = new Set(["basic", "vik", "ethnos", "transport", "security", "services"]);
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 
 import {
@@ -401,8 +409,8 @@ function Block({
           <h4 className="mb-2 text-sm font-bold uppercase tracking-wide" style={{ color: accent }}>
             {block.title}
           </h4>
-          <div className="print-card rounded-2xl bg-white/80 p-4 shadow-sm ring-1 ring-black/5">
-            <div className="relative mx-auto h-44 w-full max-w-xs">
+          <div className="print-card flex flex-col items-center gap-4 rounded-2xl bg-white/80 p-4 shadow-sm ring-1 ring-black/5 sm:flex-row sm:items-center sm:gap-6">
+            <div className="relative h-36 w-36 shrink-0">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -424,8 +432,8 @@ function Block({
                 </PieChart>
               </ResponsiveContainer>
               <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                <dir.Icon className="mb-1 h-8 w-8" style={{ color: dir.color }} />
-                <span className="text-2xl font-black text-black/80">
+                <dir.Icon className="mb-1 h-7 w-7" style={{ color: dir.color }} />
+                <span className="text-xl font-black text-black/80">
                   {block.direction === "down" ? "-" : block.direction === "up" ? "+" : ""}
                   {value}%
                 </span>
@@ -437,7 +445,9 @@ function Block({
               </div>
             </div>
             {block.note && (
-              <p className="mt-2 text-center text-[12px] text-black/55">{block.note}</p>
+              <p className="text-center text-base leading-relaxed text-black/70 sm:text-left">
+                {block.note}
+              </p>
             )}
           </div>
         </div>
@@ -890,12 +900,13 @@ function Section({
 }) {
   const theme = THEMES[section.theme];
   const Icon = ICONS[section.id] ?? MapPin;
-  const blocks =
+  let blocks =
     section.id === "basic"
       ? layoutBasicBlocks(section.blocks)
       : section.id === "ethnos"
         ? layoutEthnosBlocks(section.blocks)
         : section.blocks;
+  if (!HAS_BESPOKE_LAYOUT.has(section.id)) blocks = sortBlocksBySize(blocks);
 
   // Финалната обобщена оценка получава тъмния „village“ стил от еталона.
   if (section.id === "perspective-summary") {

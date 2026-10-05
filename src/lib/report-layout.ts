@@ -37,6 +37,56 @@ export function isBoxValue(value: string): boolean {
   return words.length <= 2;
 }
 
+/**
+ * Размерна категория на блок: 0 = малка, 1 = средна, 2 = голяма.
+ * Използва се от {@link sortBlocksBySize} за категориите без ръчно зададена
+ * подредба в промпта — малките кутийки най-отгоре, средните после, големите последни.
+ */
+function blockSizeTier(block: ReportBlock): 0 | 1 | 2 {
+  switch (block.kind) {
+    case "gauge":
+      return 0;
+    case "facts":
+      return block.items.some((it) => it.size === "md") ? 1 : 0;
+    case "scale":
+    case "risks":
+    case "cards":
+    case "pie":
+      return 1;
+    case "distances":
+    case "schedule":
+      return 2;
+    case "text": {
+      if (block.variant === "alert" || block.variant === "dark") return 2;
+      return block.body.length > 260 ? 2 : 1;
+    }
+    case "list": {
+      const totalLength = block.items.join("").length;
+      return block.items.length >= 5 || totalLength > 400 ? 2 : 1;
+    }
+    case "checklist":
+      return 2;
+    default:
+      return 1;
+  }
+}
+
+/**
+ * Подрежда блоковете на категория по размер: малки → средни → големи.
+ * Стабилно сортиране — запазва относителния ред в рамките на един размер.
+ * Прилага се само за категории БЕЗ ръчно зададена подредба в промпта
+ * (вижте HAS_BESPOKE_LAYOUT в ReportInfographic.tsx).
+ */
+export function sortBlocksBySize(blocks: ReportBlock[]): ReportBlock[] {
+  return [...blocks]
+    .map((block, index) => ({ block, index }))
+    .sort((a, b) => {
+      const diff = blockSizeTier(a.block) - blockSizeTier(b.block);
+      return diff !== 0 ? diff : a.index - b.index;
+    })
+    .map((x) => x.block);
+}
+
 const TRANSPORT_RE =
   /разстоян|отстоян|летищ|гар[аи]|жп|железопът|път|артери|магистрал|време|автомоб|км|мин|курорт|бани|язовир|възел|възли|транспорт|обходен|посока|маршрут/i;
 
