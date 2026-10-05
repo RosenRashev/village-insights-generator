@@ -202,6 +202,7 @@ function ScrollToTop() {
       onClick={scrollToTop}
       aria-label="Върни се най-горе"
       className={[
+        "print:hidden",
         "fixed bottom-5 right-5 z-50 grid h-12 w-12 place-items-center rounded-full bg-primary text-primary-foreground shadow-lg ring-offset-background transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         "hover:bg-primary/90 hover:shadow-xl hover:-translate-y-0.5",
         visible ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0",

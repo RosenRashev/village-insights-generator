@@ -723,7 +723,7 @@ function Block({
                 "Данните може да са приблизителни или на общинско ниво (Преброяване 2021 г., НСИ)."
               }
               aria-label="Пояснение към данните"
-              className="inline-flex cursor-help items-center opacity-70"
+              className="inline-flex cursor-help items-center opacity-70 print:hidden"
             >
               <Info className="h-3.5 w-3.5" />
             </span>
@@ -1067,7 +1067,7 @@ function Section({
         </div>
         {purposeNote && (
           <div
-            className="flex items-start gap-2 rounded-xl border border-dashed bg-muted/50 p-3 text-xs leading-relaxed text-slate-600 md:max-w-xs md:shrink-0"
+            className="flex items-start gap-2 rounded-xl border border-dashed bg-muted/50 p-3 text-xs leading-relaxed text-slate-600 md:max-w-xs md:shrink-0 print:hidden"
             style={{ borderColor: theme.accent }}
           >
             <Target className="mt-0.5 h-3.5 w-3.5 shrink-0" style={{ color: theme.accent }} />
@@ -1079,12 +1079,24 @@ function Section({
       <div className="space-y-6">
         {extra}
         {blocks.map((b, i) => (
-          <Block key={i} block={b} accent={theme.accent} ink={theme.ink} hover={theme.hover} />
+          // Личната информация (разстояние от настоящата локация) не се печата и не излиза в PDF.
+          <div key={i} className={isCurrentLocationBlock(b) ? "print:hidden" : undefined}>
+            <Block block={b} accent={theme.accent} ink={theme.ink} hover={theme.hover} />
+          </div>
         ))}
       </div>
 
       <SectionFooter cachedAt={section.cachedAt} sources={section.sources} />
     </section>
+  );
+}
+
+/** Блок „От <настояща локация>“ — съдържа лична информация и не се печата. */
+function isCurrentLocationBlock(b: ReportBlock): boolean {
+  return (
+    b.kind === "facts" &&
+    (b.title ?? "").startsWith("От ") &&
+    b.items.some((it) => it.label === "Разстояние по път")
   );
 }
 
@@ -1177,7 +1189,7 @@ export function ReportInfographic({
   const postalCode = place?.postalCode || DEMO_POSTAL_CODE;
 
   return (
-    <div className="report-canvas relative left-1/2 w-screen -translate-x-1/2 font-sans print:w-full print:translate-x-0">
+    <div className="report-canvas relative left-1/2 w-screen -translate-x-1/2 font-sans print:static print:left-auto print:w-full print:translate-x-0">
       <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 md:py-8">
         <div className="print-card overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md">
           <div className="flex flex-wrap items-center justify-between gap-3 bg-white px-5 py-3.5 md:px-7 md:py-4">
@@ -1190,12 +1202,17 @@ export function ReportInfographic({
                 {postalCode ? ` · п.к. ${postalCode}` : ""}
               </h2>
             </div>
-            <div className="flex items-center gap-3 print:hidden">
+            <div className="flex items-center gap-3">
               {generatedDate && (
                 <span className="text-xs text-slate-500">Генериран на {generatedDate}</span>
               )}
               {isPremium(profile) && (
-                <Button size="sm" variant="outline" onClick={() => window.print()}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="print:hidden"
+                  onClick={() => window.print()}
+                >
                   <Printer className="h-4 w-4" />
                   Печат / PDF
                 </Button>
@@ -1212,7 +1229,9 @@ export function ReportInfographic({
             section={s}
             extra={
               s.id === "basic" && mapPoint ? (
-                <LocationMap place={mapPoint} current={currentPoint} />
+                <div className={currentPoint ? "print:hidden" : undefined}>
+                  <LocationMap place={mapPoint} current={currentPoint} />
+                </div>
               ) : undefined
             }
             purposeNote={purpose ? PURPOSE_INSIGHTS[purpose]?.[s.id] : undefined}

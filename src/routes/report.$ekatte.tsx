@@ -139,7 +139,7 @@ function ReportPage() {
           обмислят да живеят там или да купят имот.
         </p>
         <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-          {(hasPublic || own?.is_public) && (
+          {user && (hasPublic || own?.is_public) && (
             <Button type="button" variant="outline" size="sm" onClick={() => void copyLink()}>
               <Link2 className="h-4 w-4" />
               Копирай връзката
