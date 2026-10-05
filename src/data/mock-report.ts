@@ -1,3 +1,5 @@
+import type { Signal } from "@/lib/purpose-fit";
+
 export type SourceLink = { label: string; url: string };
 
 export type RiskLevel = "low" | "medium" | "high";
@@ -130,6 +132,8 @@ export type ReportSection = {
   blocks: ReportBlock[];
   /** Резюме на категорията с едно изречение — показва се в свития ѝ вид. */
   summary?: string;
+  /** Целево-независими сигнали за оценка по цел (тема, оценка 1–10, увереност). */
+  signals?: Signal[];
   /** Страниците, на които се е опряло търсенето в Google за тази категория. */
   sources?: SourceLink[];
   /** Кога са проучени данните за тази категория (ISO) — кешът може да е по-стар от доклада. */

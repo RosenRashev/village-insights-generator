@@ -87,7 +87,8 @@ import {
 import type { Settlement } from "@/lib/settlements";
 import { displaySettlement } from "@/lib/settlements";
 import { PURPOSE_INSIGHTS } from "@/lib/purpose-insights";
-import type { PurposeId } from "@/lib/prompt-modules";
+import { PURPOSE_FIT_ID, sectionScore, withPurposeSection } from "@/lib/purpose-fit";
+import { PURPOSE_OPTIONS, type PurposeId } from "@/lib/prompt-modules";
 
 const ICONS: Record<string, LucideIcon> = {
   basic: Route,
@@ -105,6 +106,7 @@ const ICONS: Record<string, LucideIcon> = {
   risks: Leaf,
   environment: Wind,
   "onsite-checklist": ClipboardCheck,
+  [PURPOSE_FIT_ID]: Target,
 };
 
 type Theme = ReportSection["theme"];
@@ -1023,12 +1025,14 @@ function Section({
   section,
   extra,
   purposeNote,
+  score,
   open,
   onToggle,
 }: {
   section: ReportSection;
   extra?: ReactNode;
   purposeNote?: string | undefined;
+  score?: number | null | undefined;
   open: boolean;
   onToggle: () => void;
 }) {
@@ -1093,7 +1097,23 @@ function Section({
   );
   const textBlock = (
     <span className="min-w-0 flex-1">
-      <span className="block text-2xl font-bold leading-tight text-slate-900">{section.title}</span>
+      <span className="block text-2xl font-bold leading-tight text-slate-900">
+        {section.title}
+        {score != null && (
+          <span
+            title="Оценка по избраната цел (1–10), на база сигналите в тази категория"
+            className={`ml-3 inline-block rounded-full px-2.5 py-0.5 align-middle text-sm font-semibold ${
+              score >= 6.3
+                ? "bg-emerald-100 text-emerald-800"
+                : score >= 5
+                  ? "bg-amber-100 text-amber-800"
+                  : "bg-rose-100 text-rose-800"
+            }`}
+          >
+            {score.toFixed(1)}/10
+          </span>
+        )}
+      </span>
       {section.summary ? (
         <span className="mt-1 block text-sm font-normal leading-snug text-slate-600">
           {section.summary}
@@ -1277,12 +1297,23 @@ const DEMO_POSTAL_CODE = "6235";
 export function ReportInfographic({
   place = null,
   current = null,
-  sections = MOCK_REPORT,
+  sections: baseSections = MOCK_REPORT,
   demo = true,
-  purpose = null,
+  purpose: initialPurpose = null,
   generatedAt,
 }: InfographicProps) {
   const { profile } = useAuth();
+  const premium = isPremium(profile);
+  // Целта е филтър при гледане: може да се смени без нови заявки (оценката се смята от запазените сигнали).
+  const [viewPurpose, setViewPurpose] = useState<PurposeId | null>(initialPurpose);
+  useEffect(() => setViewPurpose(initialPurpose), [initialPurpose]);
+  const purpose = premium ? viewPurpose : null;
+  const purposeLabel = PURPOSE_OPTIONS.find((p) => p.id === purpose)?.label ?? "";
+  const sections = useMemo(
+    () => withPurposeSection(baseSections, purpose, purposeLabel),
+    [baseSections, purpose, purposeLabel],
+  );
+  const hasSignals = baseSections.some((s) => (s.signals?.length ?? 0) > 0);
   const generatedDate = formatDate(generatedAt);
   // Стабилни референции — иначе LocationMap ре-тригва ефекта си на всеки render.
   const mapPoint = useMemo(
@@ -1302,6 +1333,10 @@ export function ReportInfographic({
 
   // Категориите са затворени при отваряне на доклада; отворените се помнят само докато страницата е отворена.
   const [openIds, setOpenIds] = useState<Set<string>>(new Set());
+  const choosePurpose = (next: PurposeId | null) => {
+    setViewPurpose(next);
+    if (next) setOpenIds((prev) => new Set(prev).add(PURPOSE_FIT_ID));
+  };
   const collapsibleIds = sections.filter((x) => x.id !== "perspective-summary").map((x) => x.id);
   const allOpen = collapsibleIds.length > 0 && collapsibleIds.every((id) => openIds.has(id));
   const toggleSection = (id: string) =>
@@ -1350,6 +1385,33 @@ export function ReportInfographic({
           <div className="h-3 w-full bg-flag-red" />
         </div>
 
+        {premium && !demo && (
+          <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm print:hidden">
+            <label htmlFor="view-purpose" className="font-medium text-slate-700">
+              Оценка по цел:
+            </label>
+            <select
+              id="view-purpose"
+              value={viewPurpose ?? ""}
+              onChange={(e) => choosePurpose((e.target.value || null) as PurposeId | null)}
+              className="rounded-lg border border-slate-300 bg-white px-2 py-1.5"
+            >
+              <option value="">Без цел</option>
+              {PURPOSE_OPTIONS.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
+            {purpose && !hasSignals && (
+              <span className="text-xs text-amber-700">
+                Този доклад е генериран преди оценките по цел — натиснете „Актуализирай“, за да
+                получите оценка.
+              </span>
+            )}
+          </div>
+        )}
+
         {collapsibleIds.length > 1 && (
           <div className="flex justify-end print:hidden">
             <button
@@ -1376,6 +1438,7 @@ export function ReportInfographic({
               ) : undefined
             }
             purposeNote={purpose ? PURPOSE_INSIGHTS[purpose]?.[s.id] : undefined}
+            score={purpose && s.id !== PURPOSE_FIT_ID ? sectionScore(s, purpose) : null}
           />
         ))}
       </div>

@@ -1,6 +1,7 @@
 import type { ReportSection } from "@/data/mock-report";
 import type { Json } from "@/integrations/supabase/types";
 import type { SourceLink } from "@/lib/report-cache";
+import { parseSignals, TOPICS } from "@/lib/purpose-fit";
 import { parseBlocks, parseSummary } from "@/lib/report-schema";
 import { PROMPT_MODULES, COMMON_RULES, DISTRICT_RULE, LEVEL_RULE } from "@/lib/prompt-modules";
 
@@ -322,10 +323,18 @@ const SCHEMA_DOC = `Върни САМО JSON обект със следната 
   "title": string,                       // кратко заглавие на секцията на български
   "subtitle": string,                    // едно изречение пояснение
   "summary": string,                     // ЕДНО изречение (до 140 знака) с главния извод за категорията — какво е състоянието; без диапазони, без URL
+  "signals": Signal[],                   // 0 до 6 сигнала за оценка по цел (описание на Signal по-долу); може и празен масив
   "blocks": Block[],                     // 2 до 8 блока — толкова, колкото реално има теми/факти в текста; НЕ съкращавай съдържание само за да се вместиш в по-малко блокове
   "incidentCount": number | null         // само за категория "risks": брой регистрирани рискови събития, иначе null
 }
 ВАЖНО: структурирай ВСИЧКИ конкретни факти, числа и раздели от изследователския текст — не пропускай информация само защото "блоковете свършват". Ако темите в текста са повече от 5, използвай до 8 блока, вместо да съкращаваш или сливаш несвързани теми в един блок.
+Signal е {"topic":string,"score":number,"confidence":number,"note":string} — целево-независима оценка на ТЕМА, която тази категория реално покрива:
+// "topic" е точно един от: ${Object.entries(TOPICS)
+  .map(([id, label]) => `${id} (${label})`)
+  .join("; ")}.
+// "score" е цяло число 1–10 за КАЧЕСТВОТО на темата в това населено място (10 = много добре, 1 = много зле; за „hazards“ 10 = защитено от рискове; за „price_level“ 10 = много достъпни цени; за „price_trend“ 10 = силен ръст).
+// "confidence" е 0.3–1: 1 = ясни данни от източници, 0.5 = косвени, 0.3 = слаби. НЕ давай сигнал за тема, за която в изследователския текст НЯМА информация — липсата на данни не е лоша оценка.
+// "note" е до 80 знака — на какво се основава оценката. Само теми от тази категория; без повторение на тема.
 Block е един от:
 {"kind":"facts","items":[{"label":string,"value":string,"description":string,"size":"sm"|"md"}]}  // 2-6 кратки факта; "description" е по избор; "size" е по избор ("sm" по подразбиране) — "md" прави кутийката двойно по-широка, за стойност с повече обяснителен текст
 {"kind":"text","title":string,"body":string,"variant":"default"|"dark"|"highlight"|"alert","tone":"emerald"|"sky"|"blue"|"amber"|"violet"|"purple"|"rose"|"teal"}  // "tone" оцветява кутийката като в категория "basic" (само за категориите, чиито специални правила по-горе го изискват — напр. "basic", "services"). "alert" е оцветен с червеникав фон и удивителни иконки, за важна/критична информация (напр. медиен преглед в категория "security")
@@ -418,6 +427,7 @@ ${research}
     title?: string;
     subtitle?: string;
     summary?: unknown;
+    signals?: unknown;
     blocks?: unknown;
     incidentCount?: unknown;
   };
@@ -437,6 +447,7 @@ ${research}
       title: typeof obj.title === "string" && obj.title ? obj.title : moduleLabel(input.categoryId),
       subtitle: typeof obj.subtitle === "string" ? obj.subtitle : "",
       ...(parseSummary(obj.summary) ? { summary: parseSummary(obj.summary)! } : {}),
+      ...(parseSignals(obj.signals).length > 0 ? { signals: parseSignals(obj.signals) } : {}),
       blocks,
     },
     incidentCount: typeof obj.incidentCount === "number" ? obj.incidentCount : null,
@@ -462,6 +473,7 @@ export async function generateCategory(input: GenerateInput): Promise<GeneratedC
     title: section.title,
     ...(section.subtitle ? { subtitle: section.subtitle } : {}),
     ...(section.summary ? { summary: section.summary } : {}),
+    ...(section.signals ? { signals: section.signals } : {}),
     theme: themeFor(input.categoryId),
     blocks: section.blocks,
   };

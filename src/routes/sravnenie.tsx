@@ -6,7 +6,9 @@ import { Loader2, Star, X } from "lucide-react";
 import { SettlementCombobox } from "@/components/SettlementCombobox";
 import { Button } from "@/components/ui/button";
 import { CompareTable } from "@/components/CompareTable";
-import { buildComparison, type ComparePlace } from "@/lib/compare";
+import { buildComparison, buildPurposeComparison, type ComparePlace } from "@/lib/compare";
+import { isPremium } from "@/lib/plans";
+import { PURPOSE_OPTIONS, type PurposeId } from "@/lib/prompt-modules";
 import { useAuth } from "@/hooks/useAuth";
 import { loadSelection, saveSelection } from "@/lib/compare-selection";
 import { useFavorites } from "@/lib/favorites";
@@ -52,7 +54,9 @@ function ComparePage() {
   const navigate = useNavigate();
   const ids = useMemo(() => parseEkatte(m), [m]);
   const { favorites, remove, isFavorite, toggle } = useFavorites();
-  const { user, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
+  const premium = isPremium(profile);
+  const [purpose, setPurpose] = useState<PurposeId | null>(null);
 
   const [pickerKey, setPickerKey] = useState(0);
 
@@ -121,7 +125,14 @@ function ComparePage() {
 
   const available = loaded.filter((l): l is { ekatte: number; place: ComparePlace } => !!l.place);
   const missing = loaded.filter((l) => !l.place);
-  const groups = useMemo(() => buildComparison(available.map((l) => l.place)), [available]);
+  const groups = useMemo(() => {
+    const places = available.map((l) => l.place);
+    const base = buildComparison(places);
+    const label = PURPOSE_OPTIONS.find((p) => p.id === purpose)?.label;
+    return premium && purpose && label
+      ? [buildPurposeComparison(places, purpose, label), ...base]
+      : base;
+  }, [available, purpose, premium]);
 
   const addableFavorites = favorites.filter(
     (f) =>
@@ -257,6 +268,29 @@ function ComparePage() {
 
       {available.length > 0 && !loading && (
         <div className="mt-10">
+          {premium && (
+            <div className="mb-4 flex flex-wrap items-center gap-2 text-sm">
+              <label htmlFor="compare-purpose" className="font-medium">
+                Цел на сравнението:
+              </label>
+              <select
+                id="compare-purpose"
+                value={purpose ?? ""}
+                onChange={(e) => setPurpose((e.target.value || null) as PurposeId | null)}
+                className="rounded-lg border border-input bg-background px-2 py-1.5"
+              >
+                <option value="">Без цел</option>
+                {PURPOSE_OPTIONS.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.label}
+                  </option>
+                ))}
+              </select>
+              <span className="text-xs text-muted-foreground">
+                Оценката се смята от вече запазените доклади, независимо с каква цел са генерирани.
+              </span>
+            </div>
+          )}
           <CompareTable
             groups={groups}
             columns={available.length}
