@@ -8,6 +8,7 @@ import {
   missingSectionIds,
   splitPersonal,
   stampGeneratedAt,
+  type Personal,
 } from "@/lib/report-privacy";
 
 const REQUIRED_SECTION_IDS = PROMPT_MODULES.map((m) => m.id);
