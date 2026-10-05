@@ -21,6 +21,7 @@ import {
   Route,
   ShieldHalf,
   Stethoscope,
+  Store,
   Target,
   ThumbsDown,
   ThumbsUp,
@@ -49,7 +50,15 @@ import {
  * защото конкретният им ред е нарочно различен (напр. ВиК умишлено показва
  * скалите над кутийките).
  */
-const HAS_BESPOKE_LAYOUT = new Set(["basic", "vik", "ethnos", "transport", "security", "services"]);
+const HAS_BESPOKE_LAYOUT = new Set([
+  "basic",
+  "vik",
+  "ethnos",
+  "transport",
+  "security",
+  "health",
+  "services",
+]);
 import {
   Bar,
   BarChart,
@@ -97,7 +106,8 @@ const ICONS: Record<string, LucideIcon> = {
   transport: Bus,
   power: Zap,
   security: ShieldHalf,
-  services: Stethoscope,
+  health: Stethoscope,
+  services: Store,
   connectivity: Wifi,
   industry: TrendingUp,
   social: MessagesSquare,

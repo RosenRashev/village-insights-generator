@@ -14,6 +14,7 @@ export const CATEGORY_TTL_DAYS: Record<string, number | null> = {
   transport: 365,
   power: 365,
   security: 30,
+  health: 365,
   services: 365,
   connectivity: 365,
   industry: 180,

@@ -38,6 +38,7 @@ const ICONS: Record<string, LucideIcon> = {
   power: Zap,
   security: Shield,
   social: Newspaper,
+  health: Activity,
   services: Store,
   industry: Factory,
   connectivity: Wifi,

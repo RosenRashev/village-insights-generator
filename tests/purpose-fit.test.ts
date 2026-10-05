@@ -106,3 +106,18 @@ describe("секция и сравнение", () => {
     expect(collectSignals(sections)).toHaveLength(3);
   });
 });
+
+describe("цели и теми", () => {
+  test("семейството тежи на педиатър, ясла и аптека; доклад без тях получава „липсват данни“", () => {
+    const fit = computeFit([sig("education", 8), sig("safety", 8), sig("services", 7)], "family");
+    expect(fit.unknown).toEqual(expect.arrayContaining(["pediatric", "childcare", "pharmacy"]));
+  });
+
+  test("финалната категория съдържа списък „Какво да проверите на място“", () => {
+    const s = withPurposeSection([section("a", [sig("internet", 9)])], "family", "Семейство");
+    const fitSection = s.find((x) => x.id === "purpose-fit")!;
+    expect(
+      fitSection.blocks.some((b) => b.kind === "list" && b.title === "Какво да проверите на място"),
+    ).toBe(true);
+  });
+});
