@@ -30,7 +30,7 @@ import {
   saveReport,
   type MyReportSummary,
 } from "@/lib/reports.functions";
-import { isPremium } from "@/lib/plans";
+import { canUsePurpose } from "@/lib/plans";
 import type { ReportSection } from "@/data/mock-report";
 
 import { displaySettlement, formatSettlement, type Settlement } from "@/lib/settlements";
@@ -92,7 +92,7 @@ function Index() {
   const { user, profile, loading: authLoading } = useAuth();
   const isSignedIn = user !== null;
   const isApproved = profile?.is_approved === true;
-  const premium = isPremium(profile);
+  const purposeAllowed = canUsePurpose(profile);
   const queryClient = useQueryClient();
 
   const {
@@ -211,7 +211,7 @@ function Index() {
     // Авторът винаги може да зададе настояща локация и цел; публикуването влияе само на това
     // какво виждат другите (личното им се скрива).
     const usedCurrent = currentLocation;
-    const usedPurpose = premium ? purpose : null;
+    const usedPurpose = purposeAllowed ? purpose : null;
 
     setGenerating(true);
     setReportFor({ place, current: usedCurrent });
@@ -422,7 +422,7 @@ function Index() {
                     {isPrivate
                       ? "Докладът ще се вижда само от вас."
                       : `Докладът ще се вижда и от другите регистрирани потребители, но без вашата настояща локация${
-                          premium ? " и цел на търсенето" : ""
+                          purposeAllowed ? " и цел на търсенето" : ""
                         } — тях виждате само вие.`}
                   </p>
                 </div>
@@ -431,7 +431,7 @@ function Index() {
           </div>
         </section>
 
-        {hasPlace && isSignedIn && isApproved && premium && (
+        {hasPlace && isSignedIn && isApproved && purposeAllowed && (
           <section className="mt-12 animate-in fade-in slide-in-from-bottom-2 duration-300">
             <h2 className="text-lg font-bold text-destructive">Кажете ни за какво търсите имота</h2>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -531,7 +531,7 @@ function Index() {
                     current={reportFor.current}
                     sections={realSections}
                     demo={false}
-                    purpose={premium ? purpose : null}
+                    purpose={purposeAllowed ? purpose : null}
                     generatedAt={generatedAt}
                   />
                 )}

@@ -7,7 +7,7 @@ import { SettlementCombobox } from "@/components/SettlementCombobox";
 import { Button } from "@/components/ui/button";
 import { CompareTable } from "@/components/CompareTable";
 import { buildComparison, buildPurposeComparison, type ComparePlace } from "@/lib/compare";
-import { isPremium } from "@/lib/plans";
+import { canUsePurpose } from "@/lib/plans";
 import { PURPOSE_OPTIONS, type PurposeId } from "@/lib/prompt-modules";
 import { useAuth } from "@/hooks/useAuth";
 import { loadSelection, saveSelection } from "@/lib/compare-selection";
@@ -55,7 +55,7 @@ function ComparePage() {
   const ids = useMemo(() => parseEkatte(m), [m]);
   const { favorites, remove, isFavorite, toggle } = useFavorites();
   const { user, profile, loading: authLoading } = useAuth();
-  const premium = isPremium(profile);
+  const purposeAllowed = canUsePurpose(profile);
   const [purpose, setPurpose] = useState<PurposeId | null>(null);
 
   const [pickerKey, setPickerKey] = useState(0);
@@ -129,10 +129,10 @@ function ComparePage() {
     const places = available.map((l) => l.place);
     const base = buildComparison(places);
     const label = PURPOSE_OPTIONS.find((p) => p.id === purpose)?.label;
-    return premium && purpose && label
+    return purposeAllowed && purpose && label
       ? [buildPurposeComparison(places, purpose, label), ...base]
       : base;
-  }, [available, purpose, premium]);
+  }, [available, purpose, purposeAllowed]);
 
   const addableFavorites = favorites.filter(
     (f) =>
@@ -268,7 +268,7 @@ function ComparePage() {
 
       {available.length > 0 && !loading && (
         <div className="mt-10">
-          {premium && (
+          {purposeAllowed && (
             <div className="mb-4 flex flex-wrap items-center gap-2 text-sm">
               <label htmlFor="compare-purpose" className="font-medium">
                 Цел на сравнението:
