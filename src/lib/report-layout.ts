@@ -52,6 +52,7 @@ function blockSizeTier(block: ReportBlock): 0 | 1 | 2 {
     case "risks":
     case "cards":
     case "pie":
+    case "bars":
       return 1;
     case "distances":
     case "schedule":

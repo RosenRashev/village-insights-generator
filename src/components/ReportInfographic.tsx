@@ -41,7 +41,17 @@ import { layoutBasicBlocks, layoutEthnosBlocks, sortBlocksBySize } from "@/lib/r
  * скалите над кутийките).
  */
 const HAS_BESPOKE_LAYOUT = new Set(["basic", "vik", "ethnos", "transport", "security", "services"]);
-import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+import {
+  Bar,
+  BarChart,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 import {
   MOCK_REPORT,
@@ -726,6 +736,46 @@ function Block({
               {block.note}
             </p>
           )}
+        </div>
+      );
+    }
+
+    case "bars": {
+      const unit = block.unit ?? "";
+      return (
+        <div>
+          <h4
+            className="mb-2 flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide"
+            style={{ color: accent }}
+          >
+            {block.title}
+          </h4>
+          <div className="print-card rounded-2xl bg-white/80 p-4 shadow-sm ring-1 ring-black/5">
+            <div className="h-56 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={block.data} margin={{ top: 20, right: 8, left: 8, bottom: 0 }}>
+                  <XAxis
+                    dataKey="label"
+                    tickLine={false}
+                    axisLine={false}
+                    tick={{ fontSize: 12, fill: "#64748b" }}
+                  />
+                  <YAxis hide domain={[0, "dataMax"]} />
+                  <Tooltip formatter={(v: number) => `${v} ${unit}`.trim()} />
+                  <Bar
+                    dataKey="value"
+                    fill={accent}
+                    radius={[6, 6, 0, 0]}
+                    isAnimationActive={false}
+                    label={{ position: "top", fontSize: 12, fontWeight: 700, fill: "#334155" }}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            {block.note && (
+              <p className="mt-2 text-xs font-medium text-slate-500">{block.note}</p>
+            )}
+          </div>
         </div>
       );
     }
