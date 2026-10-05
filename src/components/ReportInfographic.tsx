@@ -1084,51 +1084,77 @@ function Section({
   const bodyId = `section-body-${section.id}`;
   const chips = summaryChips(section);
 
+  const iconBox = (
+    <span
+      className={`animated-icon-box flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white shadow-md ${theme.box}`}
+    >
+      <Icon className="h-5 w-5" />
+    </span>
+  );
+  const textBlock = (
+    <span className="min-w-0 flex-1">
+      <span className="block text-2xl font-bold leading-tight text-slate-900">{section.title}</span>
+      {section.summary ? (
+        <span className="mt-1 block text-sm font-normal leading-snug text-slate-600">
+          {section.summary}
+        </span>
+      ) : (
+        section.subtitle && (
+          <span className="block text-xs font-normal text-slate-500">{section.subtitle}</span>
+        )
+      )}
+      {!open && <SummaryChips chips={chips} />}
+    </span>
+  );
+  const chevronClass =
+    "flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200 hover:text-slate-900 print:hidden";
+
+  // Затворена категория се отваря с клик където и да е върху нея (освен върху картата);
+  // отворената се затваря само със стрелката.
+  const openOnClick = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest("[data-no-toggle]")) return;
+    onToggle();
+  };
+
   return (
     <section
       id={`section-${section.id}`}
-      className="wrap-anywhere print-card scroll-mt-6 rounded-3xl border border-slate-100 bg-white p-6 shadow-lg md:p-8"
+      onClick={open ? undefined : openOnClick}
+      className={`wrap-anywhere print-card scroll-mt-6 rounded-3xl border border-slate-100 bg-white p-6 shadow-lg transition-shadow md:p-8 ${
+        open ? "" : "cursor-pointer hover:shadow-xl"
+      }`}
     >
       <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <h3 className="min-w-0 flex-1">
-          <button
-            type="button"
-            onClick={onToggle}
-            aria-expanded={open}
-            aria-controls={bodyId}
-            className="group flex w-full items-start gap-3 rounded-xl text-left outline-none focus-visible:ring-2 focus-visible:ring-ring print:cursor-default"
-          >
-            <span
-              className={`animated-icon-box flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white shadow-md ${theme.box}`}
-            >
-              <Icon className="h-5 w-5" />
+          {open ? (
+            <span className="flex w-full items-start gap-3">
+              {iconBox}
+              {textBlock}
+              <button
+                type="button"
+                onClick={onToggle}
+                aria-expanded={true}
+                aria-controls={bodyId}
+                aria-label={`Свий категорията „${section.title}“`}
+                className={`${chevronClass} outline-none focus-visible:ring-2 focus-visible:ring-ring`}
+              >
+                <ChevronDown className="h-7 w-7 rotate-180 transition-transform duration-200" />
+              </button>
             </span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-2xl font-bold leading-tight text-slate-900">
-                {section.title}
+          ) : (
+            <button
+              type="button"
+              aria-expanded={false}
+              aria-controls={bodyId}
+              className="group flex w-full items-start gap-3 rounded-xl text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {iconBox}
+              {textBlock}
+              <span className={`${chevronClass} group-hover:bg-slate-200`} aria-hidden="true">
+                <ChevronDown className="h-7 w-7 transition-transform duration-200" />
               </span>
-              {section.summary ? (
-                <span className="mt-1 block text-sm font-normal leading-snug text-slate-600">
-                  {section.summary}
-                </span>
-              ) : (
-                section.subtitle && (
-                  <span className="block text-xs font-normal text-slate-500">
-                    {section.subtitle}
-                  </span>
-                )
-              )}
-              {!open && <SummaryChips chips={chips} />}
-            </span>
-            <span
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition-colors group-hover:bg-slate-200 group-hover:text-slate-900 print:hidden"
-              aria-hidden="true"
-            >
-              <ChevronDown
-                className={`h-7 w-7 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
-              />
-            </span>
-          </button>
+            </button>
+          )}
         </h3>
         {open && purposeNote && (
           <div
@@ -1142,7 +1168,11 @@ function Section({
       </header>
 
       {/* Картата на първата категория се вижда и когато категорията е свита. */}
-      {extra && <div className="mt-6">{extra}</div>}
+      {extra && (
+        <div className="mt-6" data-no-toggle>
+          {extra}
+        </div>
+      )}
 
       {/* Съдържанието остава подредено в страницата и когато е свито (височина 0, невидимо), за да
           се оразмеряват графиките и картата; при печат винаги се показва. */}
