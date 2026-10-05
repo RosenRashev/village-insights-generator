@@ -16,9 +16,11 @@ import { Route as NovaParolaRouteImport } from './routes/nova-parola'
 import { Route as ObshtiUsloviyaRouteImport } from './routes/obshti-usloviya'
 import { Route as PolitikaZaBiskvitkiRouteImport } from './routes/politika-za-biskvitki'
 import { Route as PolitikaZaPoveritelnostRouteImport } from './routes/politika-za-poveritelnost'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as VhodRouteImport } from './routes/vhod'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedProfilRouteImport } from './routes/_authenticated/profil'
+import { Route as SeloEkatteRouteImport } from './routes/selo/$ekatte'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -54,6 +56,11 @@ const PolitikaZaPoveritelnostRoute = PolitikaZaPoveritelnostRouteImport.update({
   path: '/politika-za-poveritelnost',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const VhodRoute = VhodRouteImport.update({
   id: '/vhod',
   path: '/vhod',
@@ -69,6 +76,11 @@ const AuthenticatedProfilRoute = AuthenticatedProfilRouteImport.update({
   path: '/profil',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const SeloEkatteRoute = SeloEkatteRouteImport.update({
+  id: '/selo/$ekatte',
+  path: '/selo/$ekatte',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -77,9 +89,11 @@ export interface FileRoutesByFullPath {
   '/obshti-usloviya': typeof ObshtiUsloviyaRoute
   '/politika-za-biskvitki': typeof PolitikaZaBiskvitkiRoute
   '/politika-za-poveritelnost': typeof PolitikaZaPoveritelnostRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/vhod': typeof VhodRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/profil': typeof AuthenticatedProfilRoute
+  '/selo/$ekatte': typeof SeloEkatteRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -88,9 +102,11 @@ export interface FileRoutesByTo {
   '/obshti-usloviya': typeof ObshtiUsloviyaRoute
   '/politika-za-biskvitki': typeof PolitikaZaBiskvitkiRoute
   '/politika-za-poveritelnost': typeof PolitikaZaPoveritelnostRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/vhod': typeof VhodRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/profil': typeof AuthenticatedProfilRoute
+  '/selo/$ekatte': typeof SeloEkatteRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -101,9 +117,11 @@ export interface FileRoutesById {
   '/obshti-usloviya': typeof ObshtiUsloviyaRoute
   '/politika-za-biskvitki': typeof PolitikaZaBiskvitkiRoute
   '/politika-za-poveritelnost': typeof PolitikaZaPoveritelnostRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/vhod': typeof VhodRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/profil': typeof AuthenticatedProfilRoute
+  '/selo/$ekatte': typeof SeloEkatteRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -114,9 +132,11 @@ export interface FileRouteTypes {
     | '/obshti-usloviya'
     | '/politika-za-biskvitki'
     | '/politika-za-poveritelnost'
+    | '/sitemap.xml'
     | '/vhod'
     | '/admin'
     | '/profil'
+    | '/selo/$ekatte'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -125,9 +145,11 @@ export interface FileRouteTypes {
     | '/obshti-usloviya'
     | '/politika-za-biskvitki'
     | '/politika-za-poveritelnost'
+    | '/sitemap.xml'
     | '/vhod'
     | '/admin'
     | '/profil'
+    | '/selo/$ekatte'
   id:
     | '__root__'
     | '/'
@@ -137,9 +159,11 @@ export interface FileRouteTypes {
     | '/obshti-usloviya'
     | '/politika-za-biskvitki'
     | '/politika-za-poveritelnost'
+    | '/sitemap.xml'
     | '/vhod'
     | '/_authenticated/admin'
     | '/_authenticated/profil'
+    | '/selo/$ekatte'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -150,7 +174,9 @@ export interface RootRouteChildren {
   ObshtiUsloviyaRoute: typeof ObshtiUsloviyaRoute
   PolitikaZaBiskvitkiRoute: typeof PolitikaZaBiskvitkiRoute
   PolitikaZaPoveritelnostRoute: typeof PolitikaZaPoveritelnostRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   VhodRoute: typeof VhodRoute
+  SeloEkatteRoute: typeof SeloEkatteRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -204,6 +230,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PolitikaZaPoveritelnostRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/vhod': {
       id: '/vhod'
       path: '/vhod'
@@ -224,6 +257,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/profil'
       preLoaderRoute: typeof AuthenticatedProfilRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/selo/$ekatte': {
+      id: '/selo/$ekatte'
+      path: '/selo/$ekatte'
+      fullPath: '/selo/$ekatte'
+      preLoaderRoute: typeof SeloEkatteRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -249,7 +289,9 @@ const rootRouteChildren: RootRouteChildren = {
   ObshtiUsloviyaRoute: ObshtiUsloviyaRoute,
   PolitikaZaBiskvitkiRoute: PolitikaZaBiskvitkiRoute,
   PolitikaZaPoveritelnostRoute: PolitikaZaPoveritelnostRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   VhodRoute: VhodRoute,
+  SeloEkatteRoute: SeloEkatteRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

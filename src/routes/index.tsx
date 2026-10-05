@@ -492,7 +492,14 @@ function Index() {
             {guestReport && (
               <>
                 <p className="mb-4 text-center text-sm text-muted-foreground">
-                  Разглеждате вече генериран публичен доклад (само за четене).
+                  Разглеждате вече генериран публичен доклад (само за четене).{" "}
+                  <Link
+                    to="/selo/$ekatte"
+                    params={{ ekatte: String(guestReport.place.ekatte) }}
+                    className="font-medium text-primary underline"
+                  >
+                    Отвори на отделна страница за споделяне
+                  </Link>
                 </p>
                 <ReportInfographic
                   place={guestReport.place}
