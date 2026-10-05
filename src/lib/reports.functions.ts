@@ -12,8 +12,10 @@ import {
 } from "@/lib/report-privacy";
 
 const REQUIRED_SECTION_IDS = PROMPT_MODULES.map((m) => m.id);
+const NO_CREDITS_MESSAGE =
+  "Нямате оставащи доклади. Свържете се с администратора, за да ви зареди.";
 
-/** Колко доклада може да генерира потребителят още днес (администраторът е без ограничения). */
+/** Оставащите кредити за нови доклади (администраторът е без ограничения). */
 export const getMyQuota = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -58,6 +60,7 @@ export const saveReport = createServerFn({ method: "POST" })
     }
 
     let existingId: string | null = null;
+    let charged = false;
     if (data.ekatte != null) {
       const { data: existing, error: findError } = await context.supabase
         .from("reports")
@@ -76,7 +79,15 @@ export const saveReport = createServerFn({ method: "POST" })
       const { getQuotaStatus } = await import("@/lib/quota.server");
       const quota = await getQuotaStatus(context.supabase, context.userId);
       if (!quota.allowed) {
-        throw new Error("Достигнахте дневния лимит от доклади. Опитайте отново утре.");
+        throw new Error(NO_CREDITS_MESSAGE);
+      }
+      // Кредитът се взема атомарно преди запис; при грешка се връща.
+      if (!quota.unlimited) {
+        const { adjustCredits } = await import("@/lib/credits.server");
+        if ((await adjustCredits(context.userId, -1, true)) === null) {
+          throw new Error(NO_CREDITS_MESSAGE);
+        }
+        charged = true;
       }
     }
 
@@ -112,7 +123,13 @@ export const saveReport = createServerFn({ method: "POST" })
       .select("id")
       .single();
 
-    if (error) throw new Error(error.message);
+    if (error) {
+      if (charged) {
+        const { adjustCredits } = await import("@/lib/credits.server");
+        await adjustCredits(context.userId, 1).catch(() => null);
+      }
+      throw new Error(error.message);
+    }
     await savePersonal(context.supabase as never, row.id as string, context.userId, personal);
     return { id: row.id as string, updated: false };
   });

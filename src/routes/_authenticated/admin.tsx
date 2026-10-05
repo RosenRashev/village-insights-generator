@@ -5,7 +5,12 @@ import { Check, Loader2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { listProfiles, setProfileApproval, type AdminProfile } from "@/lib/admin.functions";
+import {
+  listProfiles,
+  setProfileApproval,
+  setReportCredits,
+  type AdminProfile,
+} from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -51,6 +56,18 @@ function AdminPage() {
       </main>
     );
   }
+
+  const addCredits = async (id: string, add: number) => {
+    setBusyId(id);
+    try {
+      await setReportCredits({ data: { id, add } });
+      await load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Неуспешна промяна.");
+    } finally {
+      setBusyId(null);
+    }
+  };
 
   const decide = async (id: string, approved: boolean) => {
     setBusyId(id);
@@ -128,14 +145,44 @@ function AdminPage() {
                 {r.email ?? r.id}
                 {r.is_admin && <span className="ml-2 text-xs text-primary">админ</span>}
               </p>
-              <Button
-                size="sm"
-                variant="ghost"
-                disabled={busyId === r.id}
-                onClick={() => void decide(r.id, false)}
-              >
-                Отнеми достъпа
-              </Button>
+              <div className="flex flex-wrap items-center gap-2">
+                {r.is_admin ? (
+                  <span className="text-xs text-muted-foreground">без ограничения</span>
+                ) : (
+                  <span className="flex items-center gap-1.5">
+                    <span className="text-sm">
+                      Доклади: <strong>{r.credits}</strong>
+                    </span>
+                    {[1, 2, 5].map((n) => (
+                      <Button
+                        key={n}
+                        size="sm"
+                        variant="outline"
+                        disabled={busyId === r.id}
+                        onClick={() => void addCredits(r.id, n)}
+                      >
+                        +{n}
+                      </Button>
+                    ))}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      disabled={busyId === r.id || r.credits === 0}
+                      onClick={() => void addCredits(r.id, -r.credits)}
+                    >
+                      Нулирай
+                    </Button>
+                  </span>
+                )}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={busyId === r.id}
+                  onClick={() => void decide(r.id, false)}
+                >
+                  Отнеми достъпа
+                </Button>
+              </div>
             </div>
           ))}
         </div>

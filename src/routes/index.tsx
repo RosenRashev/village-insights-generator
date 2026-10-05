@@ -193,7 +193,7 @@ function Index() {
       try {
         const quota = await getMyQuota({ data: undefined });
         if (!quota.allowed) {
-          toast.error("Достигнахте дневния лимит от доклади. Опитайте отново утре.");
+          toast.error("Нямате оставащи доклади. Свържете се с администратора, за да ви зареди.");
           return;
         }
       } catch (err) {
@@ -255,6 +255,7 @@ function Index() {
         void queryClient.invalidateQueries({ queryKey: ["my-report-places"] });
         void queryClient.invalidateQueries({ queryKey: ["my-report"] });
         void queryClient.invalidateQueries({ queryKey: ["my-reports"] });
+        void queryClient.invalidateQueries({ queryKey: ["my-quota"] });
         queryClient.setQueryData(["my-report-summary", user?.id, place.ekatte], {
           id: saved.id,
           is_public: !isPrivate,

@@ -59,11 +59,11 @@ export const getCategory = createServerFn({ method: "POST" })
         fromCache: true,
       };
     } else {
-      // Нова (платена за нас) заявка към Gemini — само ако има остатък от дневния лимит.
+      // Нова (платена за нас) заявка към Gemini — само ако има оставащи кредити.
       const { getQuotaStatus } = await import("@/lib/quota.server");
       const quota = await getQuotaStatus(context.supabase, context.userId);
       if (!quota.allowed) {
-        throw new Error("Достигнахте дневния лимит от доклади. Опитайте отново утре.");
+        throw new Error("Нямате оставащи доклади. Свържете се с администратора, за да ви зареди.");
       }
       const generated = await generateCategory({
         ekatte: data.ekatte,

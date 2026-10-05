@@ -9,6 +9,8 @@ export type AdminProfile = {
   is_approved: boolean;
   is_admin: boolean;
   created_at: string;
+  /** Оставащи кредити за нови доклади (само за админ в списъка). */
+  credits: number;
 };
 
 /**
@@ -24,7 +26,36 @@ export const listProfiles = createServerFn({ method: "POST" })
       .order("created_at", { ascending: false });
 
     if (error) throw new Error(error.message);
-    return (data ?? []) as AdminProfile[];
+    const profiles = (data ?? []) as Omit<AdminProfile, "credits">[];
+    const isAdmin = profiles.some((p) => p.id === context.userId && p.is_admin);
+    const { getAllCredits } = await import("@/lib/credits.server");
+    const credits = isAdmin ? await getAllCredits() : new Map<string, number>();
+    return profiles.map((p) => ({ ...p, credits: credits.get(p.id) ?? 0 }));
+  });
+
+/** Добавя (положително) или маха (отрицателно) кредити, или задава точна стойност. Само админ. */
+export const setReportCredits = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .union([
+        z.object({ id: z.string().uuid(), add: z.number().int().min(-100).max(100) }),
+        z.object({ id: z.string().uuid(), set: z.number().int().min(0).max(1000) }),
+      ])
+      .parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: me } = await context.supabase
+      .from("profiles")
+      .select("is_admin")
+      .eq("id", context.userId)
+      .maybeSingle();
+    if (!me?.is_admin) throw new Error("Нямате права за тази операция.");
+
+    const { adjustCredits, getCredits } = await import("@/lib/credits.server");
+    const delta = "add" in data ? data.add : data.set - (await getCredits(data.id));
+    const balance = await adjustCredits(data.id, delta);
+    return { credits: balance ?? 0 };
   });
 
 /** Одобрява или отказва регистрация. Редът се запазва при отказ. */
