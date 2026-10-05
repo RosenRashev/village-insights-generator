@@ -126,9 +126,11 @@ function ReportPage() {
   const hasPublic = publicRow != null;
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-10 sm:py-14">
-      <header className="text-center print:hidden">
-        {own && (
+    <main className="px-4 py-6 sm:py-8">
+      {/* Действия (любими, сравнение, копиране) има само собственикът на доклада.
+          Който отваря чужд доклад, вижда единствено самия доклад. */}
+      {own && (
+        <header className="mx-auto mb-2 max-w-3xl text-center print:hidden">
           <p className="mb-3 text-sm text-muted-foreground">
             <Link to="/profil" className="text-primary hover:underline">
               ← Моите доклади
@@ -136,58 +138,37 @@ function ReportPage() {
             {" · "}
             {own.is_public ? "Вашият публичен доклад" : "Личен доклад — вижда се само от вас"}
           </p>
-        )}
-        <h1 className="text-3xl font-bold text-foreground sm:text-4xl">{label}</h1>
-        <p className="mt-3 text-base text-muted-foreground">
-          Доклад за инфраструктурата, услугите и средата в населеното място — за хора, които
-          обмислят да живеят там или да купят имот.
-        </p>
-        <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-          {user && (hasPublic || own?.is_public) && (
-            <Button type="button" variant="outline" size="sm" onClick={() => void copyLink()}>
-              <Link2 className="h-4 w-4" />
-              Копирай връзката
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            {(hasPublic || own.is_public) && (
+              <Button type="button" variant="outline" size="sm" onClick={() => void copyLink()}>
+                <Link2 className="h-4 w-4" />
+                Копирай връзката
+              </Button>
+            )}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => toggle({ ekatte, label })}
+              aria-pressed={favorite}
+            >
+              <Star className={`h-4 w-4 ${favorite ? "fill-amber-400 text-amber-500" : ""}`} />
+              {favorite ? "В любими" : "Добави в любими"}
             </Button>
-          )}
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => toggle({ ekatte, label })}
-            aria-pressed={favorite}
-          >
-            <Star className={`h-4 w-4 ${favorite ? "fill-amber-400 text-amber-500" : ""}`} />
-            {favorite ? "В любими" : "Добави в любими"}
-          </Button>
-          {(hasPublic || own?.is_public) && (
-            <Button asChild variant="outline" size="sm">
-              <Link to="/sravnenie" search={{ m: String(ekatte) }}>
-                <Scale className="h-4 w-4" />
-                Сравни
-              </Link>
-            </Button>
-          )}
-          <Button asChild variant="outline" size="sm">
-            <Link to="/">Търси друго населено място</Link>
-          </Button>
-        </div>
-      </header>
-
-      <section className="mt-8 print:hidden">
-        <h2 className="sr-only">Теми в доклада</h2>
-        <ul className="flex flex-wrap justify-center gap-2 text-xs text-muted-foreground">
-          {payload.sections
-            .filter((s) => s.id !== "onsite-checklist")
-            .map((s) => (
-              <li key={s.id} className="rounded-full border border-border px-3 py-1">
-                {s.title}
-              </li>
-            ))}
-        </ul>
-      </section>
+            {(hasPublic || own.is_public) && (
+              <Button asChild variant="outline" size="sm">
+                <Link to="/sravnenie" search={{ m: String(ekatte) }}>
+                  <Scale className="h-4 w-4" />
+                  Сравни
+                </Link>
+              </Button>
+            )}
+          </div>
+        </header>
+      )}
 
       {mounted && (
-        <div className="mt-8">
+        <div>
           <ReportInfographic
             place={payload.place}
             current={own ? (payload.current ?? null) : null}
