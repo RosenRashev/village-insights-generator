@@ -29,14 +29,9 @@ import {
   type MyReportSummary,
 } from "@/lib/reports.functions";
 import { isPremium } from "@/lib/plans";
-import {
-  getPublicReport,
-  listPublicPlaces,
-  type PublicPlace,
-} from "@/lib/public-reports.functions";
 import type { ReportSection } from "@/data/mock-report";
 
-import { formatSettlement, type Settlement } from "@/lib/settlements";
+import { displaySettlement, formatSettlement, type Settlement } from "@/lib/settlements";
 
 const TITLE = "Къде Да — проучване на населени места";
 const DESCRIPTION =
@@ -107,34 +102,9 @@ function Index() {
   const [isPrivate, setIsPrivate] = useState(false);
   const [generatedAt, setGeneratedAt] = useState<string | undefined>(undefined);
   const [existingReport, setExistingReport] = useState<MyReportSummary | null>(null);
-  const [publicPlaces, setPublicPlaces] = useState<PublicPlace[] | null>(null);
-  const [guestLoading, setGuestLoading] = useState(false);
-  const [guestReport, setGuestReport] = useState<{
-    place: Settlement;
-    sections: ReportSection[];
-    generatedAt?: string | undefined;
-  } | null>(null);
   const [activePhrase, setActivePhrase] = useState(0);
   const [maxPhraseWidth, setMaxPhraseWidth] = useState<number | null>(null);
   const [isDesktop, setIsDesktop] = useState(false);
-
-  useEffect(() => {
-    if (isSignedIn) {
-      setPublicPlaces(null);
-      return;
-    }
-    let active = true;
-    listPublicPlaces()
-      .then((rows) => {
-        if (active) setPublicPlaces(rows);
-      })
-      .catch(() => {
-        if (active) setPublicPlaces([]);
-      });
-    return () => {
-      active = false;
-    };
-  }, [isSignedIn]);
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -181,41 +151,15 @@ function Index() {
   const CONFLICT_MSG =
     "Настоящата локация не може да съвпада с търсеното населено място — полето беше изчистено.";
 
-  const loadGuestReport = async (s: Settlement) => {
-    const match = publicPlaces?.find((p) => p.ekatte === s.ekatte);
-    if (!match) return;
-    setGuestLoading(true);
-    setGuestReport(null);
-    try {
-      const row = await getPublicReport({ data: { id: match.reportId } });
-      const payload = row ? parseReport(row.report_content) : null;
-      if (!payload) {
-        toast.error("Докладът не може да бъде показан.");
-        return;
-      }
-      setGuestReport({
-        place: payload.place ?? s,
-        sections: payload.sections,
-        generatedAt: payload.generatedAt ?? row?.updated_at,
-      });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Неуспешно зареждане на доклада.");
-    } finally {
-      setGuestLoading(false);
-    }
-  };
-
   const handlePlaceChange = (s: Settlement | null) => {
     setPlace(s);
     setPlaceNotice(null);
-    setGuestReport(null);
     if (s && currentLocation && currentLocation.ekatte === s.ekatte) {
       setCurrentLocation(null);
       setCurrentNotice(CONFLICT_MSG);
     } else {
       setCurrentNotice(null);
     }
-    if (s && !isSignedIn) void loadGuestReport(s);
   };
 
   const handleCurrentLocationChange = (s: Settlement | null) => {
@@ -336,7 +280,6 @@ function Index() {
     setPurpose(null);
     setIsPrivate(false);
     setRealSections(null);
-    setGuestReport(null);
     setProgress({ done: 0, total: 0 });
   };
 
@@ -423,17 +366,16 @@ function Index() {
               value={place}
               onChange={handlePlaceChange}
               excludeLargeCities
-              allowedEkatte={isSignedIn ? null : (publicPlaces?.map((p) => p.ekatte) ?? [])}
               notice={placeNotice}
             />
 
             {!isSignedIn && !authLoading && (
               <p className="rounded-lg border border-border bg-card/70 p-3 text-sm text-muted-foreground">
-                Без акаунт можете да разглеждате само вече генерирани публични доклади.{" "}
+                Докладите са достъпни само за регистрирани потребители.{" "}
                 <Link to="/vhod" className="font-medium text-primary underline">
-                  Регистрирайте се
+                  Влезте или се регистрирайте
                 </Link>
-                , за да получите нов, персонализиран доклад за избрано от вас място.
+                , за да разглеждате доклади и да получите нов за избрано от вас място.
               </p>
             )}
 
@@ -501,31 +443,14 @@ function Index() {
           </section>
         )}
 
-        {hasPlace && !isSignedIn && (
-          <section className="mt-12">
-            {guestLoading && (
-              <p className="text-center text-sm text-muted-foreground">Зареждане на доклада…</p>
-            )}
-            {guestReport && (
-              <>
-                <p className="mb-4 text-center text-sm text-muted-foreground">
-                  Разглеждате вече генериран публичен доклад (само за четене).{" "}
-                  <Link
-                    to="/report/$ekatte"
-                    params={{ ekatte: String(guestReport.place.ekatte) }}
-                    className="font-medium text-primary underline"
-                  >
-                    Отвори на отделна страница за споделяне
-                  </Link>
-                </p>
-                <ReportInfographic
-                  place={guestReport.place}
-                  sections={guestReport.sections}
-                  demo={false}
-                  generatedAt={guestReport.generatedAt}
-                />
-              </>
-            )}
+        {hasPlace && !isSignedIn && !authLoading && (
+          <section className="mt-12 text-center">
+            <p className="text-sm text-muted-foreground">
+              За да видите доклада за {displaySettlement(place)}, влезте в профила си.
+            </p>
+            <Button asChild className="mt-4">
+              <Link to="/vhod">Вход / Регистрация</Link>
+            </Button>
           </section>
         )}
 

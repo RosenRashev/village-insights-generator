@@ -5,6 +5,7 @@ import { Loader2, Star, X } from "lucide-react";
 import { SettlementCombobox } from "@/components/SettlementCombobox";
 import { Button } from "@/components/ui/button";
 import { buildComparison, type CompareLevel, type ComparePlace } from "@/lib/compare";
+import { useAuth } from "@/hooks/useAuth";
 import { useFavorites } from "@/lib/favorites";
 import { parseReport } from "@/lib/generate-report";
 import {
@@ -58,6 +59,7 @@ function ComparePage() {
   const navigate = useNavigate();
   const ids = useMemo(() => parseEkatte(m), [m]);
   const { favorites, remove } = useFavorites();
+  const { user, loading: authLoading } = useAuth();
 
   const [publicPlaces, setPublicPlaces] = useState<PublicPlace[] | null>(null);
   const [loaded, setLoaded] = useState<Loaded[]>([]);
@@ -65,6 +67,7 @@ function ComparePage() {
   const [pickerKey, setPickerKey] = useState(0);
 
   useEffect(() => {
+    if (!user) return;
     let active = true;
     listPublicPlaces()
       .then((rows) => active && setPublicPlaces(rows))
@@ -72,11 +75,11 @@ function ComparePage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     let active = true;
-    if (ids.length === 0) {
+    if (!user || ids.length === 0) {
       setLoaded([]);
       return;
     }
@@ -105,7 +108,7 @@ function ComparePage() {
     return () => {
       active = false;
     };
-  }, [ids]);
+  }, [ids, user]);
 
   const setIds = (next: number[]) =>
     void navigate({
@@ -130,6 +133,21 @@ function ComparePage() {
   );
 
   let lastGroup = "";
+
+  if (!authLoading && !user) {
+    return (
+      <main className="mx-auto max-w-xl px-4 py-16 text-center">
+        <h1 className="text-2xl font-bold text-foreground">Сравнение на места</h1>
+        <p className="mt-3 text-sm text-muted-foreground">
+          Сравнението е достъпно само за регистрирани потребители. Влезте в профила си или се
+          регистрирайте, за да сравнявате населени места.
+        </p>
+        <Button asChild className="mt-6">
+          <Link to="/vhod">Вход / Регистрация</Link>
+        </Button>
+      </main>
+    );
+  }
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-10 sm:py-14">

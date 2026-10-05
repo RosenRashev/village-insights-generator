@@ -8,83 +8,67 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useFavorites } from "@/lib/favorites";
 import { parseReport } from "@/lib/generate-report";
-import { getPublicReportByEkatte } from "@/lib/public-reports.functions";
+import { getPublicReportByEkatte, type PublicReport } from "@/lib/public-reports.functions";
 import { getMyReportByEkatte, type SavedReport } from "@/lib/reports.functions";
 import { displaySettlement } from "@/lib/settlements";
 
-const SITE = "https://kadeda.eu";
-
 /**
- * Единен адрес на доклад: /report/<ЕКАТТЕ>.
- * Всички виждат публичния доклад за мястото; влезлият потребител, който има собствен доклад
- * за същото място (публичен или личен), вижда своя — с личната си локация и цел, ако ги е задал.
+ * Единен адрес на доклад: /report/<ЕКАТТЕ>. Докладите се виждат само от влезли потребители.
+ * Влезлият вижда собствения си доклад за мястото (ако има такъв — публичен или личен, с личната
+ * му локация и цел), иначе най-новия публичен доклад. Сървърът не изпраща съдържание на доклад
+ * на гости; зарежда се в браузъра след вход.
  */
 export const Route = createFileRoute("/report/$ekatte")({
   loader: async ({ params }) => {
     const ekatte = Number(params.ekatte);
     if (!Number.isInteger(ekatte) || ekatte <= 0) throw notFound();
 
-    const row = await getPublicReportByEkatte({ data: { ekatte } });
-    const payload = row ? parseReport(row.report_content) : null;
-    return {
-      ekatte,
-      row: payload ? row : null,
-      placeLabel: payload?.place ? displaySettlement(payload.place) : (row?.place_name ?? ""),
-    };
+    const { loadSettlements } = await import("@/lib/settlements");
+    const place = (await loadSettlements()).find((s) => s.ekatte === ekatte);
+    return { ekatte, placeLabel: place ? displaySettlement(place) : "" };
   },
-  head: ({ loaderData, params }) => {
-    if (!loaderData?.row) {
-      return { meta: [{ title: "Доклад — Къде Да" }, { name: "robots", content: "noindex" }] };
-    }
-    const label = loaderData.placeLabel || "населено място";
-    const title = `${label} — доклад за живеене и имот | Къде Да`;
-    const description = `Подробен доклад за ${label}: инфраструктура, ВиК, транспорт, сигурност, демография, услуги, интернет и още — на едно място.`;
-    const url = `${SITE}/report/${params.ekatte}`;
+  head: ({ loaderData }) => {
+    const label = loaderData?.placeLabel;
     return {
       meta: [
-        { title },
-        { name: "description", content: description },
-        { property: "og:title", content: title },
-        { property: "og:description", content: description },
-        { property: "og:type", content: "article" },
-        { property: "og:url", content: url },
-        { name: "twitter:card", content: "summary_large_image" },
+        { title: label ? `${label} — доклад | Къде Да` : "Доклад — Къде Да" },
+        { name: "robots", content: "noindex" },
       ],
-      links: [{ rel: "canonical", href: url }],
     };
   },
   component: ReportPage,
 });
 
 function ReportPage() {
-  const { ekatte, row: publicRow, placeLabel } = Route.useLoaderData();
+  const { ekatte, placeLabel } = Route.useLoaderData();
   const { user, loading: authLoading } = useAuth();
   const { isFavorite, toggle } = useFavorites();
   const favorite = isFavorite(ekatte);
 
-  // Собственият доклад на влезлия потребител (ако има такъв). undefined = още се проверява.
+  // Доклади: собственият на потребителя и най-новият публичен. undefined = още се зарежда.
   const [own, setOwn] = useState<SavedReport | null | undefined>(undefined);
+  const [publicRow, setPublicRow] = useState<PublicReport | null | undefined>(undefined);
   useEffect(() => {
-    if (authLoading) return;
-    if (!user) {
-      setOwn(null);
-      return;
-    }
+    if (authLoading || !user) return;
     let active = true;
+    setOwn(undefined);
+    setPublicRow(undefined);
     getMyReportByEkatte({ data: { ekatte } })
       .then((r) => active && setOwn(r))
       .catch(() => active && setOwn(null));
+    getPublicReportByEkatte({ data: { ekatte } })
+      .then((r) => active && setPublicRow(r))
+      .catch(() => active && setPublicRow(null));
     return () => {
       active = false;
     };
   }, [authLoading, user, ekatte]);
 
-  // Тежката инфографика (графики, карта) се рисува само в браузъра; сървърът изпраща
-  // заглавието и списъка с темите, които са достатъчни за индексиране.
+  // Тежката инфографика (графики, карта) се рисува само в браузъра.
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  const shown = own ?? publicRow;
+  const shown = own ?? publicRow ?? null;
   const payload = shown ? parseReport(shown.report_content) : null;
   const label = payload?.place ? displaySettlement(payload.place) : placeLabel;
 
@@ -97,10 +81,30 @@ function ReportPage() {
     }
   };
 
-  if (own === undefined && !publicRow) {
+  if (authLoading || (user && (own === undefined || publicRow === undefined))) {
     return (
       <main className="flex min-h-[60vh] items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </main>
+    );
+  }
+
+  if (!user) {
+    return (
+      <main className="mx-auto max-w-xl px-4 py-16 text-center">
+        <h1 className="text-xl font-semibold">{placeLabel || "Доклад за населено място"}</h1>
+        <p className="mt-3 text-sm text-muted-foreground">
+          Докладите са достъпни само за регистрирани потребители. Влезте в профила си или се
+          регистрирайте, за да видите този доклад.
+        </p>
+        <div className="mt-6 flex flex-wrap justify-center gap-2">
+          <Button asChild>
+            <Link to="/vhod">Вход / Регистрация</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/">Към началната страница</Link>
+          </Button>
+        </div>
       </main>
     );
   }
@@ -119,7 +123,7 @@ function ReportPage() {
     );
   }
 
-  const hasPublic = publicRow !== null;
+  const hasPublic = publicRow != null;
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-10 sm:py-14">
@@ -193,16 +197,6 @@ function ReportPage() {
             generatedAt={payload.generatedAt ?? shown?.updated_at}
           />
         </div>
-      )}
-
-      {!user && !authLoading && (
-        <p className="mt-10 rounded-lg border border-border bg-card/70 p-4 text-center text-sm text-muted-foreground print:hidden">
-          Искате доклад за друго населено място?{" "}
-          <Link to="/vhod" className="font-medium text-primary underline">
-            Регистрирайте се
-          </Link>
-          .
-        </p>
       )}
     </main>
   );
