@@ -1,12 +1,10 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Link2, Loader2, Scale, Star } from "lucide-react";
-import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 import { ReportInfographic } from "@/components/ReportInfographic";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { useFavorites } from "@/lib/favorites";
 import { parseReport } from "@/lib/generate-report";
 import { getPublicReportByEkatte, type PublicReport } from "@/lib/public-reports.functions";
 import { getMyReportByEkatte, type SavedReport } from "@/lib/reports.functions";
@@ -42,8 +40,6 @@ export const Route = createFileRoute("/report/$ekatte")({
 function ReportPage() {
   const { ekatte, placeLabel } = Route.useLoaderData();
   const { user, loading: authLoading } = useAuth();
-  const { isFavorite, toggle } = useFavorites();
-  const favorite = isFavorite(ekatte);
 
   // Доклади: собственият на потребителя и най-новият публичен. undefined = още се зарежда.
   const [own, setOwn] = useState<SavedReport | null | undefined>(undefined);
@@ -71,15 +67,6 @@ function ReportPage() {
   const shown = own ?? publicRow ?? null;
   const payload = shown ? parseReport(shown.report_content) : null;
   const label = payload?.place ? displaySettlement(payload.place) : placeLabel;
-
-  const copyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(`${window.location.origin}/report/${ekatte}`);
-      toast.success("Връзката е копирана.");
-    } catch {
-      toast.error("Връзката не можа да бъде копирана.");
-    }
-  };
 
   if (authLoading || (user && (own === undefined || publicRow === undefined))) {
     return (
@@ -123,50 +110,8 @@ function ReportPage() {
     );
   }
 
-  const hasPublic = publicRow != null;
-
   return (
     <main className="px-4 py-6 sm:py-8">
-      {/* Действия (любими, сравнение, копиране) има само собственикът на доклада.
-          Който отваря чужд доклад, вижда единствено самия доклад. */}
-      {own && (
-        <header className="mx-auto mb-2 max-w-3xl text-center print:hidden">
-          <p className="mb-3 text-sm text-muted-foreground">
-            <Link to="/profil" className="text-primary hover:underline">
-              ← Моите доклади
-            </Link>
-            {" · "}
-            {own.is_public ? "Вашият публичен доклад" : "Личен доклад — вижда се само от вас"}
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            {(hasPublic || own.is_public) && (
-              <Button type="button" variant="outline" size="sm" onClick={() => void copyLink()}>
-                <Link2 className="h-4 w-4" />
-                Копирай връзката
-              </Button>
-            )}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => toggle({ ekatte, label })}
-              aria-pressed={favorite}
-            >
-              <Star className={`h-4 w-4 ${favorite ? "fill-amber-400 text-amber-500" : ""}`} />
-              {favorite ? "В любими" : "Добави в любими"}
-            </Button>
-            {(hasPublic || own.is_public) && (
-              <Button asChild variant="outline" size="sm">
-                <Link to="/sravnenie" search={{ m: String(ekatte) }}>
-                  <Scale className="h-4 w-4" />
-                  Сравни
-                </Link>
-              </Button>
-            )}
-          </div>
-        </header>
-      )}
-
       {mounted && (
         <div>
           <ReportInfographic

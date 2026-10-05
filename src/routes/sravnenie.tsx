@@ -58,7 +58,7 @@ function ComparePage() {
   const { m } = Route.useSearch();
   const navigate = useNavigate();
   const ids = useMemo(() => parseEkatte(m), [m]);
-  const { favorites, remove } = useFavorites();
+  const { favorites, remove, isFavorite, toggle } = useFavorites();
   const { user, loading: authLoading } = useAuth();
 
   const [publicPlaces, setPublicPlaces] = useState<PublicPlace[] | null>(null);
@@ -241,6 +241,17 @@ function ComparePage() {
                       >
                         {l.place.label}
                       </Link>
+                      <button
+                        type="button"
+                        aria-label={isFavorite(l.ekatte) ? "Махни от любимите" : "Добави в любими"}
+                        title={isFavorite(l.ekatte) ? "В любими" : "Добави в любими"}
+                        className="ml-auto text-muted-foreground hover:text-amber-500"
+                        onClick={() => toggle({ ekatte: l.ekatte, label: l.place.label })}
+                      >
+                        <Star
+                          className={`h-4 w-4 ${isFavorite(l.ekatte) ? "fill-amber-400 text-amber-500" : ""}`}
+                        />
+                      </button>
                       <button
                         type="button"
                         aria-label="Махни от сравнението"
