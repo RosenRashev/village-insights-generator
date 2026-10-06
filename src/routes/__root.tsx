@@ -303,7 +303,7 @@ function SiteHeader() {
           )}
         </Link>
         {pathname === "/" && <div aria-hidden="true" />}
-        <nav className="flex items-center gap-3">
+        <nav className="flex min-w-0 flex-wrap items-center justify-end gap-x-3 gap-y-1">
           <Link to="/sravnenie" className="text-muted-foreground hover:text-primary">
             Сравнение
           </Link>
@@ -328,7 +328,8 @@ function SiteHeader() {
             </>
           ) : (
             <Link to="/vhod" className="font-medium text-primary hover:underline">
-              Вход / Регистрация
+              <span className="sm:hidden">Вход</span>
+              <span className="hidden sm:inline">Вход / Регистрация</span>
             </Link>
           )}
           <InstallAppButton />
