@@ -1063,7 +1063,7 @@ function Section({
   // Финалната обобщена оценка получава тъмния „village“ стил от еталона.
   if (section.id === "perspective-summary") {
     return (
-      <section className="wrap-anywhere print-card scroll-mt-6 space-y-4 rounded-3xl border border-village-600 bg-village-700 p-6 text-white shadow-2xl md:p-8">
+      <section className="wrap-anywhere print-card scroll-mt-24 space-y-4 rounded-3xl border border-village-600 bg-village-700 p-6 text-white shadow-2xl md:p-8">
         <div className="flex items-center gap-3">
           <span className="animated-icon-box flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-village-clay text-white shadow-lg">
             <Award className="h-5 w-5" />
@@ -1150,7 +1150,7 @@ function Section({
     <section
       id={`section-${section.id}`}
       onClick={open ? undefined : openOnClick}
-      className={`wrap-anywhere print-card scroll-mt-6 rounded-3xl border border-slate-100 bg-white p-6 shadow-lg transition-shadow md:p-8 ${
+      className={`wrap-anywhere print-card scroll-mt-24 rounded-3xl border border-slate-100 bg-white p-6 shadow-lg transition-shadow md:p-8 ${
         open ? "" : "cursor-pointer hover:shadow-xl"
       }`}
     >

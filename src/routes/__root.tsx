@@ -325,31 +325,26 @@ function SiteHeader() {
 
   return (
     <TooltipProvider delayDuration={150} skipDelayDuration={300}>
-      <header className="print:hidden border-b border-border bg-background/80">
+      <header className="print:hidden sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-2.5 text-[15px] md:py-3.5 md:text-base">
-          <NavTip
-            align="start"
-            text="Към началната страница — търсене на населено място и генериране на доклад."
+          <Link
+            to="/"
+            className="flex shrink-0 items-center gap-2 rounded-full pr-2 hover:bg-primary/5 md:gap-3 md:pr-4"
+            aria-label="Къде Да — начало"
           >
-            <Link
-              to="/"
-              className="flex shrink-0 items-center gap-2 rounded-full pr-2 hover:bg-primary/5 md:gap-3 md:pr-4"
-              aria-label="Къде Да — начало"
-            >
-              <img
-                src="/logo-icon.png"
-                alt=""
-                width={44}
-                height={44}
-                className="h-8 w-8 md:h-11 md:w-11"
-              />
-              {pathname !== "/" && (
-                <span className="inline-flex items-center gap-1 font-medium text-primary transition-colors hover:text-primary/80">
-                  <span aria-hidden="true">←</span> Начало
-                </span>
-              )}
-            </Link>
-          </NavTip>
+            <img
+              src="/logo-icon.png"
+              alt=""
+              width={44}
+              height={44}
+              className="h-8 w-8 md:h-11 md:w-11"
+            />
+            {pathname !== "/" && (
+              <span className="inline-flex items-center gap-1 font-medium text-primary transition-colors hover:text-primary/80">
+                <span aria-hidden="true">←</span> Начало
+              </span>
+            )}
+          </Link>
           {pathname === "/" && <div aria-hidden="true" />}
           <nav className="flex min-w-0 flex-wrap items-center justify-end gap-x-1 gap-y-1 md:gap-x-2">
             <NavTip text="Сравнете до три места от вашите доклади в една таблица — без нови заявки и разходи.">
