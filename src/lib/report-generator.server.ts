@@ -361,6 +361,63 @@ Block е един от:
 (напр. категория "social": положителни сигнали → emerald, клубове → blue, онлайн общности → purple,
 отрицателни сигнали → rose). Не превръщай обикновени списъци в "cards" без ясно тонално разделение.`;
 
+/** Специалните правила за оформление на категорията (празно за категориите без такива). */
+function layoutFor(categoryId: string, placeType: GenerateInput["placeType"]): string {
+  switch (categoryId) {
+    case "basic":
+      return BASIC_LAYOUT;
+    case "vik":
+      return VIK_LAYOUT;
+    case "transport":
+      return transportLayout(placeType);
+    case "ethnos":
+      return ETHNOS_LAYOUT;
+    case "history":
+      return HISTORY_LAYOUT;
+    default:
+      return "";
+  }
+}
+
+/**
+ * Ръчна версия на шаблоните, вградени във `researchCategory` и `structureCategory`.
+ * Увеличи я, когато променяш текста на тези два промпта (текстовете в `prompt-modules.ts`,
+ * правилата, схемата и оформленията се отчитат автоматично от `promptVersionFor`).
+ */
+const PROMPT_TEMPLATE_VERSION = 1;
+
+/** Бърз 32-битов хеш (FNV-1a) — достатъчен, за да се разпознае промяна в текста на промпта. */
+function fnv1a(text: string): string {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) {
+    h ^= text.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return (h >>> 0).toString(16).padStart(8, "0");
+}
+
+/**
+ * Версия на промпта за дадена категория — записва се в `report_cache.prompt_version`.
+ * Кеширана категория, генерирана с друга версия, се счита за остаряла и се генерира наново,
+ * така че при промяна на промптовете не се налага ръчно изчистване на кеша.
+ */
+export function promptVersionFor(
+  categoryId: string,
+  placeType: GenerateInput["placeType"],
+): string {
+  const text = [
+    moduleSection(categoryId),
+    LEVEL_RULE,
+    DISTRICT_RULE,
+    COMMON_RULES,
+    SCHEMA_DOC,
+    layoutFor(categoryId, placeType),
+    MODEL,
+    STRUCTURE_MODEL,
+  ].join("\u0000");
+  return `${PROMPT_TEMPLATE_VERSION}-${fnv1a(text)}`;
+}
+
 /** Стъпка 2: структуриране на грундирания текст в нашия JSON формат (без tools). */
 async function structureCategory(
   input: GenerateInput,
@@ -375,7 +432,7 @@ async function structureCategory(
 
 ${SCHEMA_DOC}
 
-${input.categoryId === "basic" ? BASIC_LAYOUT : input.categoryId === "vik" ? VIK_LAYOUT : input.categoryId === "transport" ? transportLayout(input.placeType) : input.categoryId === "ethnos" ? ETHNOS_LAYOUT : input.categoryId === "history" ? HISTORY_LAYOUT : ""}
+${layoutFor(input.categoryId, input.placeType)}
 
 Не добавяй факти, които ги няма в текста. Не включвай URL адреси в стойностите.
 Не пропускай съществени факти, числа или раздели от текста — представи ги ВСИЧКИ в подходящи блокове, дори ако това означава да използваш повече блокове.

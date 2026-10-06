@@ -65,6 +65,7 @@ export type Database = {
           expires_at: string | null
           id: string
           incident_count: number | null
+          prompt_version: string | null
           source_links: Json | null
         }
         Insert: {
@@ -75,6 +76,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           incident_count?: number | null
+          prompt_version?: string | null
           source_links?: Json | null
         }
         Update: {
@@ -85,6 +87,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           incident_count?: number | null
+          prompt_version?: string | null
           source_links?: Json | null
         }
         Relationships: []
