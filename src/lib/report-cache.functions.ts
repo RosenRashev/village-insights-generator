@@ -37,8 +37,9 @@ export const getCategory = createServerFn({ method: "POST" })
     }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { generateCategory, generateDistanceToCurrent } =
+    const { generateCategory, generateDistanceToCurrent, promptVersionFor } =
       await import("@/lib/report-generator.server");
+    const promptVersion = promptVersionFor(data.categoryId, data.placeType);
 
     const { data: row } = await supabaseAdmin
       .from("report_cache")
@@ -49,7 +50,8 @@ export const getCategory = createServerFn({ method: "POST" })
 
     let result: Omit<CachedCategory, "ekatte" | "categoryId"> & { fromCache: boolean };
 
-    if (row && isFresh(row.expires_at)) {
+    // Кешът важи само ако е генериран със същата версия на промпта (иначе се генерира наново).
+    if (row && isFresh(row.expires_at) && row.prompt_version === promptVersion) {
       result = {
         data: row.data as CachedCategory["data"],
         sourceLinks: (row.source_links as CachedCategory["sourceLinks"]) ?? null,
@@ -84,6 +86,7 @@ export const getCategory = createServerFn({ method: "POST" })
             incident_count: generated.incidentCount,
             cached_at: cachedAt,
             expires_at: expiresAt,
+            prompt_version: promptVersion,
           },
           { onConflict: "ekatte,category_id" },
         );

@@ -299,7 +299,7 @@ function Index() {
           <div
             ref={measureRef}
             aria-hidden="true"
-            className="pointer-events-none absolute opacity-0"
+            className="pointer-events-none invisible absolute left-[-9999px] top-0"
           >
             {HERO_PHRASES.map((phrase) => (
               <span key={phrase} className="block whitespace-nowrap text-6xl font-bold">
@@ -332,7 +332,7 @@ function Index() {
             </div>
             <span
               aria-hidden="true"
-              className="title-part title-part-3 logo-text relative inline-block h-[1.1em] w-full shrink-0 text-5xl text-primary sm:text-6xl"
+              className="title-part title-part-3 logo-text relative inline-block h-[1.1em] w-full max-w-full shrink-0 overflow-x-clip text-[clamp(1.35rem,7vw,1.875rem)] text-primary sm:text-6xl"
             >
               <span className="invisible block select-none whitespace-nowrap">
                 {HERO_PHRASES[activePhrase]}

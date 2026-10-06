@@ -140,6 +140,8 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    /* Предпазва от празно място вдясно на телефон, ако някой елемент излезе извън екрана. */
+    overflow-x: clip;
   }
 }
 
@@ -254,10 +256,11 @@
     animation: topo-drift 80s ease-in-out infinite;
   }
 
+  /* Видимо е по подразбиране; анимацията е само входен ефект (fill „backwards“), за да не
+     изчезва заглавието, ако браузърът прекъсне или рестартира анимацията (напр. при скрол). */
   .title-part {
-    opacity: 0;
     display: inline-block;
-    animation: title-drop 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    animation: title-drop 0.55s cubic-bezier(0.22, 1, 0.36, 1) backwards;
   }
 
   .title-part-1 {
@@ -344,7 +347,6 @@
     animation-delay: 39s;
   }
 }
-
 
 @keyframes scan-dot-pulse {
   0%,

@@ -13,9 +13,11 @@ import { useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { FeedbackBox } from "../components/FeedbackBox";
+import { InstallAppButton } from "../components/InstallAppButton";
 import { Toaster } from "../components/ui/sonner";
 import { AuthProvider, useAuth } from "../hooks/useAuth";
 import { ReportSessionProvider } from "../hooks/useReportSession";
+import { registerServiceWorker } from "../lib/pwa";
 
 function NotFoundComponent() {
   return (
@@ -100,6 +102,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content: "Подробни доклади за инфраструктурата, услугите и средата в села и малки градове.",
       },
       { name: "author", content: "Къде Да" },
+      { name: "theme-color", content: "#0f7a3d" },
+      { name: "application-name", content: "Къде Да" },
+      { name: "mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-title", content: "Къде Да" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "default" },
+      { name: "msapplication-TileColor", content: "#0f7a3d" },
+      { name: "format-detection", content: "telephone=no" },
       { property: "og:title", content: "Къде Да — проучване на населени места" },
       {
         property: "og:description",
@@ -124,11 +134,20 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Marcellus&family=Baloo+2:wght@700;800&display=swap",
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/favicon.ico", sizes: "48x48" },
+      { rel: "icon", href: "/icon-192.png", type: "image/png", sizes: "192x192" },
+      { rel: "icon", href: "/icon-512.png", type: "image/png", sizes: "512x512" },
       { rel: "icon", href: "/favicon-32x32.png", type: "image/png", sizes: "32x32" },
       { rel: "icon", href: "/favicon-16x16.png", type: "image/png", sizes: "16x16" },
       { rel: "apple-touch-icon", href: "/apple-touch-icon.png", sizes: "180x180" },
       { rel: "manifest", href: "/site.webmanifest" },
+    ],
+    // Хваща събитието за инсталиране, ако се появи преди да се зареди React.
+    scripts: [
+      {
+        children:
+          "window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__deferredInstall=e;});",
+      },
     ],
   }),
   shellComponent: RootShell,
@@ -284,7 +303,7 @@ function SiteHeader() {
           )}
         </Link>
         {pathname === "/" && <div aria-hidden="true" />}
-        <nav className="flex items-center gap-3">
+        <nav className="flex min-w-0 flex-wrap items-center justify-end gap-x-3 gap-y-1">
           <Link to="/sravnenie" className="text-muted-foreground hover:text-primary">
             Сравнение
           </Link>
@@ -309,9 +328,11 @@ function SiteHeader() {
             </>
           ) : (
             <Link to="/vhod" className="font-medium text-primary hover:underline">
-              Вход / Регистрация
+              <span className="sm:hidden">Вход</span>
+              <span className="hidden sm:inline">Вход / Регистрация</span>
             </Link>
           )}
+          <InstallAppButton />
         </nav>
       </div>
     </header>
@@ -320,6 +341,10 @@ function SiteHeader() {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  useEffect(() => {
+    registerServiceWorker();
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
