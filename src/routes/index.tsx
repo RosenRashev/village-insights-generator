@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { PURPOSE_OPTIONS, type PurposeId } from "@/lib/prompt-modules";
+import { FieldHint } from "@/components/FieldHint";
 import { SettlementCombobox } from "@/components/SettlementCombobox";
 import { ModuleCard } from "@/components/ModuleCard";
 import { TopoBackground } from "@/components/TopoBackground";
@@ -367,15 +368,20 @@ function Index() {
             Кое населено място проучвате?
           </h2>
           <div className="mt-4 space-y-4">
-            <SettlementCombobox
-              id="place"
-              label="Населено място или пощенски код"
-              placeholder="напр. Баня или 4360"
-              value={place}
-              onChange={handlePlaceChange}
-              excludeLargeCities
-              notice={placeNotice}
-            />
+            <FieldHint
+              title="Населено място"
+              text="В това поле въведете населеното място, което искате да разучите или за което искате да получите информация. Можете да търсите по име или по пощенски код."
+            >
+              <SettlementCombobox
+                id="place"
+                label="Населено място или пощенски код"
+                placeholder="напр. Баня или 4360"
+                value={place}
+                onChange={handlePlaceChange}
+                excludeLargeCities
+                notice={placeNotice}
+              />
+            </FieldHint>
 
             {!isSignedIn && !authLoading && (
               <p className="rounded-lg border border-border bg-card/70 p-3 text-sm text-muted-foreground">
@@ -389,7 +395,11 @@ function Index() {
 
             {hasPlace && isSignedIn && isApproved && (
               <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <div className="space-y-2">
+                <FieldHint
+                  className="space-y-2"
+                  title="Настояща локация"
+                  text="По желание задайте мястото, на което се намирате в момента. То ще се включи като контекст в доклада — например разстояние и време за пътуване до избраното място. Вижда се само от вас."
+                >
                   <SettlementCombobox
                     id="current-location"
                     label="Настояща локация"
@@ -405,7 +415,7 @@ function Index() {
                     разстоянието, времето за пътуване и транспортната достъпност за имоти купувани с
                     цел уикенд туризъм за отдих и почивка.
                   </p>
-                </div>
+                </FieldHint>
 
                 <div className="rounded-lg border border-border bg-card/70 p-3">
                   <div className="flex items-center gap-2">
@@ -433,10 +443,17 @@ function Index() {
 
         {hasPlace && isSignedIn && isApproved && purposeAllowed && (
           <section className="mt-12 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <h2 className="text-lg font-bold text-destructive">Кажете ни за какво търсите имота</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              По желание — изберете една цел, за да добавим обобщена оценка накрая.
-            </p>
+            <FieldHint
+              title="За какво търсите имота"
+              text="Целта дава контекст на доклада — за какво търсите имота — и добавя точкова система (оценка от 1 до 10), която ви помага да се ориентирате по-лесно и да филтрирате релевантната информация."
+            >
+              <h2 className="pr-8 text-lg font-bold text-destructive">
+                Кажете ни за какво търсите имота
+              </h2>
+              <p className="mt-1 pr-8 text-sm text-muted-foreground">
+                По желание — изберете една цел, за да добавим обобщена оценка накрая.
+              </p>
+            </FieldHint>
             <div className="mt-4 flex flex-col gap-3">
               {PURPOSE_OPTIONS.map((p) => (
                 <ModuleCard
@@ -470,8 +487,16 @@ function Index() {
 
         {hasPlace && isSignedIn && isApproved && (
           <section className="mt-16">
-            <div className="flex flex-col items-center gap-3 text-center">
-              <h2 className="text-lg font-bold text-destructive">
+            <FieldHint
+              className="flex flex-col items-center gap-3 text-center"
+              title={existingReport ? "Вече имате доклад за това място" : "Генерирай доклад"}
+              text={
+                existingReport
+                  ? "Този доклад вече е генериран и запазен в профила ви. Бутонът „Актуализирай“ опреснява същия доклад с най-новите налични данни (обновяват се категориите, чийто срок е изтекъл) и не създава нов доклад. Можете да го отворите и от „Моите доклади“."
+                  : "Бутонът „Генерирай доклад“ проучва всички категории за избраното място в реално време (с Gemini и търсене в Google) и подрежда резултата като инфографика. Новият доклад се запазва в „Моите доклади“."
+              }
+            >
+              <h2 className="px-8 text-lg font-bold text-destructive">
                 {existingReport ? "Вече имате доклад за това място" : "Генерирай доклад"}
               </h2>
               <p className="max-w-md text-sm text-muted-foreground">
@@ -515,7 +540,7 @@ function Index() {
                 <RotateCcw className="h-4 w-4" />
                 Изчисти
               </Button>
-            </div>
+            </FieldHint>
 
             {(generating || showReport) && (
               <div className="mt-8 space-y-6">

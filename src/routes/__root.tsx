@@ -9,12 +9,14 @@ import {
   Scripts,
   type ErrorComponentProps,
 } from "@tanstack/react-router";
+import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import { useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { FeedbackBox } from "../components/FeedbackBox";
 import { InstallAppButton } from "../components/InstallAppButton";
 import { Toaster } from "../components/ui/sonner";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../components/ui/tooltip";
 import { AuthProvider, useAuth } from "../hooks/useAuth";
 import { ReportSessionProvider } from "../hooks/useReportSession";
 import { registerServiceWorker } from "../lib/pwa";
@@ -287,55 +289,114 @@ function UserAvatar({ user }: { user: NonNullable<ReturnType<typeof useAuth>["us
   );
 }
 
+/** Информационно балонче към елемент от хедъра — излиза при посочване с мишка или фокус. */
+function NavTip({
+  text,
+  children,
+  align = "center",
+}: {
+  text: string;
+  children: ReactNode;
+  align?: "start" | "center" | "end";
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent
+        side="bottom"
+        align={align}
+        sideOffset={10}
+        collisionPadding={12}
+        className="max-w-[17rem] overflow-visible rounded-xl border border-primary/25 bg-card px-3.5 py-2.5 text-sm leading-snug text-foreground shadow-xl"
+      >
+        {text}
+        <TooltipPrimitive.Arrow className="fill-card" width={14} height={7} />
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+const NAV_LINK =
+  "rounded-full px-2.5 py-1.5 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary focus-visible:bg-primary/10 focus-visible:text-primary focus-visible:outline-none md:px-4 md:py-2";
+
 function SiteHeader() {
   const { user, profile, signOut } = useAuth();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
-    <header className="print:hidden border-b border-border bg-background/80">
-      <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-2 text-sm">
-        <Link to="/" className="flex items-center gap-2 shrink-0" aria-label="Къде Да — начало">
-          <img src="/logo-icon.png" alt="" width={28} height={28} className="h-7 w-7" />
-          {pathname !== "/" && (
-            <span className="inline-flex items-center gap-1 font-medium text-primary transition-colors hover:text-primary/80">
-              <span aria-hidden="true">←</span> Начало
-            </span>
-          )}
-        </Link>
-        {pathname === "/" && <div aria-hidden="true" />}
-        <nav className="flex min-w-0 flex-wrap items-center justify-end gap-x-3 gap-y-1">
-          <Link to="/sravnenie" className="text-muted-foreground hover:text-primary">
-            Сравнение
-          </Link>
-          {user ? (
-            <>
-              <UserAvatar user={user} />
-              {profile?.is_admin && (
-                <Link to="/admin" className="text-muted-foreground hover:text-primary">
-                  Админ
-                </Link>
+    <TooltipProvider delayDuration={150} skipDelayDuration={300}>
+      <header className="print:hidden border-b border-border bg-background/80">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-2.5 text-[15px] md:py-3.5 md:text-base">
+          <NavTip
+            align="start"
+            text="Към началната страница — търсене на населено място и генериране на доклад."
+          >
+            <Link
+              to="/"
+              className="flex shrink-0 items-center gap-2 rounded-full pr-2 hover:bg-primary/5 md:gap-3 md:pr-4"
+              aria-label="Къде Да — начало"
+            >
+              <img
+                src="/logo-icon.png"
+                alt=""
+                width={44}
+                height={44}
+                className="h-8 w-8 md:h-11 md:w-11"
+              />
+              {pathname !== "/" && (
+                <span className="inline-flex items-center gap-1 font-medium text-primary transition-colors hover:text-primary/80">
+                  <span aria-hidden="true">←</span> Начало
+                </span>
               )}
-              <Link to="/profil" className="text-muted-foreground hover:text-primary">
-                Моите доклади
-              </Link>
-              <button
-                type="button"
-                onClick={() => void signOut()}
-                className="text-muted-foreground hover:text-primary"
-              >
-                Изход
-              </button>
-            </>
-          ) : (
-            <Link to="/vhod" className="font-medium text-primary hover:underline">
-              <span className="sm:hidden">Вход</span>
-              <span className="hidden sm:inline">Вход / Регистрация</span>
             </Link>
-          )}
-          <InstallAppButton />
-        </nav>
-      </div>
-    </header>
+          </NavTip>
+          {pathname === "/" && <div aria-hidden="true" />}
+          <nav className="flex min-w-0 flex-wrap items-center justify-end gap-x-1 gap-y-1 md:gap-x-2">
+            <NavTip text="Сравнете до три места от вашите доклади в една таблица — без нови заявки и разходи.">
+              <Link to="/sravnenie" className={NAV_LINK}>
+                Сравнение
+              </Link>
+            </NavTip>
+            {user ? (
+              <>
+                <UserAvatar user={user} />
+                {profile?.is_admin && (
+                  <NavTip text="Одобряване на потребители, кредити за доклади и обратна връзка.">
+                    <Link to="/admin" className={NAV_LINK}>
+                      Админ
+                    </Link>
+                  </NavTip>
+                )}
+                <NavTip text="Вашите генерирани доклади — отваряне, скриване или публикуване за другите потребители и изтриване.">
+                  <Link to="/profil" className={NAV_LINK}>
+                    Моите доклади
+                  </Link>
+                </NavTip>
+                <NavTip align="end" text="Излизане от профила ви на това устройство.">
+                  <button type="button" onClick={() => void signOut()} className={NAV_LINK}>
+                    Изход
+                  </button>
+                </NavTip>
+              </>
+            ) : (
+              <NavTip
+                align="end"
+                text="Влезте или създайте профил, за да разглеждате доклади и да получите нов за избрано от вас място."
+              >
+                <Link
+                  to="/vhod"
+                  className="rounded-full px-2.5 py-1.5 font-medium text-primary transition-colors hover:bg-primary/10 focus-visible:bg-primary/10 focus-visible:outline-none md:px-4 md:py-2"
+                >
+                  <span className="sm:hidden">Вход</span>
+                  <span className="hidden sm:inline">Вход / Регистрация</span>
+                </Link>
+              </NavTip>
+            )}
+            <InstallAppButton />
+          </nav>
+        </div>
+      </header>
+    </TooltipProvider>
   );
 }
 
