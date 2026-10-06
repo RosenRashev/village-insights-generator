@@ -1,11 +1,45 @@
 {
-  "name": "Къде Да",
+  "id": "/",
+  "name": "Къде Да — проучване на населени места",
   "short_name": "Къде Да",
-  "icons": [
-    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
-  ],
-  "theme_color": "#0f7a3d",
+  "description": "Подробни доклади за инфраструктурата, услугите и средата в села и малки градове.",
+  "lang": "bg",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "background_color": "#ffffff",
-  "display": "standalone"
+  "theme_color": "#0f7a3d",
+  "categories": ["lifestyle", "travel", "utilities"],
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    {
+      "src": "/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Моите доклади",
+      "short_name": "Доклади",
+      "url": "/profil",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Сравнение на места",
+      "short_name": "Сравнение",
+      "url": "/sravnenie",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ]
 }
