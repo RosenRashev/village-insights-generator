@@ -448,7 +448,8 @@ ${research}
 
   const body = {
     contents: [{ role: "user", parts: [{ text: prompt }] }],
-    generationConfig: { responseMimeType: "application/json", temperature: 0.2 },
+    // Без temperature/top_p/top_k/thinking_budget — Gemini ги отхвърля в новите модели.
+    generationConfig: { responseMimeType: "application/json" },
   };
 
   let raw = textOf(await callGemini(body, STRUCTURE_MODEL));
