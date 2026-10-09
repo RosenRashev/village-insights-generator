@@ -165,6 +165,8 @@ function Index() {
   // Докладът на екрана се показва само за мястото, за което е генериран — иначе при смяна на
   // избраното място заглавието би било за едно място, а данните за друго.
   const showReport = realSections !== null && reportFor?.place.ekatte === place?.ekatte;
+  // Докато се генерира и след като докладът е готов, информационните балончета не са нужни.
+  const hintsOff = generating || showReport;
 
   const CONFLICT_MSG =
     "Настоящата локация не може да съвпада с търсеното населено място — полето беше изчистено.";
@@ -369,6 +371,7 @@ function Index() {
           </h2>
           <div className="mt-4 space-y-4">
             <FieldHint
+              disabled={hintsOff}
               title="Населено място"
               text="В това поле въведете населеното място, което искате да разучите или за което искате да получите информация. Можете да търсите по име или по пощенски код."
             >
@@ -396,6 +399,7 @@ function Index() {
             {hasPlace && isSignedIn && isApproved && (
               <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
                 <FieldHint
+                  disabled={hintsOff}
                   className="space-y-2"
                   title="Настояща локация"
                   text="По желание задайте мястото, на което се намирате в момента. То ще се включи като контекст в доклада — например разстояние и време за пътуване до избраното място. Вижда се само от вас."
@@ -444,6 +448,7 @@ function Index() {
         {hasPlace && isSignedIn && isApproved && purposeAllowed && (
           <section className="mt-12 animate-in fade-in slide-in-from-bottom-2 duration-300">
             <FieldHint
+              disabled={hintsOff}
               title="За какво търсите имота"
               text="Целта дава контекст на доклада — за какво търсите имота — и добавя точкова система (оценка от 1 до 10), която ви помага да се ориентирате по-лесно и да филтрирате релевантната информация."
             >
@@ -488,6 +493,7 @@ function Index() {
         {hasPlace && isSignedIn && isApproved && (
           <section className="mt-16">
             <FieldHint
+              disabled={hintsOff}
               className="flex flex-col items-center gap-3 text-center"
               title={existingReport ? "Вече имате доклад за това място" : "Генерирай доклад"}
               text={
