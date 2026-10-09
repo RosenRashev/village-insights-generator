@@ -23,6 +23,7 @@ import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedProfilRouteImport } from './routes/_authenticated/profil'
 import { Route as ReportEkatteRouteImport } from './routes/report.$ekatte'
 import { Route as AuthenticatedAdminFeedbackRouteImport } from './routes/_authenticated/admin_.feedback'
+import { Route as AuthenticatedAdminImportRouteImport } from './routes/_authenticated/admin_.import'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -94,6 +95,12 @@ const AuthenticatedAdminFeedbackRoute =
     path: '/admin/feedback',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAdminImportRoute =
+  AuthenticatedAdminImportRouteImport.update({
+    id: '/admin_/import',
+    path: '/admin/import',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -109,6 +116,7 @@ export interface FileRoutesByFullPath {
   '/profil': typeof AuthenticatedProfilRoute
   '/report/$ekatte': typeof ReportEkatteRoute
   '/admin/feedback': typeof AuthenticatedAdminFeedbackRoute
+  '/admin/import': typeof AuthenticatedAdminImportRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -124,6 +132,7 @@ export interface FileRoutesByTo {
   '/profil': typeof AuthenticatedProfilRoute
   '/report/$ekatte': typeof ReportEkatteRoute
   '/admin/feedback': typeof AuthenticatedAdminFeedbackRoute
+  '/admin/import': typeof AuthenticatedAdminImportRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -141,6 +150,7 @@ export interface FileRoutesById {
   '/_authenticated/profil': typeof AuthenticatedProfilRoute
   '/report/$ekatte': typeof ReportEkatteRoute
   '/_authenticated/admin_/feedback': typeof AuthenticatedAdminFeedbackRoute
+  '/_authenticated/admin_/import': typeof AuthenticatedAdminImportRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -158,6 +168,7 @@ export interface FileRouteTypes {
     | '/profil'
     | '/report/$ekatte'
     | '/admin/feedback'
+    | '/admin/import'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -173,6 +184,7 @@ export interface FileRouteTypes {
     | '/profil'
     | '/report/$ekatte'
     | '/admin/feedback'
+    | '/admin/import'
   id:
     | '__root__'
     | '/'
@@ -189,6 +201,7 @@ export interface FileRouteTypes {
     | '/_authenticated/profil'
     | '/report/$ekatte'
     | '/_authenticated/admin_/feedback'
+    | '/_authenticated/admin_/import'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -305,6 +318,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminFeedbackRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin_/import': {
+      id: '/_authenticated/admin_/import'
+      path: '/admin/import'
+      fullPath: '/admin/import'
+      preLoaderRoute: typeof AuthenticatedAdminImportRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -312,12 +332,14 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedProfilRoute: typeof AuthenticatedProfilRoute
   AuthenticatedAdminFeedbackRoute: typeof AuthenticatedAdminFeedbackRoute
+  AuthenticatedAdminImportRoute: typeof AuthenticatedAdminImportRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedProfilRoute: AuthenticatedProfilRoute,
   AuthenticatedAdminFeedbackRoute: AuthenticatedAdminFeedbackRoute,
+  AuthenticatedAdminImportRoute: AuthenticatedAdminImportRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
