@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import {
   displaySettlement,
-  isLargeCity,
+  isSearchable,
   loadSettlements,
   sanitizeCyrillic,
   searchSettlements,
@@ -70,7 +70,7 @@ export function SettlementCombobox({
 
   const pool = useMemo(() => {
     if (!all) return null;
-    let list = excludeLargeCities ? all.filter((s) => !isLargeCity(s)) : all;
+    let list = all.filter((s) => isSearchable(s, excludeLargeCities));
     if (allowedEkatte) {
       const allowed = new Set(allowedEkatte);
       list = list.filter((s) => allowed.has(s.ekatte));

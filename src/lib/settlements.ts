@@ -24,6 +24,14 @@ type Row = [
 
 export const LARGE_CITY_POPULATION_THRESHOLD = 30000;
 
+/**
+ * Големи градове с ръчно проучен и импортиран доклад (вж. /admin/import).
+ * Само те се показват в търсенето, въпреки че са над прага; добавяй ЕКАТТЕ след импорт.
+ */
+export const PREPARED_CITY_EKATTE: ReadonlySet<number> = new Set([
+  702, // Асеновград
+]);
+
 /** Липсващи данни за население НЕ се третират като голям град. */
 export function isLargeCity(s: Settlement): boolean {
   return typeof s.population === "number" && s.population >= LARGE_CITY_POPULATION_THRESHOLD;
@@ -116,4 +124,10 @@ export function searchSettlements(all: Settlement[], query: string, limit = 50):
   }
 
   return [...starts, ...contains].slice(0, limit);
+}
+
+/** Дали населеното място се показва в основното търсене (големите градове — само подготвените). */
+export function isSearchable(s: Settlement, excludeLargeCities: boolean): boolean {
+  if (!excludeLargeCities) return true;
+  return !isLargeCity(s) || PREPARED_CITY_EKATTE.has(s.ekatte);
 }
