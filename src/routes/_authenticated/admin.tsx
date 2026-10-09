@@ -12,6 +12,9 @@ import {
   type AdminProfile,
 } from "@/lib/admin.functions";
 
+/** Claude артефакт за ръчното проучване на градове (промпт, инструкции, запис на отговорите). */
+const DOSSIERS_URL = "https://claude.ai/artifact/75h7a4wuh9md9Ekie4nZaq";
+
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
     meta: [
@@ -89,9 +92,19 @@ function AdminPage() {
     <main className="mx-auto max-w-3xl px-4 py-12">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold text-primary">Регистрации</h1>
-        <Link to="/admin/feedback" className="text-sm text-muted-foreground hover:text-primary">
-          Обратна връзка →
-        </Link>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+          <a
+            href={DOSSIERS_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-muted-foreground hover:text-primary"
+          >
+            Градски досиета ↗
+          </a>
+          <Link to="/admin/feedback" className="text-muted-foreground hover:text-primary">
+            Обратна връзка →
+          </Link>
+        </div>
       </div>
 
       <section className="mt-8">
