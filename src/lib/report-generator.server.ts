@@ -591,7 +591,29 @@ export async function generateCategory(input: GenerateInput): Promise<GeneratedC
   const id = await placeIdentity(input);
   const research = await researchCategory(input, id);
   const { section, incidentCount } = await structureCategory(input, id, research.text);
+  return assembleCategory(input, section, incidentCount, research.sources);
+}
 
+/**
+ * Ръчно проучване (напр. от Gemini чат): пропуска скъпата грундирана стъпка и пуска само
+ * структурирането (~10% от цената на доклада). Резултатът е същият формат като при generateCategory.
+ */
+export async function structureManualCategory(
+  input: GenerateInput,
+  researchText: string,
+  sources: SourceLink[],
+): Promise<GeneratedCategory> {
+  const id = await placeIdentity(input);
+  const { section, incidentCount } = await structureCategory(input, id, researchText);
+  return assembleCategory(input, section, incidentCount, sources);
+}
+
+function assembleCategory(
+  input: GenerateInput,
+  section: Omit<ReportSection, "id" | "theme">,
+  incidentCount: number | null,
+  sources: SourceLink[],
+): GeneratedCategory {
   const full: ReportSection = {
     id: input.categoryId,
     title: section.title,
@@ -614,7 +636,7 @@ export async function generateCategory(input: GenerateInput): Promise<GeneratedC
 
   return {
     data: full as unknown as Json,
-    sourceLinks: research.sources.length > 0 ? research.sources : null,
+    sourceLinks: sources.length > 0 ? sources : null,
     incidentCount: derivedIncidents,
   };
 }
