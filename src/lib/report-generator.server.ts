@@ -257,6 +257,27 @@ function anchorRule(id: PlaceIdentity): string {
 }
 
 /** Стъпка 1: грундирано (Google Search) текстово проучване за ЕДНА категория. */
+/**
+ * Най-много заявки към Google на категория. Всяка заявка се таксува (~$0.014), а в реалните
+ * измервания търсенето е 75–80% от цената на доклад (39–51 заявки при безлимитно търсене).
+ * Лимитът е „мек“ — задава се в промпта, API-то няма параметър за него.
+ */
+const SEARCH_BUDGET: Record<string, number> = {
+  history: 3,
+  industry: 3,
+  social: 3,
+};
+const DEFAULT_SEARCH_BUDGET = 2;
+
+export function searchBudgetFor(categoryId: string): number {
+  return SEARCH_BUDGET[categoryId] ?? DEFAULT_SEARCH_BUDGET;
+}
+
+export function searchBudgetRule(categoryId: string): string {
+  const n = searchBudgetFor(categoryId);
+  return `БЮДЖЕТ ЗА ТЪРСЕНЕ (задължително): направи НАЙ-МНОГО ${n} заявки към Google за цялата тема. Планирай ги предварително: обедини свързаните въпроси в широки заявки (напр. име на населеното място + община + тема), а не една заявка за всяка точка. Не повтаряй търсене за вече намерен факт. За точки без резултат в тези заявки пиши „Няма налични публични данни“ — не търси повече.`;
+}
+
 async function researchCategory(
   input: GenerateInput,
   id: PlaceIdentity,
@@ -285,7 +306,8 @@ ${COMMON_RULES}
 - Ако данните са на общинско/областно ниво, отбележи го (община ${id.municipality ?? "—"}, област ${id.province ?? "—"}).
 - Числата давай конкретно (проценти, километри, минути, брой).
 - В края добави списък „ИЗТОЧНИЦИ:“ с пълни URL адреси на използваните страници.
-- Пиши на български, кратко и фактологично.`;
+- Пиши на български, кратко и фактологично.
+- ${searchBudgetRule(input.categoryId)}`;
 
   const res = await callGemini(
     {
@@ -426,7 +448,7 @@ function layoutFor(categoryId: string, placeType: GenerateInput["placeType"]): s
  * Увеличи я, когато променяш текста на тези два промпта (текстовете в `prompt-modules.ts`,
  * правилата, схемата и оформленията се отчитат автоматично от `promptVersionFor`).
  */
-const PROMPT_TEMPLATE_VERSION = 1;
+const PROMPT_TEMPLATE_VERSION = 2;
 
 /** Бърз 32-битов хеш (FNV-1a) — достатъчен, за да се разпознае промяна в текста на промпта. */
 function fnv1a(text: string): string {
