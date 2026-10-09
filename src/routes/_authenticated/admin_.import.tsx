@@ -49,7 +49,7 @@ export const Route = createFileRoute("/_authenticated/admin_/import")({
 function ImportPage() {
   const { profile, loading } = useAuth();
   const navigate = useNavigate();
-  const [ekatte, setEkatte] = useState<string>("");
+  const [placeQuery, setPlaceQuery] = useState("");
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<Record<string, { state: Status; error?: string }>>({});
@@ -59,8 +59,12 @@ function ImportPage() {
   }, [loading, profile, navigate]);
 
   const parsed = useMemo(() => parseManualResearch(text), [text]);
-  const ekatteNum = Number(ekatte);
-  const validEkatte = Number.isInteger(ekatteNum) && ekatteNum > 0 && ekatteNum <= 99999;
+  const query = placeQuery.trim();
+  const cityMatch =
+    CITIES.find((c) => c.name.toLowerCase() === query.toLowerCase()) ??
+    CITIES.find((c) => /^\d+$/.test(query) && c.ekatte === Number(query));
+  const ekatteNum = cityMatch ? cityMatch.ekatte : /^\d{1,5}$/.test(query) ? Number(query) : 0;
+  const validEkatte = ekatteNum > 0;
 
   if (loading || !profile?.is_admin) {
     return (
@@ -110,34 +114,32 @@ function ImportPage() {
       </p>
 
       <div className="mt-6 grid gap-4">
-        <div className="flex flex-wrap items-end gap-3">
-          <label className="grid gap-1 text-sm">
-            <span className="font-medium">Град</span>
-            <select
-              className="h-10 rounded-md border bg-background px-3"
-              value={CITIES.some((c) => String(c.ekatte) === ekatte) ? ekatte : ""}
-              onChange={(e) => setEkatte(e.target.value)}
-              disabled={busy}
-            >
-              <option value="">— избери —</option>
-              {CITIES.map((c) => (
-                <option key={c.ekatte} value={c.ekatte}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+        <div className="grid gap-1 text-sm">
+          <label htmlFor="place" className="font-medium">
+            Град или ЕКАТТЕ
           </label>
-          <label className="grid gap-1 text-sm">
-            <span className="font-medium">или ЕКАТТЕ</span>
-            <input
-              className="h-10 w-32 rounded-md border bg-background px-3"
-              inputMode="numeric"
-              value={ekatte}
-              onChange={(e) => setEkatte(e.target.value.replace(/\D/g, ""))}
-              disabled={busy}
-              placeholder="напр. 00702"
-            />
-          </label>
+          <input
+            id="place"
+            list="city-options"
+            className="h-10 w-full max-w-sm rounded-md border bg-background px-3"
+            value={placeQuery}
+            onChange={(e) => setPlaceQuery(e.target.value)}
+            disabled={busy}
+            placeholder="започни да пишеш: Асеновград или 00702"
+            autoComplete="off"
+          />
+          <datalist id="city-options">
+            {CITIES.map((c) => (
+              <option key={c.ekatte} value={c.name} />
+            ))}
+          </datalist>
+          <span className="text-xs text-muted-foreground">
+            {validEkatte
+              ? `ЕКАТТЕ ${String(ekatteNum).padStart(5, "0")}${
+                  cityMatch ? ` · ${cityMatch.name}` : ""
+                }`
+              : "Няма съвпадение — избери град от подсказките или въведи ЕКАТТЕ."}
+          </span>
         </div>
 
         <label className="grid gap-1 text-sm">
