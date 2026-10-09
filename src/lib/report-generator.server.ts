@@ -48,10 +48,41 @@ type GeminiResponse = {
     content?: { parts?: GeminiPart[] };
     groundingMetadata?: {
       groundingChunks?: { web?: { uri?: string; title?: string } }[];
+      /** Реалните текстове на изпълнените Google Search заявки — дължината на този масив
+       * е точният брой платени grounding заявки за това извикване (вж. COST_LOGGING_README.md). */
+      webSearchQueries?: string[];
     };
   }[];
+  usageMetadata?: {
+    promptTokenCount?: number;
+    candidatesTokenCount?: number;
+    totalTokenCount?: number;
+  };
   error?: { message?: string; code?: number };
 };
+
+/**
+ * ВРЕМЕННО измерване на реалната цена на доклад (вж. COST_LOGGING_README.md в корена на проекта).
+ * Цени на gemini-3.5-flash-lite към окт. 2026: $0.30 / 1M входни токени, $2.50 / 1M изходни токени.
+ * Grounding (Gemini 3 семейство): $14 / 1000 реално изпълнени Google Search заявки.
+ */
+const PRICE_PER_INPUT_TOKEN = 0.3 / 1_000_000;
+const PRICE_PER_OUTPUT_TOKEN = 2.5 / 1_000_000;
+const PRICE_PER_GROUNDING_QUERY = 14 / 1000;
+
+function logUsage(tag: string, model: string, res: GeminiResponse): void {
+  const inputTokens = res.usageMetadata?.promptTokenCount ?? 0;
+  const outputTokens = res.usageMetadata?.candidatesTokenCount ?? 0;
+  const groundingQueries = res.candidates?.[0]?.groundingMetadata?.webSearchQueries?.length ?? 0;
+  const cost =
+    inputTokens * PRICE_PER_INPUT_TOKEN +
+    outputTokens * PRICE_PER_OUTPUT_TOKEN +
+    groundingQueries * PRICE_PER_GROUNDING_QUERY;
+
+  console.log(
+    `[COST] ${tag} model=${model} inputTokens=${inputTokens} outputTokens=${outputTokens} groundingQueries=${groundingQueries} costUSD=${cost.toFixed(5)}`,
+  );
+}
 
 function apiKey(): string {
   const key = process.env["GEMINI_API_KEY"];
@@ -66,7 +97,11 @@ function sleep(ms: number): Promise<void> {
 /** Максимално време за една заявка към Gemini (търсенето в Google може да е бавно). */
 const REQUEST_TIMEOUT_MS = 90_000;
 
-async function callGemini(body: unknown, model: string = MODEL): Promise<GeminiResponse> {
+async function callGemini(
+  body: unknown,
+  model: string = MODEL,
+  logTag?: string,
+): Promise<GeminiResponse> {
   const MAX_ATTEMPTS = 4;
   const MAX_TIMEOUTS = 2;
   let timeouts = 0;
@@ -91,7 +126,10 @@ async function callGemini(body: unknown, model: string = MODEL): Promise<GeminiR
         json = { error: { message: rawText.slice(0, 200) || "празен отговор" } };
       }
 
-      if (res.ok && !json.error) return json;
+      if (res.ok && !json.error) {
+        if (logTag) logUsage(logTag, model, json);
+        return json;
+      }
 
       retryable = res.status === 429 || res.status === 503;
       lastError = new Error(
@@ -249,10 +287,14 @@ ${COMMON_RULES}
 - В края добави списък „ИЗТОЧНИЦИ:“ с пълни URL адреси на използваните страници.
 - Пиши на български, кратко и фактологично.`;
 
-  const res = await callGemini({
-    contents: [{ role: "user", parts: [{ text: prompt }] }],
-    tools: [{ google_search: {} }],
-  });
+  const res = await callGemini(
+    {
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      tools: [{ google_search: {} }],
+    },
+    MODEL,
+    `research ekatte=${input.ekatte} category=${input.categoryId}`,
+  );
 
   const text = textOf(res);
   if (!text) throw new Error("Gemini върна празен отговор при проучването.");
@@ -452,7 +494,8 @@ ${research}
     generationConfig: { responseMimeType: "application/json" },
   };
 
-  let raw = textOf(await callGemini(body, STRUCTURE_MODEL));
+  const logTag = `structure ekatte=${input.ekatte} category=${input.categoryId}`;
+  let raw = textOf(await callGemini(body, STRUCTURE_MODEL, logTag));
   let parsed: unknown;
   try {
     parsed = JSON.parse(extractJson(raw));
@@ -470,6 +513,7 @@ ${research}
           ],
         },
         STRUCTURE_MODEL,
+        `${logTag} retry=1`,
       ),
     );
     try {
@@ -561,21 +605,25 @@ export async function generateDistanceToCurrent(
   placeName: string,
   currentLocationName: string,
 ): Promise<{ block: Json; sources: SourceLink[] }> {
-  const res = await callGemini({
-    contents: [
-      {
-        role: "user",
-        parts: [
-          {
-            text: `Изчисли пътуването с автомобил от „${currentLocationName}“ до „${placeName}“ (България).
+  const res = await callGemini(
+    {
+      contents: [
+        {
+          role: "user",
+          parts: [
+            {
+              text: `Изчисли пътуването с автомобил от „${currentLocationName}“ до „${placeName}“ (България).
 Върни САМО JSON: {"distanceKm":string,"driveTime":string,"route":string}
 distanceKm — напр. "38 км"; driveTime — напр. "35–40 мин"; route — кратко описание на основните пътища (едно изречение).`,
-          },
-        ],
-      },
-    ],
-    tools: [{ google_search: {} }],
-  });
+            },
+          ],
+        },
+      ],
+      tools: [{ google_search: {} }],
+    },
+    MODEL,
+    `distance-to-current place=${placeName}`,
+  );
 
   const raw = extractJson(textOf(res));
   let parsed: { distanceKm?: string; driveTime?: string; route?: string };
