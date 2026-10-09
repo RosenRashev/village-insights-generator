@@ -58,3 +58,18 @@ describe("parseManualResearch", () => {
     expect(parseManualResearch("").categories).toEqual([]);
   });
 });
+
+import { isCacheVersionValid, manualVersionFor } from "../src/lib/report-cache";
+
+describe("isCacheVersionValid", () => {
+  test("съвпадаща версия е валидна", () => {
+    expect(isCacheVersionValid("3-abc", "3-abc")).toBe(true);
+  });
+  test("различна или липсваща версия е остаряла", () => {
+    expect(isCacheVersionValid("2-abc", "3-abc")).toBe(false);
+    expect(isCacheVersionValid(null, "3-abc")).toBe(false);
+  });
+  test("ръчно импортираните не остаряват при смяна на промпта", () => {
+    expect(isCacheVersionValid(manualVersionFor("2-old"), "3-new")).toBe(true);
+  });
+});

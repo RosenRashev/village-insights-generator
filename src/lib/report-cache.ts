@@ -55,3 +55,23 @@ export function isFresh(expiresAt: string | null | undefined): boolean {
   if (!expiresAt) return false;
   return new Date(expiresAt).getTime() > Date.now();
 }
+
+/** Префикс на `prompt_version` за ръчно проучени и импортирани категории. */
+export const MANUAL_VERSION_PREFIX = "manual-";
+
+export function manualVersionFor(promptVersion: string): string {
+  return `${MANUAL_VERSION_PREFIX}${promptVersion}`;
+}
+
+/**
+ * Кешът важи при съвпадаща версия на промпта. Ръчно импортираните категории не остаряват
+ * при промяна на промптовете (иначе биха се заменили с платена API генерация) —
+ * обновяват се само с нов импорт или когато изтече TTL.
+ */
+export function isCacheVersionValid(
+  rowVersion: string | null | undefined,
+  promptVersion: string,
+): boolean {
+  if (!rowVersion) return false;
+  return rowVersion === promptVersion || rowVersion.startsWith(MANUAL_VERSION_PREFIX);
+}

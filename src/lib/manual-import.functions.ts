@@ -39,7 +39,7 @@ export const importManualCategory = createServerFn({ method: "POST" })
     const place = (await loadSettlements()).find((s) => s.ekatte === data.ekatte);
     if (!place) throw new Error(`Няма населено място с ЕКАТТЕ ${data.ekatte}.`);
 
-    const { expiresAtFor } = await import("@/lib/report-cache");
+    const { expiresAtFor, manualVersionFor } = await import("@/lib/report-cache");
     const expiresAt = expiresAtFor(data.categoryId);
     if (expiresAt === undefined) throw new Error("Тази категория не се кешира.");
 
@@ -64,7 +64,7 @@ export const importManualCategory = createServerFn({ method: "POST" })
         incident_count: generated.incidentCount,
         cached_at: new Date().toISOString(),
         expires_at: expiresAt,
-        prompt_version: promptVersionFor(data.categoryId, input.placeType),
+        prompt_version: manualVersionFor(promptVersionFor(data.categoryId, input.placeType)),
       },
       { onConflict: "ekatte,category_id" },
     );

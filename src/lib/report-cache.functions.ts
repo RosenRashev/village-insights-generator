@@ -2,7 +2,12 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { expiresAtFor, isFresh, type CachedCategory } from "@/lib/report-cache";
+import {
+  expiresAtFor,
+  isCacheVersionValid,
+  isFresh,
+  type CachedCategory,
+} from "@/lib/report-cache";
 
 /**
  * Връща категория от кеша, ако е валидна; иначе я генерира наново през Gemini
@@ -51,7 +56,7 @@ export const getCategory = createServerFn({ method: "POST" })
     let result: Omit<CachedCategory, "ekatte" | "categoryId"> & { fromCache: boolean };
 
     // Кешът важи само ако е генериран със същата версия на промпта (иначе се генерира наново).
-    if (row && isFresh(row.expires_at) && row.prompt_version === promptVersion) {
+    if (row && isFresh(row.expires_at) && isCacheVersionValid(row.prompt_version, promptVersion)) {
       result = {
         data: row.data as CachedCategory["data"],
         sourceLinks: (row.source_links as CachedCategory["sourceLinks"]) ?? null,
