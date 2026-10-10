@@ -40,12 +40,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     if (inflight.current?.userId === userId) return inflight.current.promise;
 
-    const promise = (async () => {
-      const { data } = await supabase
+    const fetchProfile = () =>
+      supabase
         .from("profiles")
         .select("id, email, is_approved, is_admin, created_at")
         .eq("id", userId)
         .maybeSingle();
+
+    const promise = (async () => {
+      let { data, error } = await fetchProfile();
+      if (error) {
+        // Временна грешка (напр. при опресняване на сесията) — още един опит след секунда.
+        console.warn("[auth] профилът не се зареди, нов опит:", error.message);
+        await new Promise((r) => setTimeout(r, 1000));
+        ({ data, error } = await fetchProfile());
+      }
+      if (error) {
+        console.warn("[auth] профилът не се зареди:", error.message);
+        // Не губим вече заредения профил на същия потребител заради временна грешка.
+        setProfile((prev) => (prev?.id === userId ? prev : null));
+        return;
+      }
       setProfile((data as Profile | null) ?? null);
     })().finally(() => {
       if (inflight.current?.promise === promise) inflight.current = null;

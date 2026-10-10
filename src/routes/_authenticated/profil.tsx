@@ -7,6 +7,8 @@ import { ExternalLink, Eye, EyeOff, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { PendingApproval } from "@/components/PendingApproval";
+import { reasonLabel, signed } from "@/lib/credit-labels";
+import { getMyCreditHistory } from "@/lib/credits.functions";
 import {
   deleteReport,
   getMyQuota,
@@ -55,6 +57,13 @@ function ProfilePage() {
     staleTime: 60_000,
   });
   const quota = quotaQuery.data;
+  const historyQuery = useQuery({
+    queryKey: ["my-credit-history", user?.id],
+    queryFn: () => getMyCreditHistory({ data: undefined }),
+    enabled: !!user && profile?.is_approved === true && quota?.unlimited === false,
+    staleTime: 60_000,
+  });
+  const history = historyQuery.data ?? [];
   const load = async () => {
     await queryClient.invalidateQueries({ queryKey: ["my-reports"] });
   };
@@ -120,7 +129,10 @@ function ProfilePage() {
             <p className="mt-1 text-sm">
               Оставащи нови доклади: <strong>{quota.credits}</strong>
               {quota.credits === 0 && (
-                <span className="text-muted-foreground"> — свържете се с администратора</span>
+                <span className="text-muted-foreground">
+                  {" "}
+                  — заявете още от кутийката с доклади до профилната ви снимка горе
+                </span>
               )}
             </p>
           )}
@@ -184,6 +196,36 @@ function ProfilePage() {
           );
         })}
       </div>
+      {history.length > 0 && (
+        <section className="mt-10">
+          <h2 className="text-lg font-semibold">История на докладите</h2>
+          <ul className="mt-3 divide-y rounded-md border">
+            {history.map((t) => (
+              <li key={t.id} className="flex items-start justify-between gap-3 px-3 py-2 text-sm">
+                <span className="min-w-0">
+                  <span className="block">{reasonLabel(t.reason)}</span>
+                  {t.place && (
+                    <span className="block truncate text-xs text-muted-foreground">{t.place}</span>
+                  )}
+                  <span className="block text-[11px] text-muted-foreground">
+                    {new Date(t.created_at).toLocaleString("bg-BG")}
+                  </span>
+                </span>
+                <span className="shrink-0 text-right tabular-nums">
+                  <span className={t.delta > 0 ? "font-semibold text-primary" : "font-semibold"}>
+                    {signed(t.delta)}
+                  </span>
+                  {t.balance_after !== null && (
+                    <span className="block text-[11px] text-muted-foreground">
+                      остават {t.balance_after}
+                    </span>
+                  )}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </main>
   );
 }

@@ -24,6 +24,10 @@ import { Route as AuthenticatedProfilRouteImport } from './routes/_authenticated
 import { Route as ReportEkatteRouteImport } from './routes/report.$ekatte'
 import { Route as AuthenticatedAdminFeedbackRouteImport } from './routes/_authenticated/admin_.feedback'
 import { Route as AuthenticatedAdminImportRouteImport } from './routes/_authenticated/admin_.import'
+import { Route as AuthenticatedAdminReportsRouteImport } from './routes/_authenticated/admin_.reports'
+import { Route as ApiDiagReportRouteImport } from './routes/api.diag.report'
+import { Route as ApiDiagReportsRouteImport } from './routes/api.diag.reports'
+import { Route as AuthenticatedAdminUsersIdRouteImport } from './routes/_authenticated/admin_.users.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -101,6 +105,28 @@ const AuthenticatedAdminImportRoute =
     path: '/admin/import',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAdminReportsRoute =
+  AuthenticatedAdminReportsRouteImport.update({
+    id: '/admin_/reports',
+    path: '/admin/reports',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const ApiDiagReportRoute = ApiDiagReportRouteImport.update({
+  id: '/api/diag/report',
+  path: '/api/diag/report',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiDiagReportsRoute = ApiDiagReportsRouteImport.update({
+  id: '/api/diag/reports',
+  path: '/api/diag/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedAdminUsersIdRoute =
+  AuthenticatedAdminUsersIdRouteImport.update({
+    id: '/admin_/users/$id',
+    path: '/admin/users/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -117,6 +143,10 @@ export interface FileRoutesByFullPath {
   '/report/$ekatte': typeof ReportEkatteRoute
   '/admin/feedback': typeof AuthenticatedAdminFeedbackRoute
   '/admin/import': typeof AuthenticatedAdminImportRoute
+  '/admin/reports': typeof AuthenticatedAdminReportsRoute
+  '/api/diag/report': typeof ApiDiagReportRoute
+  '/api/diag/reports': typeof ApiDiagReportsRoute
+  '/admin/users/$id': typeof AuthenticatedAdminUsersIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -133,6 +163,10 @@ export interface FileRoutesByTo {
   '/report/$ekatte': typeof ReportEkatteRoute
   '/admin/feedback': typeof AuthenticatedAdminFeedbackRoute
   '/admin/import': typeof AuthenticatedAdminImportRoute
+  '/admin/reports': typeof AuthenticatedAdminReportsRoute
+  '/api/diag/report': typeof ApiDiagReportRoute
+  '/api/diag/reports': typeof ApiDiagReportsRoute
+  '/admin/users/$id': typeof AuthenticatedAdminUsersIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -151,6 +185,10 @@ export interface FileRoutesById {
   '/report/$ekatte': typeof ReportEkatteRoute
   '/_authenticated/admin_/feedback': typeof AuthenticatedAdminFeedbackRoute
   '/_authenticated/admin_/import': typeof AuthenticatedAdminImportRoute
+  '/_authenticated/admin_/reports': typeof AuthenticatedAdminReportsRoute
+  '/api/diag/report': typeof ApiDiagReportRoute
+  '/api/diag/reports': typeof ApiDiagReportsRoute
+  '/_authenticated/admin_/users/$id': typeof AuthenticatedAdminUsersIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -169,6 +207,10 @@ export interface FileRouteTypes {
     | '/report/$ekatte'
     | '/admin/feedback'
     | '/admin/import'
+    | '/admin/reports'
+    | '/api/diag/report'
+    | '/api/diag/reports'
+    | '/admin/users/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -185,6 +227,10 @@ export interface FileRouteTypes {
     | '/report/$ekatte'
     | '/admin/feedback'
     | '/admin/import'
+    | '/admin/reports'
+    | '/api/diag/report'
+    | '/api/diag/reports'
+    | '/admin/users/$id'
   id:
     | '__root__'
     | '/'
@@ -202,6 +248,10 @@ export interface FileRouteTypes {
     | '/report/$ekatte'
     | '/_authenticated/admin_/feedback'
     | '/_authenticated/admin_/import'
+    | '/_authenticated/admin_/reports'
+    | '/api/diag/report'
+    | '/api/diag/reports'
+    | '/_authenticated/admin_/users/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -216,6 +266,8 @@ export interface RootRouteChildren {
   SravnenieRoute: typeof SravnenieRoute
   VhodRoute: typeof VhodRoute
   ReportEkatteRoute: typeof ReportEkatteRoute
+  ApiDiagReportRoute: typeof ApiDiagReportRoute
+  ApiDiagReportsRoute: typeof ApiDiagReportsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -325,6 +377,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminImportRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin_/reports': {
+      id: '/_authenticated/admin_/reports'
+      path: '/admin/reports'
+      fullPath: '/admin/reports'
+      preLoaderRoute: typeof AuthenticatedAdminReportsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/diag/report': {
+      id: '/api/diag/report'
+      path: '/api/diag/report'
+      fullPath: '/api/diag/report'
+      preLoaderRoute: typeof ApiDiagReportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/diag/reports': {
+      id: '/api/diag/reports'
+      path: '/api/diag/reports'
+      fullPath: '/api/diag/reports'
+      preLoaderRoute: typeof ApiDiagReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/admin_/users/$id': {
+      id: '/_authenticated/admin_/users/$id'
+      path: '/admin/users/$id'
+      fullPath: '/admin/users/$id'
+      preLoaderRoute: typeof AuthenticatedAdminUsersIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -333,6 +413,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedProfilRoute: typeof AuthenticatedProfilRoute
   AuthenticatedAdminFeedbackRoute: typeof AuthenticatedAdminFeedbackRoute
   AuthenticatedAdminImportRoute: typeof AuthenticatedAdminImportRoute
+  AuthenticatedAdminReportsRoute: typeof AuthenticatedAdminReportsRoute
+  AuthenticatedAdminUsersIdRoute: typeof AuthenticatedAdminUsersIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -340,6 +422,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedProfilRoute: AuthenticatedProfilRoute,
   AuthenticatedAdminFeedbackRoute: AuthenticatedAdminFeedbackRoute,
   AuthenticatedAdminImportRoute: AuthenticatedAdminImportRoute,
+  AuthenticatedAdminReportsRoute: AuthenticatedAdminReportsRoute,
+  AuthenticatedAdminUsersIdRoute: AuthenticatedAdminUsersIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -357,6 +441,8 @@ const rootRouteChildren: RootRouteChildren = {
   SravnenieRoute: SravnenieRoute,
   VhodRoute: VhodRoute,
   ReportEkatteRoute: ReportEkatteRoute,
+  ApiDiagReportRoute: ApiDiagReportRoute,
+  ApiDiagReportsRoute: ApiDiagReportsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

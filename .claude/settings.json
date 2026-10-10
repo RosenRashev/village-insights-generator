@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc --noEmit)",
+      "Bash(bun test tests)",
+      "Bash(npx prettier --check src tests)",
+      "Bash(npx eslint src tests)",
+      "mcp__github__pull_request_read"
+    ]
+  }
+}

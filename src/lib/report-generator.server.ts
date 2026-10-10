@@ -2,6 +2,18 @@ import type { ReportSection } from "@/data/mock-report";
 import type { Json } from "@/integrations/supabase/types";
 import type { SourceLink } from "@/lib/report-cache";
 import { parseSignals, TOPICS } from "@/lib/purpose-fit";
+import {
+  checkListRule,
+  hideRule,
+  mergeStatuses,
+  parseCheckStatuses,
+  pendingKeys,
+  checksFor,
+  stripCheckLines,
+  withChecks,
+  type CheckStatus,
+  type StoredChecks,
+} from "@/lib/fact-checks";
 import { parseBlocks, parseSummary } from "@/lib/report-schema";
 import { PROMPT_MODULES, COMMON_RULES, DISTRICT_RULE, LEVEL_RULE } from "@/lib/prompt-modules";
 
@@ -284,8 +296,12 @@ async function researchCategory(
 ): Promise<{
   text: string;
   sources: SourceLink[];
+  statuses: Record<string, CheckStatus>;
 }> {
+  const checkRule = checkListRule(input.categoryId);
   const prompt = `Ти си прецизен изследовател на български населени места. Работиш САМО с проверими публични източници (НСИ, ГРАО, общински сайтове, ВиК оператори, ЕРП, медии) и търсене в Google в реално време.
+
+ДНЕШНА ДАТА: ${todayBg()}. Търси най-актуалната налична информация към тази дата.
 
 ОБЕКТ НА ПРОУЧВАНЕТО:
 Тип: ${PLACE_TYPE_LABEL[input.placeType]}
@@ -300,7 +316,7 @@ ${moduleSection(input.categoryId)}
 ${input.placeType === "district" ? DISTRICT_RULE : LEVEL_RULE}
 
 ${COMMON_RULES}
-
+${checkRule ? `\n${checkRule}\n` : ""}
 ПРАВИЛА:
 - Не измисляй факти. При липса на данни пиши изрично „Няма налични публични данни“.
 - Ако данните са на общинско/областно ниво, отбележи го (община ${id.municipality ?? "—"}, област ${id.province ?? "—"}).
@@ -318,9 +334,69 @@ ${COMMON_RULES}
     `research ekatte=${input.ekatte} category=${input.categoryId}`,
   );
 
-  const text = textOf(res);
-  if (!text) throw new Error("Gemini върна празен отговор при проучването.");
-  return { text, sources: sourcesOf(res) };
+  const raw = textOf(res);
+  if (!raw) throw new Error("Gemini върна празен отговор при проучването.");
+  return {
+    text: stripCheckLines(raw),
+    sources: sourcesOf(res),
+    statuses: parseCheckStatuses(raw, input.categoryId),
+  };
+}
+
+/** Днешна дата във вида дд.мм.гггг (UTC) — подава се на изследването, за да търси скорошни данни. */
+function todayBg(now = new Date()): string {
+  const [y, m, d] = now.toISOString().slice(0, 10).split("-");
+  return `${d}.${m}.${y}`;
+}
+
+/**
+ * Допроверка (второ генериране, малки места): търси САМО обектите, които първото изследване
+ * не е проверило. Резултатът се добавя към вече събрания текст и категорията се структурира наново.
+ */
+async function followUpResearch(
+  input: GenerateInput,
+  id: PlaceIdentity,
+  pending: string[],
+): Promise<{ text: string; sources: SourceLink[]; statuses: Record<string, CheckStatus> }> {
+  const wanted = checksFor(input.categoryId).filter((c) => pending.includes(c.key));
+  const list = wanted.map((c) => `- ${c.key}: ${c.label} (търси: ${c.hint})`).join("\n");
+  const prompt = `Ти си прецизен изследовател на български населени места. Работиш САМО с проверими публични източници и търсене в Google в реално време.
+
+ДНЕШНА ДАТА: ${todayBg()}.
+
+ОБЕКТ НА ПРОУЧВАНЕТО:
+Тип: ${PLACE_TYPE_LABEL[input.placeType]}
+${identityBlock(id)}
+
+${anchorRule(id)}
+
+Провери САМО наличието на следните обекти и нищо друго:
+${list}
+
+За всяка точка пиши по 1–2 изречения с източник и дата в скоби — само ако си намерил конкретен източник. След това добави по един ред за ВСЯКА точка точно във формата:
+ПРОВЕРКА <ключ>: ПОТВЪРДЕНО | ОТХВЪРЛЕНО | НЕПРОВЕРЕНО
+- ПОТВЪРДЕНО: има конкретен източник, че обектът съществува в това населено място.
+- ОТХВЪРЛЕНО: има конкретен източник, който показва, че обектът няма. Липсата на резултат НЕ е доказателство.
+- НЕПРОВЕРЕНО: нямаш източник — не пиши нищо за тази точка в текста.
+Обикновена автобусна спирка не е автогара. Всички суми в евро (€).
+В края добави списък „ИЗТОЧНИЦИ:“ с пълни URL адреси. Пиши на български.
+- ${searchBudgetRule(input.categoryId)}`;
+
+  const res = await callGemini(
+    {
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      tools: [{ google_search: {} }],
+    },
+    MODEL,
+    `followup ekatte=${input.ekatte} category=${input.categoryId}`,
+  );
+  const raw = textOf(res);
+  if (!raw) throw new Error("Gemini върна празен отговор при допроверката.");
+  return {
+    text: stripCheckLines(raw),
+    sources: sourcesOf(res),
+    statuses: parseCheckStatuses(raw, input.categoryId),
+  };
 }
 
 /** Специфично оформление за категория „basic“ (Инфраструктура). */
@@ -354,7 +430,7 @@ const PLACE_NOUN: Record<GenerateInput["placeType"], string> = {
 export function transportLayout(placeType: GenerateInput["placeType"]): string {
   const noun = PLACE_NOUN[placeType];
   return `СПЕЦИАЛНИ ПРАВИЛА ЗА ТАЗИ КАТЕГОРИЯ — блоковете са точно в този ред:
-1. ЕДИН блок "facts" с кратки показатели, ТОЧНО в този ред: (1) "Асфалтирани улици" — процент (напр. "~80%"); (2) "Изходи от ${noun}" — брой (число); (3) "Главна улица" — само името, до 2–3 думи; (4) "Автогара" — "Да" / "Няма"; (5) "ЖП спирка в ${noun}" — "Да" / "Няма". Без "description", без дълги стойности.
+1. ЕДИН блок "facts" с кратки показатели, ТОЧНО в този ред: (1) "Асфалтирани улици" — процент (напр. "~80%"); (2) "Изходи от ${noun}" — брой (число); (3) "Главна улица" — само името, до 2–3 думи; (4) "Автогара" — "Да" само ако в текста е потвърдено, че има обособена автогара, "Само спирка" ако има само автобусна спирка, "Няма" само ако текстът изрично я отхвърля с източник; (5) "ЖП спирка в ${noun}" — "Да" / "Няма" със същото правило. Кутийка за непотвърдена или неспомената в текста точка се ПРОПУСКА (не пиши „Няма“ по подразбиране). Без "description", без дълги стойности.
 2. ЕДИН блок "scale" с ТОЧНО 2 елемента: (1) label "Пътна мрежа в населеното място" — оценка на база % асфалт и общо състояние; (2) label "Изходите от населеното място" — оценка на база броя и състоянието им. Всеки с "level" (good/fair/poor), "levelText" (кратка дума/фраза до 3 думи) и пълно описателно "note".
 3. ЕДИН блок "list" с title "Изходи от населеното място" — по един елемент за всеки изход: накъде води, по какъв път/тип път.
 4. ЕДИН блок "list" с title "Улична мрежа" — брой и статус на главните улици, улично осветление, останали детайли за вътрешните улици.
@@ -364,10 +440,10 @@ export function transportLayout(placeType: GenerateInput["placeType"]): string {
 }
 
 /** Специфично оформление за категория „ethnos“ (Демография). */
-const ETHNOS_LAYOUT = `СПЕЦИАЛНИ ПРАВИЛА ЗА ТАЗИ КАТЕГОРИЯ — блоковете са точно в този ред:
-1. ЕДИН блок "gauge" (Демографски тренд) — най-отгоре.
-2. ЕДИН блок "facts" с кратки проценти: постоянно живущи, под 18 г., над 65 г., с висше образование.
-3. ЗАДЪЛЖИТЕЛНО, БЕЗ ИЗКЛЮЧЕНИЕ, ЕДИН блок "pie" (заглавие "Етнически състав") с ТОЧНО 4 елемента в "data" — "Българи", "Турци", "Роми", "Други" — НЕ добавяй пета група и НЕ ползвай „Недекларирали“/„Не са отговорили“ — тях включи в „Други“; с реални или обосновано приблизителни процентни стойности, които се сборуват до 100. ТОВА Е НАЙ-ВАЖНОТО ИЗИСКВАНЕ В ТАЗИ КАТЕГОРИЯ — отговорът е невалиден без този блок. Ако липсват каквито и да е публични данни дори на общинско ниво, дай собствена обоснована приблизителна оценка (напр. на база съседни населени места или общия етнически профил на района) и го отбележи в "note" — НИКОГА не пропускай самия блок.
+const ETHNOS_LAYOUT = `СПЕЦИАЛНИ ПРАВИЛА ЗА ТАЗИ КАТЕГОРИЯ — блоковете са в този ред:
+1. По избор ЕДИН блок "gauge" (Демографски тренд) — най-отгоре, САМО ако в текста има две сравними стойности от ЕДИН И СЪЩИ източник и методика (напр. НСИ 2011 срещу НСИ 2021). НИКОГА не сравнявай ГРАО (настоящ адрес) с преброяване на НСИ — това не е растеж или спад. Ако няма такава двойка, пропусни блока.
+2. ЕДИН блок "facts" с кратки проценти, САМО за показатели, които са дадени в текста: постоянно живущи, под 18 г., над 65 г., с висше образование. Пропусни липсващите.
+3. По избор ЕДИН блок "pie" (заглавие "Етнически състав") с елементи "Българи", "Турци", "Роми", "Други" (недекларирали и непосочени влизат в „Други“) — САМО ако текстът дава реални процентни стойности за тези групи. НИКОГА не измисляй, не оценявай и не изчислявам проценти. Ако текстът казва само „мнозинство“ или „има малцинства“, пропусни блока "pie" и опиши това в блок "list".
 4. Блок/ове "list" за останалите точки (махали, домакинства, прираст, гъстота, статус).
 Числа като диапазон замести с ЕДНА приблизителна стойност.`;
 
@@ -448,7 +524,7 @@ function layoutFor(categoryId: string, placeType: GenerateInput["placeType"]): s
  * Увеличи я, когато променяш текста на тези два промпта (текстовете в `prompt-modules.ts`,
  * правилата, схемата и оформленията се отчитат автоматично от `promptVersionFor`).
  */
-const PROMPT_TEMPLATE_VERSION = 2;
+const PROMPT_TEMPLATE_VERSION = 4;
 
 /** Бърз 32-битов хеш (FNV-1a) — достатъчен, за да се разпознае промяна в текста на промпта. */
 function fnv1a(text: string): string {
@@ -487,7 +563,9 @@ async function structureCategory(
   input: GenerateInput,
   id: PlaceIdentity,
   research: string,
+  statuses: Record<string, CheckStatus> = {},
 ): Promise<{ section: Omit<ReportSection, "id" | "theme">; incidentCount: number | null }> {
+  const hidden = hideRule(input.categoryId, statuses);
   const prompt = `Структурирай следния готов изследователски текст за „${id.name}, община ${
     id.municipality ?? "—"
   }, област ${id.province ?? "—"} (ЕКАТТЕ ${id.ekatte})“ (тема: ${moduleLabel(
@@ -499,6 +577,10 @@ ${SCHEMA_DOC}
 ${layoutFor(input.categoryId, input.placeType)}
 
 Не добавяй факти, които ги няма в текста. Не включвай URL адреси в стойностите.
+НИКАКВИ ИЗМИСЛЕНИ ЧИСЛА: не добавяй, не оценявай и не изчислявай стойности, които не са написани в текста (единственото изключение е преобразуването на лева в евро по-долу) — нито проценти, нито разстояния, нито времена, нито брой. Ако текстът не дава стойност за поле от таблица или кутийка (напр. разстояние или време до обект), пиши „—“ или пропусни реда. Диаграми ("pie", "bars", "gauge") ползват само числа от текста; ако текстът дава диапазон, използвай средата на диапазона за "gauge" и запиши оригиналния диапазон в "note".
+Не сравнявай цифри от различни методики (напр. ГРАО срещу преброяване на НСИ) като тенденция.
+Всички суми показвай в евро (€). Ако текстът дава сума само в лева, преобразувай я по фиксирания курс 1 € = 1,95583 лв. (и запиши годината, ако е посочена).
+${hidden}
 Не пропускай съществени факти, числа или раздели от текста — представи ги ВСИЧКИ в подходящи блокове, дори ако това означава да използваш повече блокове.
 Ако някъде в текста е посочена друга община или област, различна от община ${
     id.municipality ?? "—"
@@ -590,8 +672,48 @@ function themeFor(categoryId: string): ReportSection["theme"] {
 export async function generateCategory(input: GenerateInput): Promise<GeneratedCategory> {
   const id = await placeIdentity(input);
   const research = await researchCategory(input, id);
-  const { section, incidentCount } = await structureCategory(input, id, research.text);
-  return assembleCategory(input, section, incidentCount, research.sources);
+  const { section, incidentCount } = await structureCategory(
+    input,
+    id,
+    research.text,
+    research.statuses,
+  );
+  const checks: StoredChecks | null =
+    checksFor(input.categoryId).length > 0
+      ? { statuses: research.statuses, research: research.text, followUpDone: false }
+      : null;
+  return assembleCategory(input, section, incidentCount, research.sources, checks);
+}
+
+/**
+ * Второ генериране на същото място (само малки места): допроверява обектите, които първото
+ * изследване е оставило непроверени, и структурира категорията наново с по-пълния текст.
+ * Прави се най-много веднъж на място и категория (`followUpDone`).
+ */
+export async function followUpCategory(
+  input: GenerateInput,
+  previous: StoredChecks,
+  previousSources: SourceLink[] | null,
+): Promise<GeneratedCategory> {
+  const id = await placeIdentity(input);
+  const pending = pendingKeys(previous.statuses);
+  const extra = await followUpResearch(input, id, pending);
+
+  const statuses = mergeStatuses(previous.statuses, extra.statuses);
+  const research = [previous.research, extra.text].filter(Boolean).join("\n\n");
+  const { section, incidentCount } = await structureCategory(input, id, research, statuses);
+
+  const seen = new Set<string>();
+  const sources = [...(previousSources ?? []), ...extra.sources].filter((s) => {
+    if (seen.has(s.url)) return false;
+    seen.add(s.url);
+    return true;
+  });
+  return assembleCategory(input, section, incidentCount, sources, {
+    statuses,
+    research,
+    followUpDone: true,
+  });
 }
 
 /**
@@ -613,6 +735,7 @@ function assembleCategory(
   section: Omit<ReportSection, "id" | "theme">,
   incidentCount: number | null,
   sources: SourceLink[],
+  checks: StoredChecks | null = null,
 ): GeneratedCategory {
   const full: ReportSection = {
     id: input.categoryId,
@@ -635,7 +758,7 @@ function assembleCategory(
     (risks ? risks.items.reduce((sum, r) => sum + (r.incidentCount ?? 0), 0) || null : null);
 
   return {
-    data: full as unknown as Json,
+    data: withChecks(full as unknown as Json, checks),
     sourceLinks: sources.length > 0 ? sources : null,
     incidentCount: derivedIncidents,
   };
