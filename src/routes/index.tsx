@@ -27,6 +27,7 @@ import {
 } from "@/lib/generate-report";
 import {
   findMyReportByEkatte,
+  getMyReportByEkatte,
   getMyQuota,
   saveReport,
   type MyReportSummary,
@@ -165,8 +166,28 @@ function Index() {
   // Докладът на екрана се показва само за мястото, за което е генериран — иначе при смяна на
   // избраното място заглавието би било за едно място, а данните за друго.
   const showReport = realSections !== null && reportFor?.place.ekatte === place?.ekatte;
+
+  // Вече запазеният доклад на потребителя за това място се показва направо (без ново генериране).
+  // Същият ключ като в /report/$ekatte — споделя кеша и се освежава при запазване.
+  const savedQuery = useQuery({
+    queryKey: ["my-report", "row", user?.id, placeEkatte],
+    queryFn: () => getMyReportByEkatte({ data: { ekatte: placeEkatte! } }),
+    enabled: existingReport !== null && !generating && !showReport,
+    staleTime: 5 * 60_000,
+  });
+  const savedRow =
+    existingReport !== null && !savedQuery.isError ? (savedQuery.data ?? null) : null;
+  const savedPayload = savedRow ? parseReport(savedRow.report_content) : null;
+  const showSaved =
+    !generating &&
+    !showReport &&
+    savedPayload !== null &&
+    savedPayload.place.ekatte === placeEkatte;
+  const loadingSaved =
+    existingReport !== null && !showReport && !generating && savedQuery.isPending;
+
   // Докато се генерира и след като докладът е готов, информационните балончета не са нужни.
-  const hintsOff = generating || showReport;
+  const hintsOff = generating || showReport || showSaved;
 
   const CONFLICT_MSG =
     "Настоящата локация не може да съвпада с търсеното населено място — полето беше изчистено.";
@@ -493,23 +514,23 @@ function Index() {
         {hasPlace && isSignedIn && isApproved && (
           <section className="mt-16">
             <FieldHint
-              disabled={hintsOff}
+              disabled={generating}
               className="flex flex-col items-center gap-3 text-center"
-              title={existingReport ? "Вече имате доклад за това място" : "Генерирай доклад"}
+              title={existingReport ? "Този доклад е във вашия профил" : "Генерирай доклад"}
               text={
                 existingReport
-                  ? "Този доклад вече е генериран и запазен в профила ви. Бутонът „Актуализирай“ опреснява същия доклад с най-новите налични данни (обновяват се категориите, чийто срок е изтекъл) и не създава нов доклад. Можете да го отворите и от „Моите доклади“."
+                  ? `Този доклад е генериран във вашия профил на ${new Date(existingReport.updated_at).toLocaleDateString("bg-BG")}. Ако искате да го актуализирате с по-нови данни, влезте в профила си и натиснете бутона „Актуализирай“ в доклада. Актуализацията проучва мястото наново с Gemini и търсене в Google и коства токени, затова я правете само при нужда.`
                   : "Бутонът „Генерирай доклад“ проучва всички категории за избраното място в реално време (с Gemini и търсене в Google) и подрежда резултата като инфографика. Новият доклад се запазва в „Моите доклади“."
               }
             >
               <h2 className="px-8 text-lg font-bold text-destructive">
-                {existingReport ? "Вече имате доклад за това място" : "Генерирай доклад"}
+                {existingReport ? `Доклад за ${place.name}` : "Генерирай доклад"}
               </h2>
               <p className="max-w-md text-sm text-muted-foreground">
                 {IS_MOCK
                   ? "Демо режим: докладът се попълва с примерни данни, без реални заявки."
                   : existingReport
-                    ? `Последно обновен на ${new Date(existingReport.updated_at).toLocaleDateString("bg-BG")}. Отворете го от „Моите доклади“ или го актуализирайте с най-новите налични данни.`
+                    ? `Генериран във вашия профил на ${new Date(existingReport.updated_at).toLocaleDateString("bg-BG")}. За по-нови данни натиснете „Актуализирай“ (коства токени).`
                     : "Приложението ще проучи категориите с Gemini и търсене в Google в реално време и ще покаже резултата тук като инфографика."}
               </p>
 
@@ -547,6 +568,28 @@ function Index() {
                 Изчисти
               </Button>
             </FieldHint>
+
+            {(loadingSaved || showSaved) && (
+              <div className="mt-8 space-y-6">
+                {loadingSaved && (
+                  <div className="animate-pulse space-y-4 rounded-[2rem] bg-muted/60 p-6 sm:p-8">
+                    <div className="h-6 w-2/3 rounded bg-muted-foreground/20" />
+                    <div className="h-4 w-full rounded bg-muted-foreground/15" />
+                    <div className="h-24 w-full rounded-2xl bg-muted-foreground/10" />
+                  </div>
+                )}
+                {showSaved && savedPayload && savedRow && (
+                  <ReportInfographic
+                    place={savedPayload.place}
+                    current={savedPayload.current ?? null}
+                    sections={savedPayload.sections}
+                    demo={false}
+                    purpose={purposeAllowed ? (savedPayload.purpose ?? null) : null}
+                    generatedAt={savedPayload.generatedAt ?? savedRow.updated_at}
+                  />
+                )}
+              </div>
+            )}
 
             {(generating || showReport) && (
               <div className="mt-8 space-y-6">
