@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 
 import { ReportInfographic } from "@/components/ReportInfographic";
+import { LoadFailed } from "@/components/LoadFailed";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { parseReport } from "@/lib/generate-report";
@@ -57,6 +58,8 @@ function ReportPage() {
     enabled: !authLoading && !!user,
     staleTime: STALE,
   });
+  // Грешка в мрежата не е „докладът не е намерен“: показва се отделно с „Опитай пак“.
+  const fetchFailed = ownQuery.isError && publicQuery.isError;
   const own: SavedReport | null | undefined = ownQuery.isError ? null : ownQuery.data;
   const publicRow: PublicReport | null | undefined = publicQuery.isError ? null : publicQuery.data;
 
@@ -67,6 +70,21 @@ function ReportPage() {
   const shown = own ?? publicRow ?? null;
   const payload = shown ? parseReport(shown.report_content) : null;
   const label = payload?.place ? displaySettlement(payload.place) : placeLabel;
+
+  if (user && fetchFailed) {
+    return (
+      <main className="mx-auto max-w-xl px-4 py-16">
+        <LoadFailed
+          message="Докладът не успя да се зареди."
+          retrying={ownQuery.isFetching || publicQuery.isFetching}
+          onRetry={() => {
+            void ownQuery.refetch();
+            void publicQuery.refetch();
+          }}
+        />
+      </main>
+    );
+  }
 
   if (authLoading || (user && (own === undefined || publicRow === undefined))) {
     return (
@@ -86,7 +104,9 @@ function ReportPage() {
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <Button asChild>
-            <Link to="/vhod">Вход / Регистрация</Link>
+            <Link to="/vhod" search={{ redirect: `/report/${ekatte}` }}>
+              Вход / Регистрация
+            </Link>
           </Button>
           <Button asChild variant="outline">
             <Link to="/">Към началната страница</Link>

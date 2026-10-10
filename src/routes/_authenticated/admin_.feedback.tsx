@@ -3,8 +3,10 @@ import { useEffect, useState } from "react";
 import { Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
+import { ConfirmButton } from "@/components/ConfirmButton";
+import { FullPageLoading, LoadFailed } from "@/components/LoadFailed";
 import { useAuth } from "@/hooks/useAuth";
+import { toUserMessage } from "@/lib/user-errors";
 import { deleteFeedback, listFeedback, type FeedbackRow } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/_authenticated/admin_/feedback")({
@@ -15,9 +17,10 @@ export const Route = createFileRoute("/_authenticated/admin_/feedback")({
 });
 
 function FeedbackPage() {
-  const { profile, loading } = useAuth();
+  const { profile, loading, profileError, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [rows, setRows] = useState<FeedbackRow[] | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -27,8 +30,10 @@ function FeedbackPage() {
   const load = async () => {
     try {
       setRows(await listFeedback({ data: undefined }));
+      setLoadFailed(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Неуспешно зареждане.");
+      setLoadFailed(true);
+      toast.error(toUserMessage(err, "Неуспешно зареждане."));
     }
   };
 
@@ -38,9 +43,10 @@ function FeedbackPage() {
 
   if (loading || !profile?.is_admin) {
     return (
-      <main className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
-      </main>
+      <FullPageLoading
+        profileError={profileError && !profile}
+        onRetry={() => void refreshProfile()}
+      />
     );
   }
 
@@ -50,7 +56,8 @@ function FeedbackPage() {
       await deleteFeedback({ data: { id } });
       await load();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Неуспешно изтриване.");
+      toast.error(toUserMessage(err, "Неуспешно изтриване."));
+      throw err;
     } finally {
       setBusyId(null);
     }
@@ -65,7 +72,8 @@ function FeedbackPage() {
         </Link>
       </div>
 
-      {!rows && <p className="mt-8 text-sm text-muted-foreground">Зареждане…</p>}
+      {!rows && !loadFailed && <p className="mt-8 text-sm text-muted-foreground">Зареждане…</p>}
+      {!rows && loadFailed && <LoadFailed onRetry={() => void load()} />}
       {rows && rows.length === 0 && (
         <p className="mt-8 text-sm text-muted-foreground">Още няма получени съобщения.</p>
       )}
@@ -78,15 +86,18 @@ function FeedbackPage() {
               <p className="text-xs text-muted-foreground">
                 {new Date(r.created_at).toLocaleString("bg-BG")}
               </p>
-              <Button
+              <ConfirmButton
                 size="sm"
                 variant="ghost"
-                disabled={busyId === r.id}
-                onClick={() => void remove(r.id)}
-                aria-label="Изтрий съобщението"
+                disabled={busyId !== null}
+                ariaLabel="Изтрий съобщението"
+                title="Да изтрия ли съобщението?"
+                description="Съобщението ще бъде изтрито завинаги."
+                confirmLabel="Изтрий"
+                onConfirm={() => remove(r.id)}
               >
                 <Trash2 className="h-4 w-4" />
-              </Button>
+              </ConfirmButton>
             </div>
           </div>
         ))}

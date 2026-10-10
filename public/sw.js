@@ -5,7 +5,9 @@
  * - При липса на интернет, отваряне на страница показва /offline.html.
  * Вдигни CACHE_VERSION, когато променяш този файл или precache списъка.
  */
-const CACHE_VERSION = "v1";
+const CACHE_VERSION = "v2";
+// Хешираните файлове от стари внедрявания не се трупат безкрайно — пазят се последните N.
+const MAX_ASSETS = 60;
 const STATIC_CACHE = `kadeda-static-${CACHE_VERSION}`;
 const PRECACHE = [
   "/offline.html",
@@ -39,6 +41,15 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+async function trimAssets(cache) {
+  const keys = await cache.keys();
+  const assets = keys.filter((k) => new URL(k.url).pathname.startsWith("/assets/"));
+  // Ключите са в реда на добавяне: най-старите отиват първи.
+  await Promise.all(
+    assets.slice(0, Math.max(0, assets.length - MAX_ASSETS)).map((k) => cache.delete(k)),
+  );
+}
+
 const STATIC_FILE = /\.(?:png|jpg|jpeg|svg|ico|webp|woff2?|webmanifest)$/i;
 
 self.addEventListener("fetch", (event) => {
@@ -64,7 +75,10 @@ self.addEventListener("fetch", (event) => {
         const cached = await cache.match(request);
         if (cached) return cached;
         const response = await fetch(request);
-        if (response.ok) cache.put(request, response.clone());
+        if (response.ok) {
+          await cache.put(request, response.clone());
+          void trimAssets(cache);
+        }
         return response;
       }),
     );

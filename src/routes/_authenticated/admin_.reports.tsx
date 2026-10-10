@@ -1,8 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { FullPageLoading, LoadFailed } from "@/components/LoadFailed";
 import { ReportInfographic } from "@/components/ReportInfographic";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -13,6 +14,7 @@ import {
   type AdminReportsResult,
 } from "@/lib/admin.functions";
 import { parseReport } from "@/lib/generate-report";
+import { toUserMessage } from "@/lib/user-errors";
 
 export const Route = createFileRoute("/_authenticated/admin_/reports")({
   head: () => ({
@@ -34,11 +36,15 @@ function fmt(iso: string): string {
 }
 
 function ReportsPage() {
-  const { profile, loading } = useAuth();
+  const { profile, loading, profileError, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [userId, setUserId] = useState<string | null>(null);
   const [result, setResult] = useState<AdminReportsResult | null>(null);
   const [busy, setBusy] = useState(false);
+  const [listFailed, setListFailed] = useState(false);
+  const [reloadTick, setReloadTick] = useState(0);
+  const latestOpen = useRef<string | null>(null);
+  const previewRef = useRef<HTMLElement | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const [opened, setOpened] = useState<{ id: string; content: string; updated_at: string } | null>(
     null,
@@ -52,33 +58,47 @@ function ReportsPage() {
     if (!profile?.is_admin) return;
     let cancelled = false;
     setBusy(true);
+    setListFailed(false);
     listReportsAdmin({ data: { ...(userId ? { userId } : {}), limit: 100 } })
       .then((r) => !cancelled && setResult(r))
-      .catch((err) => toast.error(err instanceof Error ? err.message : "Неуспешно зареждане."))
+      .catch((err) => {
+        if (cancelled) return;
+        setListFailed(true);
+        toast.error(toUserMessage(err, "Неуспешно зареждане."));
+      })
       .finally(() => !cancelled && setBusy(false));
     return () => {
       cancelled = true;
     };
-  }, [profile?.is_admin, userId]);
+  }, [profile?.is_admin, userId, reloadTick]);
 
   const payload = useMemo(() => (opened ? parseReport(opened.content) : null), [opened]);
 
   if (loading || !profile?.is_admin) {
     return (
-      <main className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
-      </main>
+      <FullPageLoading
+        profileError={profileError && !profile}
+        onRetry={() => void refreshProfile()}
+      />
     );
   }
 
   const open = async (r: AdminReportRow) => {
+    latestOpen.current = r.id;
     setOpenId(r.id);
     setOpened(null);
+    setTimeout(
+      () => previewRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+      50,
+    );
     try {
       const res = await getReportAdmin({ data: { id: r.id } });
+      // Ако между това е натиснат друг доклад, този отговор се изхвърля.
+      if (latestOpen.current !== r.id) return;
       setOpened({ id: r.id, ...res });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Неуспешно зареждане на доклада.");
+      if (latestOpen.current !== r.id) return;
+      toast.error(toUserMessage(err, "Неуспешно зареждане на доклада."));
       setOpenId(null);
     }
   };
@@ -105,6 +125,10 @@ function ReportsPage() {
         (настояща локация, цел) не се показват.
       </p>
 
+      {listFailed && !result && (
+        <LoadFailed onRetry={() => setReloadTick((t) => t + 1)} retrying={busy} />
+      )}
+
       {result && (
         <section className="mt-6">
           <h2 className="text-lg font-semibold">
@@ -126,9 +150,17 @@ function ReportsPage() {
                     className={`cursor-pointer border-t hover:bg-muted/40 ${
                       userId === u.user_id ? "bg-primary/5" : ""
                     }`}
+                    tabIndex={0}
+                    aria-selected={userId === u.user_id}
                     onClick={() => setUserId(userId === u.user_id ? null : u.user_id)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setUserId(userId === u.user_id ? null : u.user_id);
+                      }
+                    }}
                   >
-                    <td className="px-3 py-2">{u.email ?? u.user_id.slice(0, 8)}</td>
+                    <td className="break-all px-3 py-2">{u.email ?? u.user_id.slice(0, 8)}</td>
                     <td className="px-3 py-2 tabular-nums">{u.count}</td>
                     <td className="px-3 py-2 tabular-nums">{fmt(u.last_at)}</td>
                   </tr>
@@ -161,7 +193,7 @@ function ReportsPage() {
               {(result?.reports ?? []).map((r) => (
                 <tr key={r.id} className="border-t">
                   <td className="px-3 py-2 whitespace-nowrap tabular-nums">{fmt(r.updated_at)}</td>
-                  <td className="px-3 py-2">{r.email ?? r.user_id.slice(0, 8)}</td>
+                  <td className="break-all px-3 py-2">{r.email ?? r.user_id.slice(0, 8)}</td>
                   <td className="px-3 py-2">
                     {r.ekatte != null ? (
                       <Link
@@ -201,13 +233,14 @@ function ReportsPage() {
       </section>
 
       {openId && (
-        <section className="mt-10">
+        <section ref={previewRef} className="mt-10 scroll-mt-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold">Преглед на доклада</h2>
             <Button
               size="sm"
               variant="ghost"
               onClick={() => {
+                latestOpen.current = null;
                 setOpenId(null);
                 setOpened(null);
               }}
