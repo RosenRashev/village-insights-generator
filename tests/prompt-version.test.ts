@@ -42,6 +42,6 @@ describe("бюджет за търсене", () => {
   });
 
   test("промяната на шаблона обезсилва кеша (версията е различна от първата)", () => {
-    expect(promptVersionFor("basic", "village")).toMatch(/^3-/);
+    expect(promptVersionFor("basic", "village")).toMatch(/^4-/);
   });
 });

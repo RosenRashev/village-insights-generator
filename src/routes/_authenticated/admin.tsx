@@ -101,6 +101,9 @@ function AdminPage() {
           >
             Градски досиета ↗
           </a>
+          <Link to="/admin/reports" className="text-muted-foreground hover:text-primary">
+            Доклади
+          </Link>
           <Link to="/admin/import" className="text-muted-foreground hover:text-primary">
             Импорт на проучване
           </Link>

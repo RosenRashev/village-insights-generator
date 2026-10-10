@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { needsFollowUp, splitChecks } from "@/lib/fact-checks";
 import {
   expiresAtFor,
   isCacheVersionValid,
@@ -42,7 +43,7 @@ export const getCategory = createServerFn({ method: "POST" })
     }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { generateCategory, generateDistanceToCurrent, promptVersionFor } =
+    const { followUpCategory, generateCategory, generateDistanceToCurrent, promptVersionFor } =
       await import("@/lib/report-generator.server");
     const promptVersion = promptVersionFor(data.categoryId, data.placeType);
 
@@ -57,14 +58,56 @@ export const getCategory = createServerFn({ method: "POST" })
 
     // Кешът важи само ако е генериран със същата версия на промпта (иначе се генерира наново).
     if (row && isFresh(row.expires_at) && isCacheVersionValid(row.prompt_version, promptVersion)) {
-      result = {
+      let cached = {
         data: row.data as CachedCategory["data"],
         sourceLinks: (row.source_links as CachedCategory["sourceLinks"]) ?? null,
         incidentCount: row.incident_count,
         cachedAt: row.cached_at,
-        expiresAt: row.expires_at,
-        fromCache: true,
       };
+
+      // Второ генериране на малко място: допроверяваме обектите, пропуснати при първото
+      // (най-много веднъж). Ръчно импортираните и големите градове не минават оттук.
+      const stored = splitChecks(cached.data).checks;
+      if (stored && data.placeType !== "district" && !row.prompt_version?.startsWith("manual-")) {
+        const { loadSettlements, isLargeCity } = await import("@/lib/settlements");
+        const place = (await loadSettlements()).find((s) => s.ekatte === data.ekatte);
+        if (needsFollowUp(stored, place ? isLargeCity(place) : false)) {
+          try {
+            const next = await followUpCategory(
+              {
+                ekatte: data.ekatte,
+                categoryId: data.categoryId,
+                placeName: data.placeName,
+                placeType: data.placeType,
+              },
+              stored,
+              cached.sourceLinks,
+            );
+            const followedAt = new Date().toISOString();
+            await supabaseAdmin
+              .from("report_cache")
+              .update({
+                data: next.data as never,
+                source_links: next.sourceLinks as never,
+                incident_count: next.incidentCount,
+                cached_at: followedAt,
+              })
+              .eq("ekatte", data.ekatte)
+              .eq("category_id", data.categoryId);
+            cached = {
+              data: next.data,
+              sourceLinks: next.sourceLinks,
+              incidentCount: next.incidentCount,
+              cachedAt: followedAt,
+            };
+          } catch (err) {
+            // Допроверката е бонус — при грешка връщаме кешираното.
+            console.warn("[report] допроверката се провали:", err);
+          }
+        }
+      }
+
+      result = { ...cached, expiresAt: row.expires_at, fromCache: true };
     } else {
       // Нова (платена за нас) заявка към Gemini — само ако има оставащи кредити.
       const { getQuotaStatus } = await import("@/lib/quota.server");
@@ -106,6 +149,9 @@ export const getCategory = createServerFn({ method: "POST" })
         fromCache: false,
       };
     }
+
+    // Служебните данни за допроверка никога не стигат до клиента (нито в докладите).
+    result.data = splitChecks(result.data).data;
 
     // „Жива“ част: разстояние/време с кола до настоящата локация — винаги прясно.
     if (data.categoryId === "basic" && data.currentLocationName) {

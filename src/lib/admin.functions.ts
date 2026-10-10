@@ -117,3 +117,119 @@ export const deleteFeedback = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+export type AdminReportRow = {
+  id: string;
+  user_id: string;
+  email: string | null;
+  ekatte: number | null;
+  place_name: string | null;
+  created_at: string;
+  updated_at: string;
+  is_public: boolean;
+};
+
+export type AdminUserStats = {
+  user_id: string;
+  email: string | null;
+  count: number;
+  last_at: string;
+};
+
+export type AdminReportsResult = {
+  total: number;
+  users: AdminUserStats[];
+  reports: AdminReportRow[];
+};
+
+/**
+ * Статистика за генерираните доклади: по потребител и последните доклади (за всички или за един потребител).
+ * Личните данни (настояща локация, цел) не се четат — те са в `report_personal`.
+ * `reports` има един ред на потребител и място, който се обновява при повторно генериране.
+ */
+export const listReportsAdmin = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({
+        userId: z.string().uuid().optional(),
+        limit: z.number().int().min(1).max(500).default(100),
+      })
+      .parse(data ?? {}),
+  )
+  .handler(async ({ data, context }): Promise<AdminReportsResult> => {
+    const { data: me } = await context.supabase
+      .from("profiles")
+      .select("is_admin")
+      .eq("id", context.userId)
+      .maybeSingle();
+    if (!me?.is_admin) throw new Error("Нямате права за тази операция.");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: all, error: allError } = await supabaseAdmin
+      .from("reports")
+      .select("user_id, created_at, updated_at")
+      .limit(10000);
+    if (allError) throw new Error(allError.message);
+
+    const stats = new Map<string, { count: number; last_at: string }>();
+    for (const r of all ?? []) {
+      const last = r.updated_at > r.created_at ? r.updated_at : r.created_at;
+      const prev = stats.get(r.user_id);
+      stats.set(r.user_id, {
+        count: (prev?.count ?? 0) + 1,
+        last_at: prev && prev.last_at > last ? prev.last_at : last,
+      });
+    }
+
+    let query = supabaseAdmin
+      .from("reports")
+      .select("id, user_id, ekatte, place_name, created_at, updated_at, is_public")
+      .order("updated_at", { ascending: false })
+      .limit(data.limit);
+    if (data.userId) query = query.eq("user_id", data.userId);
+    const { data: rows, error } = await query;
+    if (error) throw new Error(error.message);
+
+    const ids = [...new Set([...stats.keys(), ...(rows ?? []).map((r) => r.user_id)])];
+    const emails = new Map<string, string | null>();
+    if (ids.length > 0) {
+      const { data: profiles } = await supabaseAdmin
+        .from("profiles")
+        .select("id, email")
+        .in("id", ids);
+      for (const p of profiles ?? []) emails.set(p.id, p.email);
+    }
+
+    return {
+      total: all?.length ?? 0,
+      users: [...stats.entries()]
+        .map(([user_id, s]) => ({ user_id, email: emails.get(user_id) ?? null, ...s }))
+        .sort((a, b) => b.count - a.count),
+      reports: (rows ?? []).map((r) => ({ ...r, email: emails.get(r.user_id) ?? null })),
+    };
+  });
+
+/** Пълното съдържание на запазен доклад (без личните данни) — за проверка от администратора. */
+export const getReportAdmin = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ id: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }): Promise<{ content: string; updated_at: string }> => {
+    const { data: me } = await context.supabase
+      .from("profiles")
+      .select("is_admin")
+      .eq("id", context.userId)
+      .maybeSingle();
+    if (!me?.is_admin) throw new Error("Нямате права за тази операция.");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: row, error } = await supabaseAdmin
+      .from("reports")
+      .select("report_content, updated_at")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!row) throw new Error("Докладът не е намерен.");
+    return { content: row.report_content, updated_at: row.updated_at };
+  });
