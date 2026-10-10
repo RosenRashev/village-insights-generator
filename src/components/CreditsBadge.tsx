@@ -79,7 +79,7 @@ export function CreditsBadge() {
           type="button"
           title={label}
           aria-label={label}
-          className={`inline-flex h-9 w-9 shrink-0 flex-col items-center justify-center gap-0.5 rounded-lg border text-sm font-bold leading-none tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 md:h-10 md:w-10 ${
+          className={`inline-flex h-9 w-9 shrink-0 flex-col items-center justify-center gap-0.5 rounded-[10px] border text-sm font-bold leading-none tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 md:h-10 md:w-10 ${
             empty
               ? "border-destructive/30 bg-destructive/10 text-destructive hover:bg-destructive/15"
               : "border-primary/30 bg-primary/10 text-primary hover:bg-primary/15"
