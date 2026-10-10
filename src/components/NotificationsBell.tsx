@@ -16,10 +16,12 @@ const SHOWN = 4;
  * падащо меню с последните няколко. При отваряне всички се маркират като прочетени.
  */
 export function NotificationsBell() {
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
-  const enabled = !!user && profile?.is_approved === true;
+  // Известията са лични и се филтрират на сървъра — показваме камбанката на всеки влязъл,
+  // без да чакаме профила (иначе при бавно зареждане на профила тя изчезва).
+  const enabled = !!user;
 
   const q = useQuery({
     queryKey: ["my-notifications", user?.id],

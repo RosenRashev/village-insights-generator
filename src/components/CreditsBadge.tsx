@@ -62,7 +62,17 @@ export function CreditsBadge() {
     return () => window.removeEventListener(OPEN_CREDITS_EVENT, onOpen);
   }, []);
 
-  if (!enabled || !user) return null;
+  if (!user) return null;
+  // Профилът още се зарежда — показваме заготовка, за да не „изчезва“ кутийката.
+  if (!profile) {
+    return (
+      <span
+        aria-hidden="true"
+        className="inline-flex h-9 w-9 shrink-0 animate-pulse rounded-[10px] border border-border bg-muted md:h-10 md:w-10"
+      />
+    );
+  }
+  if (!enabled) return null;
 
   const empty = !unlimited && credits === 0;
   const label = unlimited
