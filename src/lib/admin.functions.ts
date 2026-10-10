@@ -3,6 +3,9 @@ import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+/** Колко доклада получава нов потребител при първо одобрение. */
+const WELCOME_CREDITS = 1;
+
 export type AdminProfile = {
   id: string;
   email: string | null;
@@ -70,7 +73,19 @@ export const setReportCredits = createServerFn({ method: "POST" })
 
     const { adjustCredits, getCredits } = await import("@/lib/credits.server");
     const delta = "add" in data ? data.add : data.set - (await getCredits(data.id));
-    const balance = await adjustCredits(data.id, delta);
+    const balance = await adjustCredits(data.id, delta, false, {
+      reason: "admin",
+      actorId: context.userId,
+    });
+    if (delta > 0) {
+      const { notify } = await import("@/lib/notifications.server");
+      await notify([data.id], {
+        kind: "credits_added",
+        title: `Заредени са ви ${delta === 1 ? "1 доклад" : `${delta} доклада`}`,
+        body: `Вече имате ${balance ?? 0} на разположение.`,
+        link: "/",
+      });
+    }
     return { credits: balance ?? 0 };
   });
 
@@ -87,7 +102,23 @@ export const resolveCreditRequest = createServerFn({ method: "POST" })
     if (!me?.is_admin) throw new Error("Нямате права за тази операция.");
 
     const { resolveRequest } = await import("@/lib/credits.server");
-    const res = await resolveRequest(data.id, data.approve);
+    const res = await resolveRequest(data.id, data.approve, context.userId);
+    const { notify } = await import("@/lib/notifications.server");
+    await notify(
+      [res.userId],
+      data.approve
+        ? {
+            kind: "credits_added",
+            title: `Заявката ви е одобрена: +${res.amount === 1 ? "1 доклад" : `${res.amount} доклада`}`,
+            body: `Вече имате ${res.balance ?? 0} на разположение.`,
+            link: "/",
+          }
+        : {
+            kind: "request_rejected",
+            title: "Заявката ви за доклади е отказана",
+            body: "Можете да изпратите нова заявка от кутийката с доклади.",
+          },
+    );
     return { amount: res.amount, balance: res.balance };
   });
 
@@ -104,6 +135,28 @@ export const setProfileApproval = createServerFn({ method: "POST" })
 
     if (error) throw new Error(error.message);
     if (!rows || rows.length === 0) throw new Error("Нямате права за тази операция.");
+
+    // Безплатен доклад при първо одобрение (само веднъж на потребител).
+    if (data.approved) {
+      try {
+        const { adjustCredits, hasWelcomeCredit } = await import("@/lib/credits.server");
+        if (!(await hasWelcomeCredit(data.id))) {
+          const balance = await adjustCredits(data.id, WELCOME_CREDITS, false, {
+            reason: "welcome",
+            actorId: context.userId,
+          });
+          const { notify } = await import("@/lib/notifications.server");
+          await notify([data.id], {
+            kind: "welcome",
+            title: "Добре дошли в Къде Да!",
+            body: `Профилът ви е одобрен и имате ${balance ?? WELCOME_CREDITS} безплатен доклад.`,
+            link: "/",
+          });
+        }
+      } catch (err) {
+        console.warn("[admin] безплатният доклад не е даден:", err);
+      }
+    }
     return { ok: true };
   });
 
@@ -265,4 +318,84 @@ export const getReportAdmin = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     if (!row) throw new Error("Докладът не е намерен.");
     return { content: row.report_content, updated_at: row.updated_at };
+  });
+
+export type AdminUserDetail = {
+  profile: {
+    id: string;
+    email: string | null;
+    is_approved: boolean;
+    is_admin: boolean;
+    created_at: string;
+  };
+  credits: number;
+  requests: {
+    id: string;
+    amount: number;
+    note: string | null;
+    status: string;
+    created_at: string;
+    resolved_at: string | null;
+  }[];
+  history: {
+    id: string;
+    delta: number;
+    balance_after: number | null;
+    reason: string;
+    note: string | null;
+    place: string | null;
+    created_at: string;
+  }[];
+  reports: { id: string; ekatte: number | null; place_name: string | null; updated_at: string }[];
+};
+
+/** Профил на потребител за администратора: кредити, заявки (с бележки), история и доклади. */
+export const getAdminUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ id: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }): Promise<AdminUserDetail> => {
+    const { data: me } = await context.supabase
+      .from("profiles")
+      .select("is_admin")
+      .eq("id", context.userId)
+      .maybeSingle();
+    if (!me?.is_admin) throw new Error("Нямате права за тази операция.");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: profile, error } = await supabaseAdmin
+      .from("profiles")
+      .select("id, email, is_approved, is_admin, created_at")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!profile) throw new Error("Потребителят не е намерен.");
+
+    const { getCredits, getHistory, listRequestsFor } = await import("@/lib/credits.server");
+    const [credits, requests, history, reports] = await Promise.all([
+      getCredits(data.id),
+      listRequestsFor(data.id).catch(() => []),
+      getHistory(data.id, 30).catch(() => []),
+      supabaseAdmin
+        .from("reports")
+        .select("id, ekatte, place_name, updated_at")
+        .eq("user_id", data.id)
+        .order("updated_at", { ascending: false })
+        .limit(30)
+        .then((r) => r.data ?? []),
+    ]);
+
+    return {
+      profile,
+      credits,
+      requests: requests.map((r) => ({
+        id: r.id,
+        amount: r.amount,
+        note: r.note,
+        status: r.status,
+        created_at: r.created_at,
+        resolved_at: r.resolved_at,
+      })),
+      history,
+      reports,
+    };
   });

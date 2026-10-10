@@ -16,6 +16,14 @@ import {
 /** Claude артефакт за ръчното проучване на градове (промпт, инструкции, запис на отговорите). */
 const DOSSIERS_URL = "https://claude.ai/artifact/75h7a4wuh9md9Ekie4nZaq";
 
+/** Цвят на реда: жълто — чака зареждане; зелено — има доклади; сиво — няма. */
+function rowTone(r: AdminProfile): string {
+  if (r.is_admin) return "border-border";
+  if (r.pendingRequest) return "border-amber-400/70 bg-amber-500/10";
+  if (r.credits > 0) return "border-emerald-400/60 bg-emerald-500/10";
+  return "border-border bg-muted/40";
+}
+
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
     meta: [
@@ -180,11 +188,17 @@ function AdminPage() {
           {approved.map((r) => (
             <div
               key={r.id}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border p-3"
+              className={`flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3 ${rowTone(r)}`}
             >
               <div className="text-sm">
                 <p>
-                  {r.email ?? r.id}
+                  <Link
+                    to="/admin/users/$id"
+                    params={{ id: r.id }}
+                    className="font-medium hover:text-primary hover:underline"
+                  >
+                    {r.email ?? r.id}
+                  </Link>
                   {r.is_admin && <span className="ml-2 text-xs text-primary">админ</span>}
                 </p>
                 {r.pendingRequest && (

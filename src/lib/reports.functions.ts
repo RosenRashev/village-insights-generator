@@ -84,10 +84,22 @@ export const saveReport = createServerFn({ method: "POST" })
       // Кредитът се взема атомарно преди запис; при грешка се връща.
       if (!quota.unlimited) {
         const { adjustCredits } = await import("@/lib/credits.server");
-        if ((await adjustCredits(context.userId, -1, true)) === null) {
+        const balance = await adjustCredits(context.userId, -1, true, {
+          reason: "report",
+          place: data.placeName ?? data.locationQuery,
+        });
+        if (balance === null) {
           throw new Error(NO_CREDITS_MESSAGE);
         }
         charged = true;
+        if (balance === 0) {
+          const { notify } = await import("@/lib/notifications.server");
+          await notify([context.userId], {
+            kind: "credits_empty",
+            title: "Използвахте последния си доклад",
+            body: "Можете да заявите още от кутийката с доклади до профилната снимка.",
+          });
+        }
       }
     }
 
@@ -126,7 +138,10 @@ export const saveReport = createServerFn({ method: "POST" })
     if (error) {
       if (charged) {
         const { adjustCredits } = await import("@/lib/credits.server");
-        await adjustCredits(context.userId, 1).catch(() => null);
+        await adjustCredits(context.userId, 1, false, {
+          reason: "refund",
+          place: data.placeName ?? data.locationQuery,
+        }).catch(() => null);
       }
       throw new Error(error.message);
     }

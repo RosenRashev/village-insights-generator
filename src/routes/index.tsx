@@ -161,6 +161,13 @@ function Index() {
     enabled: !!placeEkatte && isSignedIn && isApproved,
     staleTime: 5 * 60_000,
   });
+  // Броят налични доклади (същият кеш като кутийката в хедъра) — за предупреждението за последен доклад.
+  const quotaQuery = useQuery({
+    queryKey: ["my-quota", user?.id],
+    queryFn: () => getMyQuota({ data: undefined }),
+    enabled: isSignedIn && isApproved,
+    staleTime: 60_000,
+  });
   const existingReport: MyReportSummary | null =
     placeEkatte && isSignedIn && isApproved ? (existingQuery.data ?? null) : null;
 
@@ -293,6 +300,8 @@ function Index() {
         void queryClient.invalidateQueries({ queryKey: ["my-report"] });
         void queryClient.invalidateQueries({ queryKey: ["my-reports"] });
         void queryClient.invalidateQueries({ queryKey: ["my-quota"] });
+        void queryClient.invalidateQueries({ queryKey: ["my-credit-history"] });
+        void queryClient.invalidateQueries({ queryKey: ["my-notifications"] });
         queryClient.setQueryData(["my-report-summary", user?.id, place.ekatte], {
           id: saved.id,
           is_public: !isPrivate,
@@ -552,10 +561,18 @@ function Index() {
                   Актуализирай
                 </Button>
               ) : (
-                <Button size="lg" onClick={() => void generateReport()}>
-                  <Sparkles className="h-4 w-4" />
-                  Генерирай доклад
-                </Button>
+                <>
+                  <Button size="lg" onClick={() => void generateReport()}>
+                    <Sparkles className="h-4 w-4" />
+                    Генерирай доклад
+                  </Button>
+                  {quotaQuery.data?.unlimited === false && quotaQuery.data.credits === 1 && (
+                    <p className="max-w-md rounded-md bg-amber-500/10 px-3 py-2 text-sm text-amber-800 dark:text-amber-200">
+                      Това е последният ви наличен доклад. След него можете да заявите още от
+                      кутийката с доклади до профилната снимка.
+                    </p>
+                  )}
+                </>
               )}
               {IS_MOCK && (
                 <Button
