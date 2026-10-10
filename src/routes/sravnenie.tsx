@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { CompareTable } from "@/components/CompareTable";
 import { buildComparison, buildPurposeComparison, type ComparePlace } from "@/lib/compare";
 import { canUsePurpose } from "@/lib/plans";
-import { PURPOSE_OPTIONS, type PurposeId } from "@/lib/prompt-modules";
+import { PURPOSE_OPTIONS, type PurposeId } from "@/lib/purposes";
 import { useAuth } from "@/hooks/useAuth";
 import { loadSelection, saveSelection } from "@/lib/compare-selection";
 import { useFavorites } from "@/lib/favorites";

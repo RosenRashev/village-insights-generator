@@ -51,6 +51,14 @@ export function LocationMap({ place, current = null }: Props) {
           : null;
       if (ref.current) resizeObserver?.observe(ref.current);
 
+      // Почистването се регистрира веднага — иначе при излизане по време на заявката към маршрута
+      // картата и наблюдателят оставаха в паметта.
+      cleanup = () => {
+        clearTimeout(sizeFix);
+        resizeObserver?.disconnect();
+        map.remove();
+      };
+
       const dot = (color: string) =>
         L.divIcon({
           className: "",
@@ -65,7 +73,6 @@ export function LocationMap({ place, current = null }: Props) {
 
       if (!current) {
         map.setView([place.lat, place.lng], 12);
-        cleanup = () => map.remove();
         return;
       }
 
@@ -74,6 +81,7 @@ export function LocationMap({ place, current = null }: Props) {
         .bindTooltip(current.label, { direction: "top", offset: [0, -8] });
 
       const drawStraightFallback = () => {
+        if (cancelled) return;
         L.polyline(
           [
             [current.lat, current.lng],
@@ -100,6 +108,7 @@ export function LocationMap({ place, current = null }: Props) {
           `https://router.project-osrm.org/route/v1/driving/${current.lng},${current.lat};${place.lng},${place.lat}?overview=full&geometries=geojson`,
           { signal: controller.signal },
         );
+        if (cancelled) return;
         if (!res.ok) throw new Error(`OSRM ${res.status}`);
         const json = (await res.json()) as {
           routes?: {
@@ -108,6 +117,7 @@ export function LocationMap({ place, current = null }: Props) {
             duration?: number;
           }[];
         };
+        if (cancelled) return;
         const route = json.routes?.[0];
         const coords = route?.geometry?.coordinates;
         if (!coords || coords.length < 2 || typeof route?.distance !== "number") {
@@ -131,12 +141,6 @@ export function LocationMap({ place, current = null }: Props) {
         clearTimeout(timeout);
         if (!cancelled) setLoading(false);
       }
-
-      cleanup = () => {
-        clearTimeout(sizeFix);
-        resizeObserver?.disconnect();
-        map.remove();
-      };
     })();
 
     return () => {

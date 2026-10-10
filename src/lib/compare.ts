@@ -1,5 +1,5 @@
 import type { ReportBlock, ReportSection } from "@/data/mock-report";
-import type { PurposeId } from "@/lib/prompt-modules";
+import type { PurposeId } from "@/lib/purposes";
 import { collectSignals, computeFit, TOPICS, VERDICT_TEXT, type TopicId } from "@/lib/purpose-fit";
 import { normalize, type Settlement } from "@/lib/settlements";
 

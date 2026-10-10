@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { RefreshCw, RotateCcw, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { PURPOSE_OPTIONS, type PurposeId } from "@/lib/prompt-modules";
+import { PURPOSE_OPTIONS, type PurposeId } from "@/lib/purposes";
 import { FieldHint } from "@/components/FieldHint";
 import { SettlementCombobox } from "@/components/SettlementCombobox";
 import { ModuleCard } from "@/components/ModuleCard";
@@ -16,8 +16,9 @@ import { TopoBackground } from "@/components/TopoBackground";
 import { PendingApproval } from "@/components/PendingApproval";
 import { OPEN_CREDITS_EVENT } from "@/components/CreditsBadge";
 import { GenerationProgress } from "@/components/GenerationProgress";
-import { ReportInfographic } from "@/components/ReportInfographic";
+import { LoadFailed } from "@/components/LoadFailed";
 import { useAuth } from "@/hooks/useAuth";
+import { toUserMessage } from "@/lib/user-errors";
 import { useReportSession } from "@/hooks/useReportSession";
 import {
   generateReportSections,
@@ -91,8 +92,24 @@ const HERO_PHRASES = [
   "намеря спокойствие",
 ];
 
+// Тежката инфографика (графики, карта, примерен доклад) се тегли чак когато трябва да се покаже.
+const ReportInfographic = lazy(() =>
+  import("@/components/ReportInfographic").then((m) => ({ default: m.ReportInfographic })),
+);
+
+function ReportSkeleton() {
+  return (
+    <div className="animate-pulse space-y-4 rounded-[2rem] bg-muted/60 p-6 sm:p-8">
+      <div className="h-6 w-2/3 rounded bg-muted-foreground/20" />
+      <div className="h-4 w-full rounded bg-muted-foreground/15" />
+      <div className="h-24 w-full rounded-2xl bg-muted-foreground/10" />
+    </div>
+  );
+}
+
 function Index() {
-  const { user, profile, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading, profileError, refreshProfile } = useAuth();
+  const startingRef = useRef(false);
   const isSignedIn = user !== null;
   const isApproved = profile?.is_approved === true;
   const purposeAllowed = canUsePurpose(profile);
@@ -225,7 +242,17 @@ function Index() {
 
   const generateReport = async () => {
     if (!place) return;
+    // Двоен клик: втората заявка се игнорира още преди проверката на квотата.
+    if (startingRef.current) return;
+    startingRef.current = true;
+    try {
+      await runGenerate(place);
+    } finally {
+      startingRef.current = false;
+    }
+  };
 
+  const runGenerate = async (place: Settlement) => {
     // Лимитът важи за нови доклади, не за актуализация на вече съществуващ.
     if (!existingReport) {
       try {
@@ -240,7 +267,7 @@ function Index() {
           return;
         }
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Неуспешна проверка на лимита.");
+        toast.error(toUserMessage(err, "Неуспешна проверка на лимита."));
         return;
       }
     }
@@ -315,14 +342,10 @@ function Index() {
               : "Докладът е готов.",
         );
       } catch (err) {
-        toast.error(
-          err instanceof Error
-            ? `Докладът не беше запазен: ${err.message}`
-            : "Докладът не беше запазен.",
-        );
+        toast.error(`Докладът не беше запазен: ${toUserMessage(err, "опитайте отново.")}`);
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Грешка при генерирането.");
+      toast.error(toUserMessage(err, "Грешка при генерирането."));
     } finally {
       setGenerating(false);
     }
@@ -522,7 +545,14 @@ function Index() {
 
         {hasPlace && isSignedIn && !isApproved && !authLoading && (
           <section className="mt-12">
-            <PendingApproval />
+            {profileError && !profile ? (
+              <LoadFailed
+                message="Профилът ви не успя да се зареди."
+                onRetry={() => void refreshProfile()}
+              />
+            ) : (
+              <PendingApproval />
+            )}
           </section>
         )}
 
@@ -594,22 +624,18 @@ function Index() {
 
             {(loadingSaved || showSaved) && (
               <div className="mt-8 space-y-6">
-                {loadingSaved && (
-                  <div className="animate-pulse space-y-4 rounded-[2rem] bg-muted/60 p-6 sm:p-8">
-                    <div className="h-6 w-2/3 rounded bg-muted-foreground/20" />
-                    <div className="h-4 w-full rounded bg-muted-foreground/15" />
-                    <div className="h-24 w-full rounded-2xl bg-muted-foreground/10" />
-                  </div>
-                )}
+                {loadingSaved && <ReportSkeleton />}
                 {showSaved && savedPayload && savedRow && (
-                  <ReportInfographic
-                    place={savedPayload.place}
-                    current={savedPayload.current ?? null}
-                    sections={savedPayload.sections}
-                    demo={false}
-                    purpose={purposeAllowed ? (savedPayload.purpose ?? null) : null}
-                    generatedAt={savedPayload.generatedAt ?? savedRow.updated_at}
-                  />
+                  <Suspense fallback={<ReportSkeleton />}>
+                    <ReportInfographic
+                      place={savedPayload.place}
+                      current={savedPayload.current ?? null}
+                      sections={savedPayload.sections}
+                      demo={false}
+                      purpose={purposeAllowed ? (savedPayload.purpose ?? null) : null}
+                      generatedAt={savedPayload.generatedAt ?? savedRow.updated_at}
+                    />
+                  </Suspense>
                 )}
               </div>
             )}
@@ -623,14 +649,16 @@ function Index() {
                   </p>
                 )}
                 {showReport && realSections && realSections.length > 0 && reportFor && (
-                  <ReportInfographic
-                    place={reportFor.place}
-                    current={reportFor.current}
-                    sections={realSections}
-                    demo={false}
-                    purpose={purposeAllowed ? purpose : null}
-                    generatedAt={generatedAt}
-                  />
+                  <Suspense fallback={<ReportSkeleton />}>
+                    <ReportInfographic
+                      place={reportFor.place}
+                      current={reportFor.current}
+                      sections={realSections}
+                      demo={false}
+                      purpose={purposeAllowed ? purpose : null}
+                      generatedAt={generatedAt}
+                    />
+                  </Suspense>
                 )}
                 {generating &&
                   Array.from({ length: Math.max(0, progress.total - progress.done) })

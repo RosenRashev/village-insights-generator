@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -8,12 +8,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { safeRedirect } from "@/lib/redirect";
+import { toUserMessage } from "@/lib/user-errors";
 
 const TITLE = "Вход и регистрация — Къде Да";
 const DESCRIPTION =
   "Влезте в профила си или си създайте акаунт в Къде Да, за да генерирате и запазвате доклади за населени места.";
 
 export const Route = createFileRoute("/vhod")({
+  // Къде да върнем потребителя след вход (напр. страницата, от която е пренасочен).
+  validateSearch: (search: Record<string, unknown>): { redirect?: string | undefined } => ({
+    redirect: typeof search["redirect"] === "string" ? search["redirect"] : undefined,
+  }),
   head: () => ({
     meta: [
       { title: TITLE },
@@ -35,11 +41,14 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const { session } = useAuth();
-  const navigate = useNavigate();
+  const router = useRouter();
+  const { redirect } = Route.useSearch();
+  const dest = safeRedirect(redirect);
+  const goBack = () => router.history.push(dest);
 
   useEffect(() => {
-    if (session) void navigate({ to: "/" });
-  }, [session, navigate]);
+    if (session) router.history.push(dest);
+  }, [session, router, dest]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,7 +58,7 @@ function AuthPage() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         toast.success("Успешен вход.");
-        void navigate({ to: "/" });
+        goBack();
       } else if (mode === "signup") {
         const { data, error } = await supabase.auth.signUp({
           email,
@@ -60,7 +69,7 @@ function AuthPage() {
         if (data.session) {
           // Потвърждението на имейл е изключено в Supabase — сесията идва веднага.
           toast.success("Регистрацията е успешна. Достъпът се активира след одобрение.");
-          void navigate({ to: "/" });
+          goBack();
         } else {
           toast.success(
             "Регистрацията е получена. Потвърдете имейла си — достъпът се активира след одобрение.",
@@ -76,7 +85,7 @@ function AuthPage() {
         setMode("signin");
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Неуспешен опит.");
+      toast.error(toUserMessage(err, "Неуспешен опит. Опитайте пак."));
     } finally {
       setBusy(false);
     }
@@ -87,7 +96,7 @@ function AuthPage() {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo: window.location.origin },
+        options: { redirectTo: `${window.location.origin}${dest}` },
       });
       if (error) {
         toast.error("Входът с Google не бе успешен.");

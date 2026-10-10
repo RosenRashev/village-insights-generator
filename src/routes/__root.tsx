@@ -10,6 +10,7 @@ import {
   type ErrorComponentProps,
 } from "@tanstack/react-router";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
+import { Menu } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
@@ -17,6 +18,12 @@ import { FeedbackBox } from "../components/FeedbackBox";
 import { CreditsBadge } from "@/components/CreditsBadge";
 import { NotificationsBell } from "@/components/NotificationsBell";
 import { InstallAppButton } from "../components/InstallAppButton";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../components/ui/dropdown-menu";
 import { Toaster } from "../components/ui/sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../components/ui/tooltip";
 import { AuthProvider, useAuth } from "../hooks/useAuth";
@@ -263,19 +270,18 @@ function UserAvatar({ user }: { user: NonNullable<ReturnType<typeof useAuth>["us
     user.email ||
     "";
   const initial = displayName.trim().charAt(0).toUpperCase() || "?";
+  const [imgFailed, setImgFailed] = useState(false);
 
-  if (avatarUrl) {
+  if (avatarUrl && !imgFailed) {
     return (
       <img
         src={avatarUrl}
         alt={displayName ? `Профилна снимка на ${displayName}` : "Профилна снимка"}
         title={displayName || undefined}
         referrerPolicy="no-referrer"
-        className="h-7 w-7 rounded-full border border-border object-cover"
-        onError={(e) => {
-          // Ако Google снимката не успее да се зареди, скриваме img-а, за да не остане счупена икона.
-          e.currentTarget.style.display = "none";
-        }}
+        className="hidden h-7 w-7 rounded-full border border-border object-cover md:block"
+        // Ако Google снимката не успее да се зареди, показваме буквата вместо празно място.
+        onError={() => setImgFailed(true)}
       />
     );
   }
@@ -283,7 +289,7 @@ function UserAvatar({ user }: { user: NonNullable<ReturnType<typeof useAuth>["us
   return (
     <span
       title={displayName || undefined}
-      className="grid h-7 w-7 place-items-center rounded-full bg-primary/10 text-xs font-semibold text-primary"
+      className="hidden h-7 w-7 place-items-center rounded-full bg-primary/10 text-xs font-semibold text-primary md:grid"
       aria-hidden="true"
     >
       {initial}
@@ -319,7 +325,32 @@ function NavTip({
 }
 
 const NAV_LINK =
-  "rounded-full px-2.5 py-1.5 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary focus-visible:bg-primary/10 focus-visible:text-primary focus-visible:outline-none md:px-4 md:py-2";
+  "hidden rounded-full px-2.5 py-1.5 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary focus-visible:bg-primary/10 focus-visible:text-primary focus-visible:outline-none md:inline-block md:px-4 md:py-2";
+
+function MobileMenu() {
+  const { profile, user, signOut } = useAuth();
+  const router = useRouter();
+  const go = (to: string) => () => void router.navigate({ to });
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          aria-label="Меню"
+          className="grid h-9 w-9 place-items-center rounded-full text-foreground hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:hidden"
+        >
+          <Menu className="h-5 w-5" aria-hidden="true" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="min-w-48">
+        <DropdownMenuItem onSelect={go("/sravnenie")}>Сравнение</DropdownMenuItem>
+        {user && <DropdownMenuItem onSelect={go("/profil")}>Моите доклади</DropdownMenuItem>}
+        {profile?.is_admin && <DropdownMenuItem onSelect={go("/admin")}>Админ</DropdownMenuItem>}
+        {user && <DropdownMenuItem onSelect={() => void signOut()}>Изход</DropdownMenuItem>}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
 function SiteHeader() {
   const { user, profile, signOut } = useAuth();
@@ -392,6 +423,7 @@ function SiteHeader() {
               </NavTip>
             )}
             <InstallAppButton />
+            <MobileMenu />
           </nav>
         </div>
       </header>
@@ -404,6 +436,24 @@ function RootComponent() {
 
   useEffect(() => {
     registerServiceWorker();
+  }, []);
+
+  // После ново внедряване старите JS файлове изчезват: при „chunk не е намерен“ страницата
+  // се презарежда веднъж, за да вземе новата версия (защита срещу цикъл от презареждания).
+  useEffect(() => {
+    const onPreloadError = (event: Event) => {
+      event.preventDefault();
+      try {
+        const last = Number(window.sessionStorage.getItem("kadeda:preload-reload") ?? "0");
+        if (Date.now() - last < 30_000) return;
+        window.sessionStorage.setItem("kadeda:preload-reload", String(Date.now()));
+      } catch {
+        return;
+      }
+      window.location.reload();
+    };
+    window.addEventListener("vite:preloadError", onPreloadError);
+    return () => window.removeEventListener("vite:preloadError", onPreloadError);
   }, []);
 
   return (

@@ -1,13 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
-import { ExternalLink, Eye, EyeOff, Loader2, Trash2 } from "lucide-react";
+import { ExternalLink, Eye, EyeOff, Trash2 } from "lucide-react";
 
+import { ConfirmButton } from "@/components/ConfirmButton";
+import { FullPageLoading, LoadFailed } from "@/components/LoadFailed";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { PendingApproval } from "@/components/PendingApproval";
 import { reasonLabel, signed } from "@/lib/credit-labels";
+import { toUserMessage } from "@/lib/user-errors";
 import { getMyCreditHistory } from "@/lib/credits.functions";
 import {
   deleteReport,
@@ -33,7 +36,7 @@ export const Route = createFileRoute("/_authenticated/profil")({
 });
 
 function ProfilePage() {
-  const { profile, loading, user, signOut } = useAuth();
+  const { profile, loading, user, signOut, profileError, refreshProfile } = useAuth();
   const [busyId, setBusyId] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const refreshCompare = () => {
@@ -68,20 +71,8 @@ function ProfilePage() {
     await queryClient.invalidateQueries({ queryKey: ["my-reports"] });
   };
 
-  useEffect(() => {
-    if (reportsQuery.error) {
-      toast.error(
-        reportsQuery.error instanceof Error ? reportsQuery.error.message : "Неуспешно зареждане.",
-      );
-    }
-  }, [reportsQuery.error]);
-
-  if (loading) {
-    return (
-      <main className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
-      </main>
-    );
+  if (loading || !profile) {
+    return <FullPageLoading profileError={profileError} onRetry={() => void refreshProfile()} />;
   }
 
   if (profile && !profile.is_approved) {
@@ -99,7 +90,7 @@ function ProfilePage() {
       refreshCompare();
       await load();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Неуспешна промяна.");
+      toast.error(toUserMessage(err, "Неуспешна промяна."));
     } finally {
       setBusyId(null);
     }
@@ -113,7 +104,7 @@ function ProfilePage() {
       await load();
       toast.success("Докладът е изтрит.");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Неуспешно изтриване.");
+      toast.error(toUserMessage(err, "Неуспешно изтриване."));
     } finally {
       setBusyId(null);
     }
@@ -124,7 +115,7 @@ function ProfilePage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-primary">Моите доклади</h1>
-          <p className="text-sm text-muted-foreground">{user?.email}</p>
+          <p className="break-all text-sm text-muted-foreground">{user?.email}</p>
           {quota && !quota.unlimited && (
             <p className="mt-1 text-sm">
               Оставащи нови доклади: <strong>{quota.credits}</strong>
@@ -142,7 +133,15 @@ function ProfilePage() {
         </Button>
       </div>
 
-      {!reports && <p className="mt-8 text-sm text-muted-foreground">Зареждане…</p>}
+      {!reports && reportsQuery.isError && (
+        <LoadFailed
+          onRetry={() => void reportsQuery.refetch()}
+          retrying={reportsQuery.isFetching}
+        />
+      )}
+      {!reports && !reportsQuery.isError && (
+        <p className="mt-8 text-sm text-muted-foreground">Зареждане…</p>
+      )}
       {reports && reports.length === 0 && (
         <p className="mt-8 text-sm text-muted-foreground">Още нямате генерирани доклади.</p>
       )}
@@ -152,8 +151,8 @@ function ProfilePage() {
           return (
             <div key={r.id} className="rounded-xl border border-border p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="font-semibold">{r.place_name ?? r.location_query}</p>
+                <div className="min-w-0">
+                  <p className="break-words font-semibold">{r.place_name ?? r.location_query}</p>
                   <p className="text-xs text-muted-foreground">
                     Обновен: {new Date(r.updated_at).toLocaleDateString("bg-BG")} ·{" "}
                     {r.is_public ? "публичен" : "личен"}
@@ -182,14 +181,18 @@ function ProfilePage() {
                       </Link>
                     </Button>
                   )}
-                  <Button
+                  <ConfirmButton
                     size="sm"
                     variant="ghost"
+                    ariaLabel="Изтрий доклада"
                     disabled={busyId === r.id}
-                    onClick={() => void remove(r)}
+                    title="Да изтрия ли доклада?"
+                    description={`Докладът за „${r.place_name ?? r.location_query}“ ще бъде изтрит. Кредитът не се възстановява.`}
+                    confirmLabel="Изтрий"
+                    onConfirm={() => remove(r)}
                   >
                     <Trash2 className="h-4 w-4" />
-                  </Button>
+                  </ConfirmButton>
                 </div>
               </div>
             </div>

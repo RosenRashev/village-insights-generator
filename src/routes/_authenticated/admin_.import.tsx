@@ -1,13 +1,17 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { Check, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 
+import { FullPageLoading } from "@/components/LoadFailed";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { importManualCategory } from "@/lib/manual-import.functions";
 import { parseManualResearch } from "@/lib/manual-research";
-import { PROMPT_MODULES } from "@/lib/prompt-modules";
+import { CATEGORIES, categoryLabel } from "@/lib/categories";
+import { loadSettlements } from "@/lib/settlements";
+import { toUserMessage } from "@/lib/user-errors";
 
 /** Градовете от docs/manual-research/cities.md (ЕКАТТЕ). */
 const CITIES: { name: string; ekatte: number }[] = [
@@ -47,7 +51,7 @@ export const Route = createFileRoute("/_authenticated/admin_/import")({
 });
 
 function ImportPage() {
-  const { profile, loading } = useAuth();
+  const { profile, loading, profileError, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [placeQuery, setPlaceQuery] = useState("");
   const [text, setText] = useState("");
@@ -58,19 +62,41 @@ function ImportPage() {
     if (!loading && profile && !profile.is_admin) void navigate({ to: "/" });
   }, [loading, profile, navigate]);
 
+  // Предупреждение при затваряне на страницата по време на импорт (иначе част от категориите се губят).
+  useEffect(() => {
+    if (!busy) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [busy]);
+
+  const settlementsQuery = useQuery({
+    queryKey: ["settlements"],
+    queryFn: loadSettlements,
+    staleTime: Infinity,
+  });
+  const knownEkatte = useMemo(
+    () => (settlementsQuery.data ? new Set(settlementsQuery.data.map((s) => s.ekatte)) : null),
+    [settlementsQuery.data],
+  );
+
   const parsed = useMemo(() => parseManualResearch(text), [text]);
   const query = placeQuery.trim();
   const cityMatch =
     CITIES.find((c) => c.name.toLowerCase() === query.toLowerCase()) ??
     CITIES.find((c) => /^\d+$/.test(query) && c.ekatte === Number(query));
   const ekatteNum = cityMatch ? cityMatch.ekatte : /^\d{1,5}$/.test(query) ? Number(query) : 0;
-  const validEkatte = ekatteNum > 0;
+  const validEkatte = ekatteNum > 0 && (knownEkatte === null || knownEkatte.has(ekatteNum));
 
   if (loading || !profile?.is_admin) {
     return (
-      <main className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
-      </main>
+      <FullPageLoading
+        profileError={profileError && !profile}
+        onRetry={() => void refreshProfile()}
+      />
     );
   }
 
@@ -88,7 +114,7 @@ function ImportPage() {
         setStatus((s) => ({ ...s, [c.id]: { state: "done" } }));
       } catch (err) {
         failed += 1;
-        const error = err instanceof Error ? err.message : "Неуспешен импорт.";
+        const error = toUserMessage(err, "Неуспешен импорт.");
         setStatus((s) => ({ ...s, [c.id]: { state: "error", error } }));
       }
     }
@@ -97,7 +123,7 @@ function ImportPage() {
     else toast.error(`${failed} категории не се импортираха — вж. списъка.`);
   };
 
-  const label = (id: string) => PROMPT_MODULES.find((m) => m.id === id)?.label ?? id;
+  const label = categoryLabel;
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-12">
@@ -123,7 +149,10 @@ function ImportPage() {
             list="city-options"
             className="h-10 w-full max-w-sm rounded-md border bg-background px-3"
             value={placeQuery}
-            onChange={(e) => setPlaceQuery(e.target.value)}
+            onChange={(e) => {
+              setPlaceQuery(e.target.value);
+              setStatus({});
+            }}
             disabled={busy}
             placeholder="започни да пишеш: Асеновград или 00702"
             autoComplete="off"
@@ -138,7 +167,7 @@ function ImportPage() {
               ? `ЕКАТТЕ ${String(ekatteNum).padStart(5, "0")}${
                   cityMatch ? ` · ${cityMatch.name}` : ""
                 }`
-              : "Няма съвпадение — избери град от подсказките или въведи ЕКАТТЕ."}
+              : "Няма съвпадение с известно населено място — избери град от подсказките или въведи ЕКАТТЕ."}
           </span>
         </div>
 
@@ -147,7 +176,10 @@ function ImportPage() {
           <textarea
             className="min-h-64 rounded-md border bg-background p-3 font-mono text-xs"
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => {
+              setText(e.target.value);
+              setStatus({});
+            }}
             disabled={busy}
             spellCheck={false}
             placeholder="## КАТЕГОРИЯ: basic …"
@@ -157,7 +189,7 @@ function ImportPage() {
         {text.trim() && (
           <div className="rounded-md border p-3 text-sm">
             <p>
-              Разпознати категории: <b>{parsed.categories.length}</b> от {PROMPT_MODULES.length}
+              Разпознати категории: <b>{parsed.categories.length}</b> от {CATEGORIES.length}
             </p>
             {parsed.missingIds.length > 0 && (
               <p className="mt-1 text-amber-600">Липсват: {parsed.missingIds.join(", ")}</p>

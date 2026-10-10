@@ -1,6 +1,7 @@
 import { toast } from "sonner";
 
-import { PROMPT_MODULES, type PlaceType, type PurposeId } from "@/lib/prompt-modules";
+import { CATEGORY_IDS, categoryLabel } from "@/lib/categories";
+import type { PurposeId } from "@/lib/purposes";
 import { REPORT_DATA_SOURCE } from "@/lib/report-mode";
 import { generateMockCategory, generateMockPerspectiveSummary } from "@/lib/mock-report-generator";
 import { getCategory } from "@/lib/report-cache.functions";
@@ -20,8 +21,6 @@ export type ReportPayload = {
 };
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-export const CATEGORY_IDS = PROMPT_MODULES.map((m) => m.id);
 
 export function totalSteps(purpose: PurposeId | null): number {
   return CATEGORY_IDS.length + (purpose ? 1 : 0) + 1;
@@ -43,7 +42,6 @@ export async function generateReportSections({
   onSections,
   onStep,
 }: Options): Promise<{ sections: ReportSection[]; failed: number }> {
-  const placeType: PlaceType = place.isVillage ? "village" : "town";
   const collected: ReportSection[] = [];
   let failed = 0;
 
@@ -71,9 +69,7 @@ export async function generateReportSections({
             data: {
               ekatte: place.ekatte,
               categoryId,
-              placeName: formatSettlement(place),
-              placeType,
-              ...(current ? { currentLocationName: formatSettlement(current) } : {}),
+              ...(current ? { currentEkatte: current.ekatte } : {}),
             },
           });
           const section = result.data as unknown as ReportSection | null;
@@ -92,7 +88,7 @@ export async function generateReportSections({
         } catch (err) {
           failed += 1;
           toast.error(
-            `Грешка при „${PROMPT_MODULES.find((m) => m.id === categoryId)?.label ?? categoryId}“: ${
+            `Грешка при „${categoryLabel(categoryId)}“: ${
               err instanceof Error ? err.message : "неизвестна грешка"
             }`,
           );

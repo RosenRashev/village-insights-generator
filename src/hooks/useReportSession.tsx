@@ -1,7 +1,9 @@
 import {
   createContext,
   useContext,
+  useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type Dispatch,
@@ -11,7 +13,7 @@ import {
 
 import type { ReportSection } from "@/data/mock-report";
 import { useAuth } from "@/hooks/useAuth";
-import type { PurposeId } from "@/lib/prompt-modules";
+import type { PurposeId } from "@/lib/purposes";
 import type { Settlement } from "@/lib/settlements";
 
 /**
@@ -62,7 +64,7 @@ export function ReportSessionProvider({ children }: { children: ReactNode }) {
   } | null>(null);
   const [generatedAt, setGeneratedAt] = useState<string | undefined>(undefined);
 
-  const reset = () => {
+  const reset = useCallback(() => {
     setPlace(null);
     setCurrentLocation(null);
     setPurpose(null);
@@ -71,7 +73,7 @@ export function ReportSessionProvider({ children }: { children: ReactNode }) {
     setReportFor(null);
     setGeneratedAt(undefined);
     setProgress({ done: 0, total: 0 });
-  };
+  }, []);
 
   // При смяна на потребителя (изход/вход с друг акаунт) нищо от предишния не остава.
   const lastUser = useRef<string | null | undefined>(undefined);
@@ -79,29 +81,43 @@ export function ReportSessionProvider({ children }: { children: ReactNode }) {
     const id = user?.id ?? null;
     if (lastUser.current !== undefined && lastUser.current !== id) reset();
     lastUser.current = id;
-  }, [user?.id]);
+  }, [user?.id, reset]);
 
-  const value: ReportSessionState = {
-    place,
-    setPlace,
-    currentLocation,
-    setCurrentLocation,
-    purpose,
-    setPurpose,
-    isPrivate,
-    setIsPrivate,
-    generating,
-    setGenerating,
-    progress,
-    setProgress,
-    realSections,
-    setRealSections,
-    reportFor,
-    setReportFor,
-    generatedAt,
-    setGeneratedAt,
-    reset,
-  };
+  const value = useMemo<ReportSessionState>(
+    () => ({
+      place,
+      setPlace,
+      currentLocation,
+      setCurrentLocation,
+      purpose,
+      setPurpose,
+      isPrivate,
+      setIsPrivate,
+      generating,
+      setGenerating,
+      progress,
+      setProgress,
+      realSections,
+      setRealSections,
+      reportFor,
+      setReportFor,
+      generatedAt,
+      setGeneratedAt,
+      reset,
+    }),
+    [
+      place,
+      currentLocation,
+      purpose,
+      isPrivate,
+      generating,
+      progress,
+      realSections,
+      reportFor,
+      generatedAt,
+      reset,
+    ],
+  );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

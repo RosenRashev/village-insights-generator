@@ -1,4 +1,4 @@
-import { PROMPT_MODULES } from "@/lib/prompt-modules";
+import { CATEGORIES } from "@/lib/categories";
 import type { SourceLink } from "@/lib/report-cache";
 
 /** Една категория от ръчно проучване: суров текст (без блока ИЗТОЧНИЦИ) + извадените връзки. */
@@ -40,7 +40,7 @@ function labelFor(url: string): string {
  * и текст преди първото заглавие (игнорира се).
  */
 export function parseManualResearch(markdown: string): ParsedManualResearch {
-  const known = new Set(PROMPT_MODULES.map((m) => m.id));
+  const known = new Set(CATEGORIES.map((m) => m.id));
   const lines = markdown.replace(/\r\n?/g, "\n").split("\n");
 
   const blocks: { id: string; lines: string[] }[] = [];
@@ -92,9 +92,9 @@ export function parseManualResearch(markdown: string): ParsedManualResearch {
     }
   }
 
-  const categories = PROMPT_MODULES.map((m) => byId.get(m.id)).filter(
+  const categories = CATEGORIES.map((m) => byId.get(m.id)).filter(
     (c): c is ManualCategory => c !== undefined,
   );
-  const missingIds = PROMPT_MODULES.map((m) => m.id).filter((id) => !byId.has(id));
+  const missingIds = CATEGORIES.map((m) => m.id).filter((id) => !byId.has(id));
   return { categories, unknownIds, missingIds, emptyIds };
 }

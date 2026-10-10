@@ -97,7 +97,8 @@ import type { Settlement } from "@/lib/settlements";
 import { displaySettlement } from "@/lib/settlements";
 import { PURPOSE_INSIGHTS } from "@/lib/purpose-insights";
 import { PURPOSE_FIT_ID, sectionScore, withPurposeSection } from "@/lib/purpose-fit";
-import { PURPOSE_OPTIONS, type PurposeId } from "@/lib/prompt-modules";
+import { PURPOSE_OPTIONS, type PurposeId } from "@/lib/purposes";
+import { safeSources } from "@/lib/safe-url";
 
 const ICONS: Record<string, LucideIcon> = {
   basic: Route,
@@ -271,8 +272,9 @@ const GAUGE_DIRECTION = {
   neutral: { color: "#64748b", Icon: Minus },
 } as const;
 
-function SourceArrow({ sources }: { sources?: SourceLink[] | undefined }) {
-  if (!sources || sources.length === 0) return null;
+function SourceArrow({ sources: rawSources }: { sources?: SourceLink[] | undefined }) {
+  const sources = safeSources(rawSources);
+  if (sources.length === 0) return null;
   const first = sources[0]!;
   return (
     <a
@@ -1254,13 +1256,14 @@ function formatDate(iso: string | undefined): string | null {
 /** Дата на данните и списък с източниците, на които се е опряло проучването. */
 function SectionFooter({
   cachedAt,
-  sources,
+  sources: rawSources,
 }: {
   cachedAt?: string | undefined;
   sources?: SourceLink[] | undefined;
 }) {
   const date = formatDate(cachedAt);
-  if (!date && (!sources || sources.length === 0)) return null;
+  const sources = safeSources(rawSources);
+  if (!date && sources.length === 0) return null;
 
   return (
     <footer className="space-y-2 border-t border-slate-100 pt-3 text-xs text-slate-500">

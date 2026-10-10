@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
+import { toUserMessage } from "@/lib/user-errors";
 
 const TITLE = "Нова парола — Къде Да";
 const DESCRIPTION = "Задайте нова парола за профила си в Къде Да.";
@@ -40,7 +41,7 @@ function NewPasswordPage() {
       toast.success("Паролата е сменена.");
       void navigate({ to: "/" });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Неуспешна смяна на паролата.");
+      toast.error(toUserMessage(err, "Неуспешна смяна на паролата."));
     } finally {
       setBusy(false);
     }

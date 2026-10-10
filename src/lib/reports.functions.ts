@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { PROMPT_MODULES } from "@/lib/prompt-modules";
+import { CATEGORY_IDS } from "@/lib/categories";
 import {
   mergePersonal,
   missingSectionIds,
@@ -11,7 +11,7 @@ import {
   type Personal,
 } from "@/lib/report-privacy";
 
-const REQUIRED_SECTION_IDS = PROMPT_MODULES.map((m) => m.id);
+const REQUIRED_SECTION_IDS = CATEGORY_IDS;
 const NO_CREDITS_MESSAGE =
   "Нямате оставащи доклади. Свържете се с администратора, за да ви зареди.";
 
@@ -44,11 +44,12 @@ export const saveReport = createServerFn({ method: "POST" })
   .inputValidator((data) =>
     z
       .object({
-        locationQuery: z.string().min(1),
-        ekatte: z.number().int().nullable().optional(),
-        placeName: z.string().nullable().optional(),
-        selectedTopics: z.array(z.string()),
-        reportContent: z.string().min(1),
+        locationQuery: z.string().min(1).max(300),
+        ekatte: z.number().int().min(1).max(99999).nullable().optional(),
+        placeName: z.string().max(300).nullable().optional(),
+        selectedTopics: z.array(z.string().max(40)).max(5),
+        // Достатъчно за най-големия реален доклад; пази от запис на огромни данни.
+        reportContent: z.string().min(1).max(400_000),
         isPublic: z.boolean(),
       })
       .parse(data),

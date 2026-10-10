@@ -495,32 +495,4 @@ export const COMMON_RULES = `ПРАВИЛО ЗА ДАВНОСТ:
 ПРИОРИТЕТНИ ИЗТОЧНИЦИ ЗА ТЪРСЕНЕ В МРЕЖАТА:
 Използвай новинарски сайтове, които са локални или свързани с населеното място.`;
 
-export type PurposeId = "family" | "weekend" | "retirees" | "remote" | "investor";
-
-export const PURPOSE_OPTIONS: { id: PurposeId; label: string; hint: string }[] = [
-  {
-    id: "family",
-    label: "Семейство с деца",
-    hint: "Училища, детски градини, безопасност, услуги.",
-  },
-  {
-    id: "weekend",
-    label: "Имот за почивка (уикенд)",
-    hint: "Достъпност, природа, спокойствие, сезонност.",
-  },
-  {
-    id: "retirees",
-    label: "Възрастни хора",
-    hint: "Здравеопазване, аптеки, спокойствие, достъпност.",
-  },
-  {
-    id: "remote",
-    label: "Работа от разстояние / дигитален номад",
-    hint: "Интернет, мобилно покритие, Home Office.",
-  },
-  {
-    id: "investor",
-    label: "Инвеститори и предприемачи",
-    hint: "Икономически потенциал, работна сила, ОУП, финансиращи програми.",
-  },
-];
+export type { PurposeId } from "@/lib/purposes";

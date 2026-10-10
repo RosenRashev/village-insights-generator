@@ -127,6 +127,15 @@ export const setProfileApproval = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => z.object({ id: z.string().uuid(), approved: z.boolean() }).parse(data))
   .handler(async ({ data, context }) => {
+    // Изрична проверка (не само RLS): иначе потребител може сам да се одобри и да вземе
+    // безплатния доклад.
+    const { data: me } = await context.supabase
+      .from("profiles")
+      .select("is_admin")
+      .eq("id", context.userId)
+      .maybeSingle();
+    if (!me?.is_admin) throw new Error("Нямате права за тази операция.");
+
     const { data: rows, error } = await context.supabase
       .from("profiles")
       .update({ is_approved: data.approved })

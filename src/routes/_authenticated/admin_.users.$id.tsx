@@ -1,8 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import { ConfirmButton } from "@/components/ConfirmButton";
+import { FullPageLoading, LoadFailed } from "@/components/LoadFailed";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -12,6 +13,11 @@ import {
   type AdminUserDetail,
 } from "@/lib/admin.functions";
 import { reasonLabel, signed } from "@/lib/credit-labels";
+import { reportsWord } from "@/lib/credits-notice";
+import { toUserMessage } from "@/lib/user-errors";
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const MAX_CUSTOM = 1000;
 
 export const Route = createFileRoute("/_authenticated/admin_/users/$id")({
   head: () => ({
@@ -37,9 +43,10 @@ const STATUS_LABEL: Record<string, string> = {
 
 function AdminUserPage() {
   const { id } = Route.useParams();
-  const { profile, loading } = useAuth();
+  const { profile, loading, profileError, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [user, setUser] = useState<AdminUserDetail | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [custom, setCustom] = useState("");
 
@@ -47,28 +54,71 @@ function AdminUserPage() {
     if (!loading && profile && !profile.is_admin) void navigate({ to: "/" });
   }, [loading, profile, navigate]);
 
+  const validId = UUID_RE.test(id);
+  const currentId = useRef(id);
+  currentId.current = id;
+
   const load = async () => {
+    const requested = id;
     try {
-      setUser(await getAdminUser({ data: { id } }));
+      const res = await getAdminUser({ data: { id: requested } });
+      // Ако междувременно е отворен друг потребител, старият отговор се изхвърля.
+      if (currentId.current !== requested) return;
+      setUser(res);
+      setLoadFailed(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Неуспешно зареждане.");
+      if (currentId.current !== requested) return;
+      setLoadFailed(true);
+      toast.error(toUserMessage(err, "Неуспешно зареждане."));
     }
   };
 
   useEffect(() => {
-    if (profile?.is_admin) void load();
+    setUser(null);
+    setLoadFailed(false);
+    if (profile?.is_admin && validId) void load();
   }, [profile?.is_admin, id]);
 
-  if (loading || !profile?.is_admin || !user) {
+  if (loading || !profile?.is_admin) {
     return (
-      <main className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      <FullPageLoading
+        profileError={profileError && !profile}
+        onRetry={() => void refreshProfile()}
+      />
+    );
+  }
+
+  if (!validId) {
+    return (
+      <main className="mx-auto max-w-3xl px-4 py-12">
+        <p className="text-sm">Потребителят не е намерен.</p>
+        <Link to="/admin" className="mt-2 inline-block text-sm text-primary underline">
+          ← Към админ панела
+        </Link>
       </main>
     );
   }
 
+  if (!user) {
+    if (loadFailed) {
+      return (
+        <main className="mx-auto max-w-3xl px-4 py-12">
+          <LoadFailed onRetry={() => void load()} />
+          <Link to="/admin" className="mt-4 block text-center text-sm text-primary underline">
+            ← Към админ панела
+          </Link>
+        </main>
+      );
+    }
+    return <FullPageLoading />;
+  }
+
   const add = async (n: number) => {
     if (!Number.isInteger(n) || n === 0) return;
+    if (Math.abs(n) > MAX_CUSTOM) {
+      toast.error(`Най-много ${MAX_CUSTOM} доклада наведнъж.`);
+      return;
+    }
     setBusy(true);
     try {
       const res = await setReportCredits({ data: { id, add: n } });
@@ -76,7 +126,7 @@ function AdminUserPage() {
       setCustom("");
       await load();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Неуспешна промяна.");
+      toast.error(toUserMessage(err, "Неуспешна промяна."));
     } finally {
       setBusy(false);
     }
@@ -86,10 +136,10 @@ function AdminUserPage() {
     setBusy(true);
     try {
       const res = await resolveCreditRequest({ data: { id: requestId, approve } });
-      toast.success(approve ? `Заредени са ${res.amount} доклада.` : "Заявката е отказана.");
+      toast.success(approve ? `Заредени са ${reportsWord(res.amount)}.` : "Заявката е отказана.");
       await load();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Неуспешна промяна.");
+      toast.error(toUserMessage(err, "Неуспешна промяна."));
     } finally {
       setBusy(false);
     }
@@ -152,14 +202,17 @@ function AdminUserPage() {
                   Добави
                 </Button>
               </form>
-              <Button
+              <ConfirmButton
                 size="sm"
                 variant="ghost"
                 disabled={busy || user.credits === 0}
-                onClick={() => void add(-user.credits)}
+                title="Да нулирам ли докладите?"
+                description={`Ще бъдат премахнати всички ${user.credits} налични доклада.`}
+                confirmLabel="Нулирай"
+                onConfirm={() => add(-user.credits)}
               >
                 Нулирай
-              </Button>
+              </ConfirmButton>
             </div>
           </>
         )}
@@ -173,7 +226,7 @@ function AdminUserPage() {
           <p className="mt-1 text-xs text-muted-foreground">
             Изпратена на {fmt(pending.created_at)}
           </p>
-          <p className="mt-3 rounded-md bg-background/70 p-3 text-sm">
+          <p className="mt-3 break-words rounded-md bg-background/70 p-3 text-sm">
             {pending.note ? (
               `„${pending.note}“`
             ) : (
