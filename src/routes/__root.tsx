@@ -387,9 +387,6 @@ function SiteHeader() {
             </NavTip>
             {user ? (
               <>
-                <NotificationsBell />
-                <CreditsBadge />
-                <UserAvatar user={user} />
                 {profile?.is_admin && (
                   <NavTip text="Одобряване на потребители, кредити за доклади и обратна връзка.">
                     <Link to="/admin" className={NAV_LINK}>
@@ -402,11 +399,23 @@ function SiteHeader() {
                     Моите доклади
                   </Link>
                 </NavTip>
+                <Link
+                  to="/profil"
+                  aria-label="Моят профил"
+                  className="hidden rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:block"
+                >
+                  <UserAvatar user={user} />
+                </Link>
                 <NavTip align="end" text="Излизане от профила ви на това устройство.">
                   <button type="button" onClick={() => void signOut()} className={NAV_LINK}>
                     Изход
                   </button>
                 </NavTip>
+                {/* Известията и докладите са най-вдясно, с по-голямо разстояние от навигацията. */}
+                <div className="ml-2 flex items-center gap-2 md:ml-8 md:gap-3">
+                  <NotificationsBell />
+                  <CreditsBadge />
+                </div>
               </>
             ) : (
               <NavTip
