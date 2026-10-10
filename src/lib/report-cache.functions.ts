@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { needsFollowUp, splitChecks } from "@/lib/fact-checks";
+import { needsFollowUp, splitChecks, withChecks } from "@/lib/fact-checks";
 import {
   expiresAtFor,
   isCacheVersionValid,
@@ -23,11 +23,11 @@ export const getCategory = createServerFn({ method: "POST" })
   .inputValidator((data) =>
     z
       .object({
-        ekatte: z.number().int(),
-        categoryId: z.string().min(1),
-        placeName: z.string().min(1),
-        placeType: z.enum(["village", "town", "district"]),
-        currentLocationName: z.string().min(1).optional(),
+        ekatte: z.number().int().min(1).max(99999),
+        categoryId: z.string().min(1).max(40),
+        // Настоящата локация се подава като ЕКАТТЕ — името се взима от официалния списък на
+        // сървъра (свободен текст от браузъра не влиза в промптовете).
+        currentEkatte: z.number().int().min(1).max(99999).optional(),
       })
       .parse(data),
   )
@@ -45,7 +45,16 @@ export const getCategory = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { followUpCategory, generateCategory, generateDistanceToCurrent, promptVersionFor } =
       await import("@/lib/report-generator.server");
-    const promptVersion = promptVersionFor(data.categoryId, data.placeType);
+
+    // Мястото и типът му се определят от сървъра по ЕКАТТЕ, а не от браузъра: иначе някой може
+    // да вмъкне свой текст в промпта или да обезсили споделения кеш с грешен тип.
+    const { loadSettlements, formatSettlement, isLargeCity } = await import("@/lib/settlements");
+    const all = await loadSettlements();
+    const settlement = all.find((s) => s.ekatte === data.ekatte);
+    if (!settlement) throw new Error("Непознато населено място.");
+    const placeName = formatSettlement(settlement);
+    const placeType = settlement.isVillage ? ("village" as const) : ("town" as const);
+    const promptVersion = promptVersionFor(data.categoryId, placeType);
 
     const { data: row } = await supabaseAdmin
       .from("report_cache")
@@ -68,17 +77,15 @@ export const getCategory = createServerFn({ method: "POST" })
       // Второ генериране на малко място: допроверяваме обектите, пропуснати при първото
       // (най-много веднъж). Ръчно импортираните и големите градове не минават оттук.
       const stored = splitChecks(cached.data).checks;
-      if (stored && data.placeType !== "district" && !row.prompt_version?.startsWith("manual-")) {
-        const { loadSettlements, isLargeCity } = await import("@/lib/settlements");
-        const place = (await loadSettlements()).find((s) => s.ekatte === data.ekatte);
-        if (needsFollowUp(stored, place ? isLargeCity(place) : false)) {
+      if (stored && !row.prompt_version?.startsWith("manual-")) {
+        if (needsFollowUp(stored, isLargeCity(settlement))) {
           try {
             const next = await followUpCategory(
               {
                 ekatte: data.ekatte,
                 categoryId: data.categoryId,
-                placeName: data.placeName,
-                placeType: data.placeType,
+                placeName,
+                placeType,
               },
               stored,
               cached.sourceLinks,
@@ -101,8 +108,19 @@ export const getCategory = createServerFn({ method: "POST" })
               cachedAt: followedAt,
             };
           } catch (err) {
-            // Допроверката е бонус — при грешка връщаме кешираното.
+            // Допроверката е бонус — при грешка връщаме кешираното. Отбелязваме я като направена,
+            // за да не вика Gemini (с търсене) при всяко следващо отваряне.
             console.warn("[report] допроверката се провали:", err);
+            const base = splitChecks(cached.data).data;
+            await supabaseAdmin
+              .from("report_cache")
+              .update({ data: withChecks(base, { ...stored, followUpDone: true }) as never })
+              .eq("ekatte", data.ekatte)
+              .eq("category_id", data.categoryId)
+              .then(
+                () => undefined,
+                () => undefined,
+              );
           }
         }
       }
@@ -118,8 +136,8 @@ export const getCategory = createServerFn({ method: "POST" })
       const generated = await generateCategory({
         ekatte: data.ekatte,
         categoryId: data.categoryId,
-        placeName: data.placeName,
-        placeType: data.placeType,
+        placeName,
+        placeType,
       });
       const expiresAt = expiresAtFor(data.categoryId);
       const cachedAt = new Date().toISOString();
@@ -154,9 +172,12 @@ export const getCategory = createServerFn({ method: "POST" })
     result.data = splitChecks(result.data).data;
 
     // „Жива“ част: разстояние/време с кола до настоящата локация — винаги прясно.
-    if (data.categoryId === "basic" && data.currentLocationName) {
+    const currentPlace = data.currentEkatte
+      ? all.find((s) => s.ekatte === data.currentEkatte)
+      : undefined;
+    if (data.categoryId === "basic" && currentPlace) {
       try {
-        const live = await generateDistanceToCurrent(data.placeName, data.currentLocationName);
+        const live = await generateDistanceToCurrent(placeName, formatSettlement(currentPlace));
         const section = result.data as { blocks?: unknown[] } | null;
         if (section && Array.isArray(section.blocks)) {
           section.blocks = [live.block, ...section.blocks];

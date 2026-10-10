@@ -1,6 +1,6 @@
 import { MOCK_REPORT, type ReportSection } from "@/data/mock-report";
 import { ONSITE_CHECKLIST_SECTION } from "@/data/onsite-checklist";
-import { PROMPT_MODULES } from "@/lib/prompt-modules";
+import { categoryLabel } from "@/lib/categories";
 import { ADDON_MODULES } from "@/lib/addon-modules";
 
 const LOREM_LINES = [
@@ -15,9 +15,7 @@ const LOREM_PARAGRAPH =
 
 function labelFor(categoryId: string): string {
   return (
-    PROMPT_MODULES.find((m) => m.id === categoryId)?.label ??
-    ADDON_MODULES.find((m) => m.id === categoryId)?.label ??
-    categoryId
+    categoryLabel(categoryId) ?? ADDON_MODULES.find((m) => m.id === categoryId)?.label ?? categoryId
   );
 }
 

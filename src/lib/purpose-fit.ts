@@ -1,5 +1,5 @@
 import type { ReportBlock, ReportSection } from "@/data/mock-report";
-import type { PurposeId } from "@/lib/prompt-modules";
+import type { PurposeId } from "@/lib/purposes";
 
 /**
  * Оценка „доколко е подходящо за <цел>“ (1–10).

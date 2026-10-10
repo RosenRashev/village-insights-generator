@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { importManualCategory } from "@/lib/manual-import.functions";
 import { parseManualResearch } from "@/lib/manual-research";
-import { PROMPT_MODULES } from "@/lib/prompt-modules";
+import { CATEGORIES, categoryLabel } from "@/lib/categories";
 
 /** Градовете от docs/manual-research/cities.md (ЕКАТТЕ). */
 const CITIES: { name: string; ekatte: number }[] = [
@@ -97,7 +97,7 @@ function ImportPage() {
     else toast.error(`${failed} категории не се импортираха — вж. списъка.`);
   };
 
-  const label = (id: string) => PROMPT_MODULES.find((m) => m.id === id)?.label ?? id;
+  const label = categoryLabel;
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-12">
@@ -157,7 +157,7 @@ function ImportPage() {
         {text.trim() && (
           <div className="rounded-md border p-3 text-sm">
             <p>
-              Разпознати категории: <b>{parsed.categories.length}</b> от {PROMPT_MODULES.length}
+              Разпознати категории: <b>{parsed.categories.length}</b> от {CATEGORIES.length}
             </p>
             {parsed.missingIds.length > 0 && (
               <p className="mt-1 text-amber-600">Липсват: {parsed.missingIds.join(", ")}</p>

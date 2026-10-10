@@ -11,7 +11,7 @@ import {
 
 import type { ReportSection } from "@/data/mock-report";
 import { useAuth } from "@/hooks/useAuth";
-import type { PurposeId } from "@/lib/prompt-modules";
+import type { PurposeId } from "@/lib/purposes";
 import type { Settlement } from "@/lib/settlements";
 
 /**

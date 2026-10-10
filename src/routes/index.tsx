@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { PURPOSE_OPTIONS, type PurposeId } from "@/lib/prompt-modules";
+import { PURPOSE_OPTIONS, type PurposeId } from "@/lib/purposes";
 import { FieldHint } from "@/components/FieldHint";
 import { SettlementCombobox } from "@/components/SettlementCombobox";
 import { ModuleCard } from "@/components/ModuleCard";

@@ -1,4 +1,4 @@
-import type { PurposeId } from "@/lib/prompt-modules";
+import type { PurposeId } from "@/lib/purposes";
 
 /**
  * Статични кратки коментари за конкретен модул (по section.id), показвани
