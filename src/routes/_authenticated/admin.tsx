@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import {
   listProfiles,
+  resolveCreditRequest,
   setProfileApproval,
   setReportCredits,
   type AdminProfile,
@@ -72,6 +73,19 @@ function AdminPage() {
     }
   };
 
+  const resolveRequest = async (profileId: string, requestId: string, approve: boolean) => {
+    setBusyId(profileId);
+    try {
+      const res = await resolveCreditRequest({ data: { id: requestId, approve } });
+      await load();
+      toast.success(approve ? `Заредени са ${res.amount} доклада.` : "Заявката е отказана.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Неуспешна промяна.");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const decide = async (id: string, approved: boolean) => {
     setBusyId(id);
     try {
@@ -87,6 +101,7 @@ function AdminPage() {
 
   const pending = rows?.filter((r) => !r.is_approved) ?? [];
   const approved = rows?.filter((r) => r.is_approved) ?? [];
+  const pendingRequests = approved.filter((r) => r.pendingRequest !== null);
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-12">
@@ -153,17 +168,54 @@ function AdminPage() {
       </section>
 
       <section className="mt-10">
-        <h2 className="text-lg font-semibold">Одобрени ({approved.length})</h2>
+        <h2 className="text-lg font-semibold">
+          Одобрени ({approved.length})
+          {pendingRequests.length > 0 && (
+            <span className="ml-2 rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300">
+              Чакащи заявки за доклади: {pendingRequests.length}
+            </span>
+          )}
+        </h2>
         <div className="mt-3 space-y-2">
           {approved.map((r) => (
             <div
               key={r.id}
               className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border p-3"
             >
-              <p className="text-sm">
-                {r.email ?? r.id}
-                {r.is_admin && <span className="ml-2 text-xs text-primary">админ</span>}
-              </p>
+              <div className="text-sm">
+                <p>
+                  {r.email ?? r.id}
+                  {r.is_admin && <span className="ml-2 text-xs text-primary">админ</span>}
+                </p>
+                {r.pendingRequest && (
+                  <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                    <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300">
+                      Иска {r.pendingRequest.amount}{" "}
+                      {r.pendingRequest.amount === 1 ? "доклад" : "доклада"}
+                    </span>
+                    <Button
+                      size="sm"
+                      disabled={busyId === r.id}
+                      onClick={() => void resolveRequest(r.id, r.pendingRequest!.id, true)}
+                    >
+                      Одобри +{r.pendingRequest.amount}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      disabled={busyId === r.id}
+                      onClick={() => void resolveRequest(r.id, r.pendingRequest!.id, false)}
+                    >
+                      Откажи
+                    </Button>
+                    {r.pendingRequest.note && (
+                      <span className="basis-full text-xs text-muted-foreground">
+                        „{r.pendingRequest.note}“
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
               <div className="flex flex-wrap items-center gap-2">
                 {r.is_admin ? (
                   <span className="text-xs text-muted-foreground">без ограничения</span>

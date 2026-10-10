@@ -120,7 +120,10 @@ function ProfilePage() {
             <p className="mt-1 text-sm">
               Оставащи нови доклади: <strong>{quota.credits}</strong>
               {quota.credits === 0 && (
-                <span className="text-muted-foreground"> — свържете се с администратора</span>
+                <span className="text-muted-foreground">
+                  {" "}
+                  — заявете още от кутийката с доклади до профилната ви снимка горе
+                </span>
               )}
             </p>
           )}

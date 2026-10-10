@@ -11,6 +11,8 @@ export type AdminProfile = {
   created_at: string;
   /** Оставащи кредити за нови доклади (само за админ в списъка). */
   credits: number;
+  /** Чакаща заявка за още доклади (само за админ в списъка). */
+  pendingRequest: { id: string; amount: number; note: string | null; created_at: string } | null;
 };
 
 /**
@@ -26,11 +28,25 @@ export const listProfiles = createServerFn({ method: "POST" })
       .order("created_at", { ascending: false });
 
     if (error) throw new Error(error.message);
-    const profiles = (data ?? []) as Omit<AdminProfile, "credits">[];
+    const profiles = (data ?? []) as Omit<AdminProfile, "credits" | "pendingRequest">[];
     const isAdmin = profiles.some((p) => p.id === context.userId && p.is_admin);
-    const { getAllCredits } = await import("@/lib/credits.server");
+    const { getAllCredits, listPendingRequests } = await import("@/lib/credits.server");
     const credits = isAdmin ? await getAllCredits() : new Map<string, number>();
-    return profiles.map((p) => ({ ...p, credits: credits.get(p.id) ?? 0 }));
+    // Таблицата `credit_requests` може още да не е създадена (миграцията се пуска ръчно) —
+    // списъкът с потребители не бива да зависи от нея.
+    const requests = isAdmin
+      ? await listPendingRequests().catch(() => new Map<string, never>())
+      : new Map<string, never>();
+    return profiles.map((p) => {
+      const r = requests.get(p.id);
+      return {
+        ...p,
+        credits: credits.get(p.id) ?? 0,
+        pendingRequest: r
+          ? { id: r.id, amount: r.amount, note: r.note, created_at: r.created_at }
+          : null,
+      };
+    });
   });
 
 /** Добавя (положително) или маха (отрицателно) кредити, или задава точна стойност. Само админ. */
@@ -56,6 +72,23 @@ export const setReportCredits = createServerFn({ method: "POST" })
     const delta = "add" in data ? data.add : data.set - (await getCredits(data.id));
     const balance = await adjustCredits(data.id, delta);
     return { credits: balance ?? 0 };
+  });
+
+/** Одобрява (зарежда исканите доклади) или отказва заявка на потребител за още доклади. */
+export const resolveCreditRequest = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ id: z.string().uuid(), approve: z.boolean() }).parse(data))
+  .handler(async ({ data, context }) => {
+    const { data: me } = await context.supabase
+      .from("profiles")
+      .select("is_admin")
+      .eq("id", context.userId)
+      .maybeSingle();
+    if (!me?.is_admin) throw new Error("Нямате права за тази операция.");
+
+    const { resolveRequest } = await import("@/lib/credits.server");
+    const res = await resolveRequest(data.id, data.approve);
+    return { amount: res.amount, balance: res.balance };
   });
 
 /** Одобрява или отказва регистрация. Редът се запазва при отказ. */

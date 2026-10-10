@@ -14,6 +14,7 @@ import { SettlementCombobox } from "@/components/SettlementCombobox";
 import { ModuleCard } from "@/components/ModuleCard";
 import { TopoBackground } from "@/components/TopoBackground";
 import { PendingApproval } from "@/components/PendingApproval";
+import { OPEN_CREDITS_EVENT } from "@/components/CreditsBadge";
 import { GenerationProgress } from "@/components/GenerationProgress";
 import { ReportInfographic } from "@/components/ReportInfographic";
 import { useAuth } from "@/hooks/useAuth";
@@ -223,7 +224,12 @@ function Index() {
       try {
         const quota = await getMyQuota({ data: undefined });
         if (!quota.allowed) {
-          toast.error("Нямате оставащи доклади. Свържете се с администратора, за да ви зареди.");
+          toast.error("Нямате оставащи доклади.", {
+            action: {
+              label: "Заяви още",
+              onClick: () => window.dispatchEvent(new Event(OPEN_CREDITS_EVENT)),
+            },
+          });
           return;
         }
       } catch (err) {

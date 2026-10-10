@@ -14,6 +14,7 @@ import { useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { FeedbackBox } from "../components/FeedbackBox";
+import { CreditsBadge } from "@/components/CreditsBadge";
 import { InstallAppButton } from "../components/InstallAppButton";
 import { Toaster } from "../components/ui/sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../components/ui/tooltip";
@@ -354,6 +355,7 @@ function SiteHeader() {
             </NavTip>
             {user ? (
               <>
+                <CreditsBadge />
                 <UserAvatar user={user} />
                 {profile?.is_admin && (
                   <NavTip text="Одобряване на потребители, кредити за доклади и обратна връзка.">
